@@ -80,10 +80,20 @@ enum MeetingSummarizer {
     authorize: (@MainActor () -> Bool)?,
     progress: @escaping @MainActor (String) -> Void
   ) async -> Result<MeetingSummary, AIAnswerFailure> {
-    let lines = input.transcript
+    let sourceIndex = SummarySourceIndex(input.transcript)
+    let originalLines = input.transcript
       .filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
       .map { input.transcriptLine(for: $0, cloud: true) }
-    let transcript = lines.joined(separator: "\n")
+    let compactLines = sourceIndex.lines(hasTimestamps: input.duration > 0)
+    let sourceLegend = sourceIndex.legend
+    let compactBytes = sourceLegend.utf8.count + 1 + compactLines.reduce(0) { $0 + $1.utf8.count + 1 }
+    let originalBytes = originalLines.reduce(0) { $0 + $1.utf8.count + 1 }
+    let compact = compactBytes < originalBytes
+    let lines = compact ? compactLines : originalLines
+    let legend = compact ? sourceLegend + "\n" : ""
+    let transcript = legend + lines.joined(separator: "\n")
+    SummaryDiagnostics.current?.record(.sourceWireBytes, code: compact ? compactBytes : originalBytes)
+    SummaryDiagnostics.current?.record(.sourceOriginalBytes, code: originalBytes)
 
     let request: String
     if transcript.count <= singlePassCharacterLimit {
@@ -105,7 +115,7 @@ enum MeetingSummarizer {
             part: index + 1,
             of: parts.count,
             range: range,
-            transcript: part.joined(separator: "\n")
+            transcript: legend + part.joined(separator: "\n")
           ),
           llm: llm,
           processingMode: input.preferences.processingMode,
@@ -168,11 +178,27 @@ enum MeetingSummarizer {
       var summary = SummaryResponseParser.validateTemplate(SummaryResponseParser.parse(reply),
         allowedIDs: Set(choices.map(\.id)), actionFreeIDs: Set(actionFree))
       guard summary.hasCompleteExtraction else { return .failure(.generationFailed) }
+      summary.evidence = summary.evidence.compactMap { reference in
+        guard let id = sourceIndex.originalID(for: reference.sourceSegmentID, allowShortIDs: compact),
+              sourceIndex.validates(id: reference.sourceSegmentID, quote: reference.quote) else { return nil }
+        var reference = reference
+        reference.sourceSegmentID = id.uuidString
+        return reference
+      }
+      if var knowledge = summary.knowledge {
+        for index in knowledge.facts.indices {
+          guard var references = knowledge.facts[index].sourceReferences else { continue }
+          for reference in references.indices {
+            if let id = sourceIndex.originalID(for: references[reference].sourceSegmentID, allowShortIDs: compact) {
+              references[reference].sourceSegmentID = id.uuidString
+            }
+          }
+          knowledge.facts[index].sourceReferences = references
+        }
+        summary.knowledge = knowledge
+      }
       summary.knowledge = summary.knowledge?.validated(allowedProfiles: Set(choices.map(\.id))) { reference in
-        guard let id = UUID(uuidString: reference.sourceSegmentID), reference.quote.count >= 8,
-              reference.quote.count <= 2_000,
-              input.transcript.filter({ $0.id == id }).count == 1 else { return false }
-        return input.transcript.contains { $0.id == id && $0.text.contains(reference.quote) }
+        sourceIndex.validates(id: reference.sourceSegmentID, quote: reference.quote, allowShortIDs: false)
       }
       if var knowledge = summary.knowledge {
         if knowledge.selectedProfileIDs.isEmpty, let id = summary.templateID { knowledge.selectedProfileIDs = [id] }

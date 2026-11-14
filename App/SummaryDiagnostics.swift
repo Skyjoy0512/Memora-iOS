@@ -11,7 +11,8 @@ final class SummaryDiagnostics: Sendable {
     case responseComplete, parseStarted, parseCompleted, saveStarted, saveCompleted
     case backgroundExpiration, cancelled, contextChanged, saveFailed, failed, completed
     case onDeviceSection, onDeviceError, wireBytes
-    case inputTokens, outputTokens, reasoningTokens
+    case inputTokens, outputTokens, reasoningTokens, cachedInputTokens, cacheWriteTokens
+    case sourceWireBytes, sourceOriginalBytes
     case enteredForeground, enteredBackground
     case providerStop
     case processingMode
@@ -76,13 +77,21 @@ final class SummaryDiagnostics: Sendable {
   }
 
   func outputReceived() {
-    let first = state.withLock { value in
+    let first = state.withLock { value -> Event? in
       let first = !value.outputs[Self.requestID, default: Output()].firstReceived
       value.outputs[Self.requestID, default: Output()].firstReceived = true
-      value.outputs[Self.requestID, default: Output()].last = event(.lastToken)
-      return first
+      var received = event(.lastToken)
+      value.outputs[Self.requestID, default: Output()].last = received
+      guard first else { return nil }
+      // A one-chunk answer has the same first/last instant. Recording the
+      // first event afterwards would manufacture a negative generation span.
+      received.stage = .firstToken
+      value.append(received)
+      return received
     }
-    if first { record(.firstToken) }
+    if let first {
+      Self.logger.info("job=\(self.jobID.uuidString, privacy: .public) request=\(first.requestID?.uuidString ?? "job", privacy: .public) stage=firstToken elapsed=\(first.elapsed, privacy: .public)")
+    }
   }
 
   func responseCompleted() {
@@ -102,7 +111,11 @@ final class SummaryDiagnostics: Sendable {
     let input = usage[usesAnthropicAPI ? "input_tokens" : "prompt_tokens"]
     let output = usage[usesAnthropicAPI ? "output_tokens" : "completion_tokens"]
     let reasoning = (usage["completion_tokens_details"] as? [String: Any])?["reasoning_tokens"]
-    for (stage, raw) in [(Stage.inputTokens, input), (.outputTokens, output), (.reasoningTokens, reasoning)] {
+    let cached = usesAnthropicAPI ? usage["cache_read_input_tokens"] :
+      ((usage["prompt_tokens_details"] as? [String: Any])?["cached_tokens"] ?? usage["prompt_cache_hit_tokens"])
+    let written = usesAnthropicAPI ? usage["cache_creation_input_tokens"] : nil
+    for (stage, raw) in [(Stage.inputTokens, input), (.outputTokens, output), (.reasoningTokens, reasoning),
+                         (.cachedInputTokens, cached), (.cacheWriteTokens, written)] {
       guard let number = raw as? NSNumber, CFGetTypeID(number) != CFBooleanGetTypeID(),
             let value = Int(exactly: number.doubleValue), value >= 0 else { continue }
       record(stage, code: value)
@@ -148,6 +161,69 @@ final class SummaryDiagnostics: Sendable {
     }).joined(separator: "\n")
   }
   static var reports: [String] { recent.withLock { $0 }.reversed().map(\.report) }
+
+  /// Numeric measurements only. Missing provider counters stay nil rather than
+  /// becoming a zero-cost or zero-reasoning claim. Delays include provider work.
+  struct Metrics: Codable, Sendable {
+    struct Request: Codable, Sendable {
+      var id: UUID
+      var httpStatus: Int?
+      var headerDelaySeconds: Double?
+      var firstReasoningDelaySeconds: Double?
+      var ttftSeconds: Double?
+      var reasoningToBodySeconds: Double?
+      var bodyGenerationSeconds: Double?
+      var totalSeconds: Double?
+      var inputTokens: Int?
+      var outputTokens: Int?
+      var reasoningTokens: Int?
+      var cachedInputTokens: Int?
+      var cacheWriteTokens: Int?
+    }
+    var timelineIncomplete: Bool
+    var requests: [Request]
+    var parseSeconds: Double?
+    var saveSeconds: Double?
+    var sourceOriginalBytes: Int?
+    var sourceWireBytes: Int?
+  }
+
+  var metrics: Metrics {
+    let snapshot = state.withLock { ($0.events + $0.outputs.values.compactMap(\.last), $0.omittedEvents) }
+    let entries = snapshot.0
+    func duration(_ first: Double?, _ last: Double?) -> Double? {
+      guard let first, let last, last >= first else { return nil }
+      return last - first
+    }
+    let starts = entries.filter { $0.stage == .request && $0.requestID != nil }
+    let requests = starts.map { start -> Metrics.Request in
+      let values = entries.filter { $0.requestID == start.requestID }
+      func time(_ stage: Stage) -> Double? { values.first { $0.stage == stage }?.elapsed }
+      func count(_ stage: Stage) -> Int? { values.last { $0.stage == stage }?.code }
+      return Metrics.Request(id: start.requestID!, httpStatus: count(.httpResponse),
+        headerDelaySeconds: duration(start.elapsed, time(.httpResponse)),
+        firstReasoningDelaySeconds: duration(start.elapsed, time(.firstReasoning)),
+        ttftSeconds: duration(start.elapsed, time(.firstToken)),
+        reasoningToBodySeconds: duration(time(.firstReasoning), time(.firstToken)),
+        bodyGenerationSeconds: duration(time(.firstToken), time(.lastToken)),
+        totalSeconds: duration(start.elapsed, time(.responseComplete)),
+        inputTokens: count(.inputTokens), outputTokens: count(.outputTokens), reasoningTokens: count(.reasoningTokens),
+        cachedInputTokens: count(.cachedInputTokens), cacheWriteTokens: count(.cacheWriteTokens))
+    }
+    func span(_ begin: Stage, _ end: Stage) -> Double? {
+      duration(entries.first { $0.stage == begin }?.elapsed, entries.last { $0.stage == end }?.elapsed)
+    }
+    return Metrics(timelineIncomplete: snapshot.1 > 0, requests: requests,
+      parseSeconds: span(.parseStarted, .parseCompleted), saveSeconds: span(.saveStarted, .saveCompleted),
+      sourceOriginalBytes: entries.last { $0.stage == .sourceOriginalBytes }?.code,
+      sourceWireBytes: entries.last { $0.stage == .sourceWireBytes }?.code)
+  }
+
+  var metricsJSON: String? {
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.sortedKeys]
+    return (try? encoder.encode(metrics)).flatMap { String(data: $0, encoding: .utf8) }
+  }
 
   private func event(_ stage: Stage, code: Int? = nil) -> Event {
     let duration = start.duration(to: .now).components

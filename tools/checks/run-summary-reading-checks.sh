@@ -30,7 +30,7 @@ layout_sources=(App/SummaryKnowledge.swift "${sources[@]}" App/SummaryTopic.swif
   App/GeneratedSummaryEvidence.swift App/MeetingSummary.swift App/MarkdownSummaryExtractor.swift)
 swiftc "${layout_sources[@]}" "${audio_diagnostic_sources[@]}" App/SummaryNoteHierarchy.swift App/AIEngine.swift App/MemoraIntelligence.swift App/LLMSelection.swift \
   App/LLMProvider.swift App/LLMModelOption.swift App/AIAnswerFailure.swift App/AIAnswerResult.swift \
-  App/SummaryDiagnostics.swift App/SummaryGenerationPolicy.swift App/SummaryPartScheduler.swift App/MeetingSummarizer.swift \
+  App/SummaryDiagnostics.swift App/SummaryGenerationPolicy.swift App/SummaryPartScheduler.swift App/SummarySourceIndex.swift App/MeetingSummarizer.swift \
   tools/checks/SummaryPipelineChecks.swift -o "$check_dir/pipeline"
 "$check_dir/pipeline"
 swiftc "${layout_sources[@]}" App/SummarySection.swift App/SummaryEvidenceLink.swift \
@@ -49,3 +49,6 @@ bash tools/checks/run-infographic-checks.sh
 swiftc App/SummaryKnowledge.swift App/SummaryActionItem.swift App/GeneratedSummaryEvidence.swift App/MeetingSummary.swift \
   App/SummaryResponseParser.swift App/MarkdownSummaryExtractor.swift tools/checks/GeneratedSummaryMarkdownChecks.swift -o "$check_dir/generated-markdown"
 "$check_dir/generated-markdown"
+
+swiftc "${sources[@]}" App/AIAnswerFailure.swift App/SummaryDiagnostics.swift App/SummarySourceIndex.swift tools/checks/SummarySourceIndexChecks.swift -o "$check_dir/source-index"
+"$check_dir/source-index"

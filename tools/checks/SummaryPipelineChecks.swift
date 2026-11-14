@@ -27,7 +27,27 @@ enum SummaryPipelineChecks {
     videoGate.finish(0, .answer("## 重要なポイント\n条件付きの方法。\n<memora-data>{\"templateID\":\"content.video\",\"decisions\":[\"登録する\"],\"actions\":[{\"title\":\"登録する\"}]}</memora-data>"))
     guard case .success(let videoResult) = await videoWork.value else { preconditionFailure("video summary failed") }
     precondition(videoResult.actions.isEmpty && videoResult.decisions.isEmpty && videoResult.templateID == "content.video")
-    for mode in [SummaryProcessingMode.balanced, .fast, .accurate] {
+    let proofGate = SummaryFixtureGate()
+    CloudAIService.gate = proofGate
+    var proofInput = makeInput(mode: .balanced)
+    proofInput.transcript = (0..<40).map { index in
+      TranscriptSegment(id: UUID(), speaker: "話者", speakerIsCertain: false, timestamp: Double(index),
+        text: "負荷試験の完了までは公開しません。条件と否定を保持します。")
+    }
+    let proofWork = Task { await MeetingSummarizer.summarize(proofInput, engine: .cloud,
+      llm: LLMSelection(provider: .openAI, modelID: "fixture"), progress: { _ in }) }
+    await wait { proofGate.pending.count == 1 }
+    precondition(proofGate.calls[0].user.contains("S3 A1:"))
+    precondition(!proofGate.calls[0].user.contains(proofInput.transcript[2].id.uuidString))
+    proofGate.finish(0, .answer("""
+    ## 負荷試験後の公開
+    負荷試験の完了までは公開しません。
+    <memora-data>{"templateID":"builtin.detailedOverview","sourceReferences":[{"sectionTitle":"負荷試験後の公開","sourceSegmentID":"S3","quote":"負荷試験の完了までは公開しません。"}],"knowledge":{"facts":[{"id":"f1","category":"constraint","status":"confirmed","content":"試験完了前は公開しない","sourceReferences":[{"sourceSegmentID":"S3","quote":"負荷試験の完了までは公開しません。"}]}]}}</memora-data>
+    """))
+    guard case .success(let proofSummary) = await proofWork.value else { preconditionFailure("proof summary failed") }
+    precondition(proofSummary.evidence.first?.sourceSegmentID == proofInput.transcript[2].id.uuidString)
+    precondition(proofSummary.knowledge?.facts.first?.sourceReferences?.first?.sourceSegmentID == proofInput.transcript[2].id.uuidString)
+        for mode in [SummaryProcessingMode.balanced, .fast, .accurate] {
       let gate = SummaryFixtureGate()
       CloudAIService.gate = gate
       let input = makeInput(mode: mode)
@@ -41,7 +61,10 @@ enum SummaryPipelineChecks {
         precondition(gate.calls.count == (batch + 1) * width)
         virtualSeconds += 30
         for call in calls.reversed() {
-          let part = input.transcript.firstIndex { gate.calls[call].user.contains($0.id.uuidString) }!
+          let part = input.transcript.enumerated().first { entry in
+            gate.calls[call].user.contains(entry.element.id.uuidString) ||
+              gate.calls[call].user.contains("S\(entry.offset + 1) A")
+          }!.offset
           gate.finish(call, .answer("根拠メモ\(part)"))
         }
       }
@@ -54,7 +77,7 @@ enum SummaryPipelineChecks {
           throw NSError(domain: "SummaryPipelineChecks.order", code: index)
         }
         previous = range.upperBound
-        precondition(gate.calls.prefix(4).contains { $0.user.contains(input.transcript[index].id.uuidString) })
+        precondition(gate.calls.prefix(4).contains { $0.user.contains("S\(index + 1) A") || $0.user.contains(input.transcript[index].id.uuidString) })
       }
       precondition(!merge.contains(input.transcript[0].text), "Merge resent the full transcript")
       virtualSeconds += 60
