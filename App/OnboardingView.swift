@@ -12,8 +12,8 @@ struct OnboardingView: View {
     VStack(spacing: 0) {
       HStack {
         HStack(spacing: MemoraSpacing.sm) {
-          MemoraSymbol().accessibilityHidden(true)
-          MemoraWordmark(width: 100)
+          MemoraBrandMark(width: 96).accessibilityHidden(true)
+          MemoraWordmark(width: 96).accessibilityHidden(true)
         }
         Spacer()
         Button("スキップ", action: skip)

@@ -1,98 +1,94 @@
-# Canonical Memora brand assets
+# Memora brand assets (geometric v3)
 
-The approved source is `memora-brand-light-dark.zip`, supplied on 2026-11-10.
-This replaces the former geometric sidebar mark and app icon. No artwork is
-redrawn, generated, tinted at runtime, or downloaded.
+The approved source is `memora-geometric-v3-svg.zip`, supplied on
+2026-11-14. It replaces the earlier M-shaped mark, the old text logo and the
+old app icon. The supplied SVGs are the design of record: no artwork is
+redrawn, generated, tinted at runtime or downloaded.
 
-## Artwork and appearances
+The five solids read left to right as record, organize, understand, connect
+and expand. The center `understand` shape is a true circle and stays the
+quiet core in both the static mark and the thinking animation.
 
-- `App/Assets.xcassets/AppIcon.appiconset`: the original light and dark
-  1024×1024 PNGs, byte for byte. Both are RGB without an alpha channel; all
-  background pixels are opaque, including the corners. iOS supplies the mask.
-  Light uses white / `#111113`; dark uses `#111113` / `#F8F8F8`, matching the
-  supplied files rather than substituting pure black and white.
-- The tinted slot is a grayscale conversion of the supplied dark PNG. The
-  conversion changes only color space, preserving dimensions, M position,
-  line weight, antialiasing and full-bleed background. iOS applies the chosen
-  tint. Reproduce with macOS `sips -m
-  '/System/Library/ColorSync/Profiles/Generic Gray Gamma 2.2 Profile.icc'
-  memora-appicon-dark.png --out memora-appicon-tinted.png`.
-- `memora-wordmark.imageset`: the original 410×68 SVG pair. The image has no
-  background; the drawing bounds including strokes are 5.5…403.5 horizontally
-  and 10.5…57.5 vertically. Keep that original canvas; external spacing belongs
-  to the views. The sidebar displays it at 144pt wide (about 23.9pt high).
-- `memora-symbol.imageset`: the original 432×432 SVG pair, including its
-  `viewBox="290 287 444 451"`. Its existing viewport and uniform scaling are
-  preserved; do not stretch its M to fill a square.
-- Both vector sets preserve vector representation and original rendering,
-  with the dark luminosity variant selected automatically by Asset Catalog
-  in the app's existing appearance environment.
+## Source of record
 
-`MemoraWordmark` and `MemoraSymbol` are the shared components.
-`SidebarBrandMark` retains the sidebar's accessibility identifier. Ask AI uses
-only the header wordmark; a person-scoped chat still shows the person's name.
-Onboarding's existing brand heading uses the symbol and wordmark. No idle
-logo, loading animation or new launch-screen artwork is added.
+The six supplied SVGs are kept byte for byte in
+`docs/brand/memora-geometric-v3/`:
 
-## Scope and cleanup
+- `…-mark-light.svg`, `…-mark-dark.svg`, `…-mark-adaptive.svg` — the 432×92
+  mark.
+- `…-lockup-light.svg`, `…-lockup-dark.svg`, `…-lockup-adaptive.svg` — the
+  432×134 combination logo: mark above the outlined `MEMORA` wordmark.
 
-The old `memora-sidebar-logo.imageset` and `AppIcon.appiconset/Icon.png` are
-removed after their consumers are switched. The old macOS-only icon entry is
-removed: this project targets iOS only. Functional Lucide icons, provider
-logos and unrelated artwork remain as before. Bundle identifiers, signing,
-app name, backend, models and navigation are unchanged.
+`tools/checks/test_sidebar_brand_assets.py` guards their SHA-256 hashes.
+Runtime drawing uses SwiftUI `Path`s converted from those same coordinates:
 
-The drawer's 56pt continuous clipping encloses its closing wash
-as well as the screen, preventing the rectangular wash from covering the
-rounded corners. Existing drag, tap and Reduce Motion behavior are retained.
+- `MemoraBrandShape` — the five solids in the 432×92 space.
+- `MemoraBrandGeometry` — canvas sizes and the outlined wordmark strokes
+  (`lineWidth` 1.65, square caps, miter joins).
+- `MemoraBrandMark` — the static mark.
+- `MemoraWordmark` — the wordmark cropped to its ink (271×21).
+- `MemoraBrandLockup` — the vertical combination logo.
+- `MemoraThinkingLogo` — the animated mark.
+
+The supplied wordmark is already outline vector artwork, so the app bundles no
+font file and no system font stands in for the letterforms. The letter size,
+spacing, weight and uppercase form are exactly those of the approved lockup.
+
+## Colors and appearances
+
+Brand ink resolves with the app's existing appearance (`preferredColorScheme`):
+`#0B0B0B` in light, `#F6F4EF` in dark. The logo has a transparent background;
+spacing belongs to the SwiftUI layout, never to the artwork.
+
+## Placement
+
+- Sidebar header: the supplied mark at 144pt with its wordmark at 120pt
+  stacked beneath it (`SidebarBrandMark`). The wordmark keeps the supplied
+  letterforms and tracking; it is drawn larger than in the print lockup so it
+  stays readable at drawer width. The header stays left aligned and vertically
+  centered with the search button, whose behavior is unchanged.
+- Onboarding header: the mark and wordmark side by side, preserving the row's
+  previous height.
+- Ask AI header: `MemoraWordmark`, as before.
+- Ask AI thinking: `MemoraThinkingLogo` inside the existing status row.
+
+## App icon
+
+`docs/brand/appicon/…-light.svg` and `…-dark.svg` place the supplied lockup
+inside a 1024×1024 canvas (content 640pt wide, centered). Light is white with
+`#0B0B0B` ink; dark is `#0B0B0B` with `#F6F4EF` ink. The PNGs were rendered
+with Quick Look, flattened to opaque RGB, and the tinted slot is a grayscale
+conversion of the dark icon. All three are 1024×1024 with no alpha and no
+rounded corners baked in; iOS applies the mask. The existing three
+`AppIcon.appiconset` entries (light, dark, tinted) keep their filenames.
+
+## Thinking animation
+
+`MemoraThinkingLogo` draws the five solids independently over a 3.0s loop with
+a 0.13s stagger. Offsets are 2.5pt vertically, rotation ±7°, scale 0.87–1.0
+and opacity 0.55–1.0; the center circle uses 0.8pt, ±2°, 0.95–1.0 and
+0.8–1.0. A 0.45s envelope brings the shapes out of rest. Because every shape's
+phase returns to zero at the loop boundary, the final frame is exactly the
+static mark.
+
+State mapping uses the existing `AIChatMessage.isThinking` flow: the animated
+logo shows while the reply has no text and no approval is pending; an approval
+or streaming answer settles it to the static mark; completion, cancellation
+and errors remove the row. The timeline pauses when the scene is inactive and
+Reduce Motion replaces the animation with the static mark. The mark is hidden
+from VoiceOver; the existing status line announces the state.
+
+## Cleanup
+
+`memora-wordmark.imageset`, `memora-symbol.imageset`, `MemoraSymbol.swift`
+and the earlier M-shaped app icon PNGs are removed after their last reference
+was switched. Interface glyphs, provider logos and unrelated artwork are
+unchanged. Bundle identifiers, signing, the app name, navigation, data, models
+and processing are unchanged.
 
 ## Verification
 
-Canonical byte hashes and appearance registrations are guarded by
-`python3 -B tools/checks/test_sidebar_brand_assets.py`. The original PNGs'
-measured ink bounds are identical: x=302…721, y=299…725. ImageIO inspection
-confirmed alpha=255 throughout both icon inputs. The tinted input is 8-bit
-grayscale without alpha. No duplicate PNG wordmarks or preview sheet are
-bundled; the SVGs are the runtime source.
-
-Build with `bitrig preview -platform iOS`; use the build log to check Asset
-Catalog warnings. This Project.json has no Xcode test targets, so
-`bitrig test` cannot run it. Repository presentation checks and actual
-simulator checks must be reported separately from compilation.
-
-### Results on 2026-11-10
-
-- `bitrig preview -platform iOS`: succeeded and launched the updated preview.
-  No Asset Catalog warnings. The build reported 11 warnings in unchanged
-  location/OAuth/App Intents code; these are outside this brand change.
-- `test_sidebar_brand_assets.py`: all 3 checks passed.
-- `test_chat_surface_presentation.py`: all 8 checks passed.
-- `bash tools/checks/run-design-refresh-checks.sh`: passed, including existing
-  presentation, navigation, icon, composer, loading and motion checks.
-- `git diff --check`: passed.
-- iPhone 18 Pro Max built-in simulator: sidebar and Ask AI checked in light and
-  dark, including live appearance switching, drawer navigation and the header's
-  history/search menu. Rounded screen corners and wordmark proportions checked.
-  Home Screen Default, Dark and Tinted were selected in iOS Customize and
-  visibly rendered with the new M. Appearance settings restored after checking.
-- iPhone 17e built-in simulator: onboarding and sidebar checked in both
-  appearances, Ask AI in light; no logo clipping. Onboarding M geometry checked.
-- Screenshots are saved in the ignored `build/brand-review/` directory:
-  `home-light.png`, `home-dark.png`, `home-tinted.png`, `sidebar-light.png`,
-  `sidebar-dark.png`, `askai-light.png`, `askai-dark.png`,
-  `onboarding-light.png`, `onboarding-dark.png`, `sidebar-compact-light.png`,
-  `sidebar-compact-dark.png` and `askai-compact-light.png`.
-- Physical devices and App Store upload were not tested. The historical
-  `tests/sidebar-glass.e2e.ts` logo size assertion was updated; this E2E suite
-  was not executed. The verification above used actual simulator interactions
-  plus repository checks, not an assertion that every E2E test passed.
-
-### Sidebar size refinement
-
-Following the supplied iPhone drawer reference, the open screen now has a 56pt
-continuous corner radius (previously 28pt), and only the sidebar wordmark grows
-from 118pt to 144pt. The same vector geometry and aspect ratio are retained.
-`bitrig preview -platform iOS` succeeded; the 3 brand checks and 8 chat
-presentation checks passed. Light/dark presentation and tap-to-close were
-checked on the iPhone 18 Pro Max simulator. Current screenshots are
-`build/brand-review/sidebar-rounded-light.png` and `sidebar-rounded-dark.png`.
+Run `python3 -B tools/checks/test_sidebar_brand_assets.py` and
+`bitrig preview -platform iOS`; inspect sidebar, onboarding and Ask AI in both
+appearances, and open the thinking state from your own Ask AI request or the
+Settings diagnostics fixtures. Compilation alone is not visual validation.

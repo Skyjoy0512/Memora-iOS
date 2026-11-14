@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="432" height="134" viewBox="0 0 432 134" role="img" aria-label="Memora">
+  <g id="memora-mark" fill="#F6F4EF">
+    <rect id="record" x="0" y="2" width="68" height="88"/>
+    <path id="organize" d="M80 2 H82 A50 44 0 0 1 82 90 H80 Z"/>
+    <circle id="understand" cx="190" cy="46" r="46"/>
+    <path id="connect" d="M249 2 H333 V90 H311 C308 60 282 40 249 40 Z"/>
+    <path id="expand" d="M345 2 L432 90 H345 Z"/>
+  </g>
+  <g id="wordmark" fill="none" stroke="#F6F4EF" stroke-width="1.65" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M79 132 V114 L89 127 L99 114 V132"/>
+    <path d="M147 114 H134 V132 H147 M134 123 H145"/>
+    <path d="M180 132 V114 L190 127 L200 114 V132"/>
+    <circle cx="242" cy="123" r="9.5"/>
+    <path d="M284 132 V114 H292 C302 114 302 125 292 125 H284 M291 125 L300 132"/>
+    <path d="M330 132 L339 114 L348 132 M333 126 H345"/>
+  </g>
+</svg>

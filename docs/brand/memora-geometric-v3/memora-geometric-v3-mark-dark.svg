@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="432" height="92" viewBox="0 0 432 92" role="img" aria-label="Memora">
+  <g id="memora-mark" fill="#F6F4EF">
+    <rect id="record" x="0" y="2" width="68" height="88"/>
+    <path id="organize" d="M80 2 H82 A50 44 0 0 1 82 90 H80 Z"/>
+    <circle id="understand" cx="190" cy="46" r="46"/>
+    <path id="connect" d="M249 2 H333 V90 H311 C308 60 282 40 249 40 Z"/>
+    <path id="expand" d="M345 2 L432 90 H345 Z"/>
+  </g>
+</svg>

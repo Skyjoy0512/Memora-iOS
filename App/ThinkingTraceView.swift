@@ -19,8 +19,12 @@ struct ThinkingTraceView: View {
 
     VStack(alignment: .leading, spacing: 0) {
       if message.isThinking && (message.text.isEmpty || isWaiting) {
-        ConversationStatusLine(label: isWaiting ? "確認を待っています" : label,
-          since: message.createdAt, isWaiting: isWaiting, showsShimmer: message.text.isEmpty && permitsShimmer)
+        HStack(spacing: MemoraSpacing.sm) {
+          MemoraThinkingLogo(isAnimating: !isWaiting)
+          ConversationStatusLine(label: isWaiting ? "確認を待っています" : label,
+            since: message.createdAt, isWaiting: isWaiting, showsShimmer: message.text.isEmpty && permitsShimmer)
+        }
+        .transition(.opacity)
       }
       if !message.agentSteps.isEmpty {
         AgentActivityView(steps: message.agentSteps, isRunning: message.isThinking, isWaiting: isWaiting,
