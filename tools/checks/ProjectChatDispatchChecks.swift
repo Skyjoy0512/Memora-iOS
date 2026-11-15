@@ -150,7 +150,7 @@ enum AIEngineService {
   static func contextCharacterLimit(for engine: MockEngine, llm: MockLLM, task: ContextTaskKind) -> Int { 10_000 }
   static func modelLabel(engine: MockEngine, llm: MockLLM) -> String? { nil }
   static func answer(engine: MockEngine, llm: MockLLM, question: String, scopeLabel: String, context: String,
-                     history: String, onText: (@MainActor (String) -> Void)?) async -> AIAnswerResult {
+                     history: String, onText: (@MainActor (String) -> Void)?, authorize: (@MainActor () -> Bool)? = nil) async -> AIAnswerResult {
     requests.append(question)
     callbacks[question] = onText
     onText?("partial " + question)

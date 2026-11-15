@@ -8,7 +8,8 @@ enum CloudAIService {
     context: String,
     history: String,
     llm: LLMSelection,
-    onText: (@MainActor (String) -> Void)? = nil
+    onText: (@MainActor (String) -> Void)? = nil,
+    authorize: (@MainActor () -> Bool)? = nil
   ) async -> AIAnswerResult {
     let system = """
     \(AIAnswerPrompt.grounding)
@@ -22,13 +23,13 @@ enum CloudAIService {
       context: context,
       history: history
     )
-    if let onText { return await streamedAnswer(system: system, user: user, llm: llm, onText: onText) }
-    return await complete(system: system, user: user, llm: llm)
+    if let onText { return await streamedAnswer(system: system, user: user, llm: llm, onText: onText, authorize: authorize) }
+    return await complete(system: system, user: user, llm: llm, authorize: authorize)
   }
 
   @MainActor
   private static func streamedAnswer(system: String, user: String, llm: LLMSelection,
-                                     onText: @escaping @MainActor (String) -> Void) async -> AIAnswerResult {
+                                     onText: @escaping @MainActor (String) -> Void, authorize: (@MainActor () -> Bool)?) async -> AIAnswerResult {
     guard let key = KeychainStore.string(forKey: llm.keychainAccount), !key.isEmpty else {
       return .failure(llm.isMemoraIntelligence ? .serviceNotConnected : .missingKey)
     }
@@ -39,7 +40,7 @@ enum CloudAIService {
         [["role": "system", "content": system], ["role": "user", "content": user]]
       let request = try streamingRequest(system: system, messages: messages, llm: llm, key: key)
       let response = try await CloudTurnStreaming.response(for: request, provider: anthropicAPI ? .anthropic : .chatCompletions, onText: onText,
-        authorize: { KeychainStore.string(forKey: llm.keychainAccount) == key })
+        authorize: { KeychainStore.string(forKey: llm.keychainAccount) == key && (authorize?() ?? true) })
       let part = try CloudSummaryResponse(response, provider: anthropicAPI ? .anthropic : .chatCompletions)
       guard !part.wasCutOff else { throw AIAnswerFailure.executionLimit }
       return .answer(part.text.trimmingCharacters(in: .whitespacesAndNewlines))
@@ -51,7 +52,9 @@ enum CloudAIService {
 
   /// Sends one system and user prompt to the chosen provider. Ask AI and the
   /// summarizer share it, each with its own instructions.
-  static func complete(system: String, user: String, llm: LLMSelection, maximumOutputTokens: Int? = nil) async -> AIAnswerResult {
+  static func complete(system: String, user: String, llm: LLMSelection, maximumOutputTokens: Int? = nil,
+    sessionConfiguration: URLSessionConfiguration = .ephemeral, admission: SummaryRequestAdmission = .shared,
+    authorize: (@MainActor () -> Bool)? = nil) async -> AIAnswerResult {
     guard let key = KeychainStore.string(forKey: llm.keychainAccount), !key.isEmpty else {
       return .failure(llm.isMemoraIntelligence ? .serviceNotConnected : .missingKey)
     }
@@ -59,9 +62,9 @@ enum CloudAIService {
 
     do {
       let text = if llm.provider.usesAnthropicAPI {
-        try await anthropic(system: system, user: user, llm: llm, key: key, maximumOutputTokens: maximumOutputTokens)
+        try await anthropic(system: system, user: user, llm: llm, key: key, maximumOutputTokens: maximumOutputTokens, sessionConfiguration: sessionConfiguration, admission: admission, authorize: authorize)
       } else {
-        try await chatCompletions(system: system, user: user, llm: llm, key: key, maximumOutputTokens: maximumOutputTokens)
+        try await chatCompletions(system: system, user: user, llm: llm, key: key, maximumOutputTokens: maximumOutputTokens, sessionConfiguration: sessionConfiguration, admission: admission, authorize: authorize)
       }
       return .answer(text)
     } catch let failure as AIAnswerFailure {
@@ -196,7 +199,8 @@ enum CloudAIService {
     user: String,
     llm: LLMSelection,
     key: String,
-    maximumOutputTokens: Int? = nil
+    maximumOutputTokens: Int? = nil, sessionConfiguration: URLSessionConfiguration,
+    admission: SummaryRequestAdmission, authorize: (@MainActor () -> Bool)?
   ) async throws -> String {
     var request = URLRequest(url: llm.baseURL.appendingPathComponent("chat/completions"))
     request.httpMethod = "POST"
@@ -219,16 +223,18 @@ enum CloudAIService {
     }
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-    let receiver = CloudHTTPTransport(endpoint: request.url!)
+    let receiver = CloudHTTPTransport(endpoint: request.url!, configuration: sessionConfiguration, admission: admission)
     defer { receiver.invalidate() }
     let (data, response) = try await receiver.data(for: request) {
-      KeychainStore.string(forKey: llm.keychainAccount) == key
+      KeychainStore.string(forKey: llm.keychainAccount) == key && (authorize?() ?? true)
     }
     try validate(response)
     return try completedText(data, provider: .chatCompletions)
   }
 
-  private static func anthropic(system: String, user: String, llm: LLMSelection, key: String, maximumOutputTokens: Int? = nil) async throws -> String {
+  private static func anthropic(system: String, user: String, llm: LLMSelection, key: String, maximumOutputTokens: Int? = nil,
+    sessionConfiguration: URLSessionConfiguration, admission: SummaryRequestAdmission,
+    authorize: (@MainActor () -> Bool)?) async throws -> String {
     var request = URLRequest(url: llm.baseURL.appendingPathComponent("messages"))
     request.httpMethod = "POST"
     request.timeoutInterval = 300
@@ -246,10 +252,10 @@ enum CloudAIService {
     ]
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-    let receiver = CloudHTTPTransport(endpoint: request.url!)
+    let receiver = CloudHTTPTransport(endpoint: request.url!, configuration: sessionConfiguration, admission: admission)
     defer { receiver.invalidate() }
     let (data, response) = try await receiver.data(for: request) {
-      KeychainStore.string(forKey: llm.keychainAccount) == key
+      KeychainStore.string(forKey: llm.keychainAccount) == key && (authorize?() ?? true)
     }
     try validate(response)
     return try completedText(data, provider: .anthropic)

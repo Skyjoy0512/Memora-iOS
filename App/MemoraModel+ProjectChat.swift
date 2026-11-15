@@ -155,7 +155,7 @@ extension MemoraModel {
         sentReferences = outcome.references
       } else {
         result = await AIEngineService.answer(engine: configuration.engine, llm: configuration.llm,
-          question: question, scopeLabel: project.name, context: instruction + context.text + selection.guidance, history: history, onText: onText)
+          question: question, scopeLabel: project.name, context: instruction + context.text + selection.guidance, history: history, onText: onText, authorize: isCurrentExecution)
       }
       guard isCurrentExecution(),
             await projectEvidenceStillAvailable(allEvidence + sentReferences, projectID: projectID, cloud: cloud), isCurrentExecution() else {

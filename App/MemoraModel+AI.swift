@@ -453,7 +453,7 @@ extension MemoraModel {
     } else {
       result = await AIEngineService.answer(engine: engine, llm: llm,
         question: content.question, scopeLabel: scopeLabel, context: content.context,
-        history: content.history, onText: safeText)
+        history: content.history, onText: safeText, authorize: contextAvailable)
     }
 
     guard !Task.isCancelled else { return outcome(.failure(.cancelled)) }
@@ -467,7 +467,7 @@ extension MemoraModel {
         return outcome(.failure(Task.isCancelled ? .cancelled : .contextChanged))
       }
       result = await AIEngineService.answer(engine: engine, llm: llm,
-        question: content.question, scopeLabel: scopeLabel, context: content.context, history: content.history)
+        question: content.question, scopeLabel: scopeLabel, context: content.context, history: content.history, authorize: contextAvailable)
     }
     if Task.isCancelled { result = .failure(.cancelled) }
     else if !contextAvailable() { result = .failure(.contextChanged) }

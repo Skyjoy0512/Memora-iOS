@@ -58,7 +58,8 @@ enum AIEngineService {
     scopeLabel: String,
     context: String,
     history: String,
-    onText: (@MainActor (String) -> Void)? = nil
+    onText: (@MainActor (String) -> Void)? = nil,
+    authorize: (@MainActor () -> Bool)? = nil
   ) async -> AIAnswerResult {
     switch effectiveEngine(engine) {
     case .foundation, .automatic:
@@ -81,7 +82,7 @@ enum AIEngineService {
         context: context,
         history: history,
         llm: llm,
-        onText: onText
+        onText: onText, authorize: authorize
       )
     }
   }

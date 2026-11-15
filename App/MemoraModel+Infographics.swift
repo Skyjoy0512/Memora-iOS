@@ -16,7 +16,8 @@ extension MemoraModel {
     let result: AIAnswerResult
     if engine == .cloud {
       result = await CloudAIService.complete(system: MeetingInfographicPrompt.system,
-        user: "以下は資料です。\n<summary>\n\(snapshot.summary)\n</summary>", llm: configuration.llm, maximumOutputTokens: 4_200)
+        user: "以下は資料です。\n<summary>\n\(snapshot.summary)\n</summary>", llm: configuration.llm, maximumOutputTokens: 4_200,
+        authorize: { snapshot.isCurrent(in: self) && !Task.isCancelled })
     } else {
       result = await AIEngineService.answer(engine: engine, llm: configuration.llm,
         question: MeetingInfographicPrompt.system, scopeLabel: "この会議の要約のみ", context: snapshot.summary, history: "")

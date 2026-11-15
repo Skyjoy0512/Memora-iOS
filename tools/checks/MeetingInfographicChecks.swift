@@ -77,7 +77,7 @@ enum AIAnswerResult {
   static var response = ""
   static var calls = 0
   static var onCall: (() -> Void)?
-  static func complete(system: String, user: String, llm: LLMSelection, maximumOutputTokens: Int?) async -> AIAnswerResult {
+  static func complete(system: String, user: String, llm: LLMSelection, maximumOutputTokens: Int?, authorize: (@MainActor () -> Bool)? = nil) async -> AIAnswerResult {
     precondition(system == MeetingInfographicPrompt.system && maximumOutputTokens == 4_200)
     calls += 1
     onCall?()

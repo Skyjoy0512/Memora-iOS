@@ -54,6 +54,18 @@ import Synchronization
       Wire.state.assertConsumed(0)
     }
 
+    let occupiedCompletion = try await transport.admit(request)
+    var completionAllowed = true
+    let completion = Task { await CloudAIService.complete(system: "fixture", user: "fixture", llm: llm,
+      maximumOutputTokens: 100, sessionConfiguration: CloudSessionChecks.configuration(), admission: admission,
+      authorize: { completionAllowed }) }
+    await queued(admission)
+    completionAllowed = false
+    await transport.release(occupiedCompletion)
+    let completionResult = await completion.value
+    precondition(completionResult.failure == .contextChanged)
+    Wire.state.assertConsumed(0)
+
     let anotherJob = CloudHTTPTransport(endpoint: endpoint, configuration: CloudSessionChecks.configuration(),
       summaryConcurrency: 1, admission: admission)
     defer { anotherJob.invalidate() }
