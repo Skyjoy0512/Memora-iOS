@@ -1,5 +1,19 @@
 # 日本語Live音声会話
 
+2026-11-16: 一般利用は一時無効。`FeatureFlags.isLiveConversationEnabled` は通常のDebug/Releaseでfalse。
+開発時だけ `DEBUG` と `MEMORA_ENABLE_LIVE_CONVERSATION` の両方をコンパイル条件に指定すると再有効化できる。
+一般設定、UserDefaults、環境変数での解除はない。以下の操作説明は開発用に保持した実装について記す。
+コード・導入処理・テスト・ライセンス・既存モデルファイルは削除していない。
+録音、文字起こし、通常の音声入力/読み上げ、録音Live Activityは別機能として維持する。
+
+無効時はcomposerがLive sessionを生成せず、Live panel/導入sheet/idle波形を表示しない。
+Session開始、local chat、LLM準備/回答、model導入の各入口でも処理前に拒否する。
+モデル解放/保存容量からの削除は次の単位で追記する。
+
+`python3 -B tools/checks/run-live-feature-checks.py` は4コンパイル条件と、通常Debug/Releaseの
+本番LLM/downloaderに対する各100回の拒否を確認する。nativeモデル/通信/ファイルアクセスは
+到達時に失敗させるstubで検出する。実機音声往復ではない。
+
 LiveはAPIを使わないローカル専用の会話。通常のAsk AIで選んだクラウドモデルとは別に動く。
 波形ボタンから始める。会話モデルが未導入なら初回セットアップを開き、ダウンロード操作を待つ。
 導入完了後の「Liveを開始」で会話を始める。音声認識・会話生成・読み上げを端末内で処理する。

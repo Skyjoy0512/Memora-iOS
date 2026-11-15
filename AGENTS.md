@@ -227,7 +227,10 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Notion pages, tasks and documents. Reading tools run straight away; every
   tool that changes data waits for the approval card, and a declined change is
   reported back to the model.
-- Ask AIの波形ボタンは日本語Live (`LiveConversationSession`) を開始する。
+- Live音声対話は通常無効（`FeatureFlags.isLiveConversationEnabled`）。開発用の
+  `DEBUG && MEMORA_ENABLE_LIVE_CONVERSATION` でのみ再有効化し、一般設定に出さない。
+  録音Live Activity・通常の音声入力/読み上げはこのflagの対象外。
+  以下は保持している開発用の実装仕様。Ask AIの波形ボタンは日本語Live (`LiveConversationSession`) を開始する。
   Volocal由来の共有音声エンジン・文分割・割り込み制御を使う。LiveはQwen3.5-2Bの
   ローカル専用。未導入時は約1.33 GBのダウンロード/検証画面を開き、完了するまで開始しない。
   `sendLocalVoiceChat`は会話テキストだけを使い、クラウド選択・API・URL取得・記録検索・

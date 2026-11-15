@@ -16,6 +16,7 @@ final class LocalVoiceModelStore {
   @ObservationIgnored private var generation = UUID()
 
   func install() {
+    guard FeatureFlags.isLiveConversationEnabled else { return }
     guard !isDownloading, !isInstalled else { return }
     generation = UUID()
     let run = generation

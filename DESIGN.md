@@ -1,5 +1,12 @@
 # Memora — Native reading and conversation
 
+2026-11-16: Live conversation is temporarily unavailable in ordinary Debug and
+Release builds. Hide its idle waveform, panel and setup route; retain the separate
+dictation microphone, normal model picker, send and stop controls. Re-enabling
+requires an explicit development compile condition, without an experimental
+preference. Earlier Live sections describe retained implementation, not normal
+availability. Recording Live Activity remains independent.
+
 Updated 2026-11-14. This is the current design specification. Product behavior
 and access constraints remain in AGENTS.md and domain documents under docs/.
 Historical visual experiments are superseded.

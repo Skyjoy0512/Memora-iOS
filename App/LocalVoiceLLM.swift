@@ -7,6 +7,9 @@ actor LocalVoiceLLM {
   private var loadingTask: Task<LocalLlamaContext, Error>?
 
   func prepare() async throws {
+    guard FeatureFlags.isLiveConversationEnabled else {
+      throw LiveVoiceError.unavailable("Liveはこのビルドでは利用できません。")
+    }
     guard LocalVoiceModel.isInstalled else { throw LiveVoiceError.unavailable("会話モデルが未導入です。モデル画面からダウンロードしてください。") }
     guard context == nil else { return }
     if loadingTask == nil {
@@ -19,6 +22,7 @@ actor LocalVoiceLLM {
   func answer(question: String, context references: String, history: String,
               onText: (@MainActor (String) -> Void)? = nil,
               authorize: (@MainActor () -> Bool)? = nil) async -> AIAnswerResult {
+    guard FeatureFlags.isLiveConversationEnabled else { return .failure(.engineNotReady) }
     // An interrupted native decode may still be finishing its current batch.
     // Let it release the context instead of turning a quick follow-up into an error.
     for _ in 0..<100 {

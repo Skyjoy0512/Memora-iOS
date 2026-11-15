@@ -5,6 +5,7 @@ extension MemoraModel {
   /// This path has no tools, URL intake or provider/API fallback.
   @discardableResult
   func sendLocalVoiceChat(_ question: String) -> Bool {
+    guard FeatureFlags.isLiveConversationEnabled else { return false }
     guard currentTeamID == nil, !isRestoring, !isStoreProtected, !isAIChatResponding,
           LocalVoiceModel.isInstalled else { return false }
     let question = question.trimmingCharacters(in: .whitespacesAndNewlines)

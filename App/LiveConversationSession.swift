@@ -39,8 +39,6 @@ final class LiveConversationSession {
   var isRunning: Bool { authority.sessionID != nil }
   var isSpeaking: Bool { phase == .speaking }
 
-  init() { installLifecycleObservers() }
-
   private func installLifecycleObservers() {
     if stopperID == nil {
       stopperID = AudioSessionCoordinator.shared.registerStopper(.speechInput) { [weak self] in self?.stop() }
@@ -65,6 +63,7 @@ final class LiveConversationSession {
   }
 
   func start() async {
+    guard FeatureFlags.isLiveConversationEnabled else { return }
     installLifecycleObservers()
     stop(preserveTranscript: false)
     let run = authority.begin()

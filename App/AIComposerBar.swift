@@ -52,7 +52,7 @@ struct AIComposerBar: View {
   @State private var speechOriginalText = ""
   @State private var dictationOriginalText = ""
   @State private var speechTask: Task<Void, Never>?
-  @State private var liveSession = LiveConversationSession()
+  @State private var liveSession: LiveConversationSession?
   @AppStorage("memora.askAI.voiceSpeakerEnabled") private var isSpeakerEnabled = true
   @Environment(\.scenePhase) private var scenePhase
   @State private var isIntegrationsPresented = false
@@ -81,6 +81,21 @@ struct AIComposerBar: View {
       restoresAttachmentFocus || restoresModelFocus
   }
   private var usesStackedLayout: Bool { isExpanded }
+
+  /// The idle Live waveform is offered only when Live is compiled in.
+  private var offersLiveVoiceAction: Bool {
+    isConversation && FeatureFlags.isLiveConversationEnabled
+  }
+
+  private var offersCollapsedAction: Bool {
+    (offersIdleVoiceInput && (!isConversation || offersLiveVoiceAction)) ||
+      onStop != nil || isBusy || speechInput.isListening
+  }
+
+  private var offersStackedAction: Bool {
+    !isConversation || offersLiveVoiceAction || onStop != nil || isBusy || canSend ||
+      speechInput.isListening
+  }
 
   private var cornerRadius: CGFloat {
     usesStackedLayout ? MemoraRadius.composer : Self.collapsedHeight / 2
@@ -114,7 +129,8 @@ struct AIComposerBar: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      if isConversation && isVoiceConversation {
+      if isConversation && isVoiceConversation, FeatureFlags.isLiveConversationEnabled,
+         let liveSession {
         AIChatVoicePanel(isRunning: liveSession.isRunning, status: liveSession.phase.label,
           transcript: liveSession.transcript.isEmpty ? text : liveSession.transcript,
           session: liveSession,
@@ -159,7 +175,7 @@ struct AIComposerBar: View {
               researchButton
                 .matchedGeometryEffect(id: "research", in: controlsNamespace)
             }
-            if offersIdleVoiceInput || onStop != nil || isBusy || speechInput.isListening {
+            if offersCollapsedAction {
               actionButton
                 .matchedGeometryEffect(id: "action", in: controlsNamespace, properties: isConversation ? [] : .frame)
             }
@@ -189,8 +205,10 @@ struct AIComposerBar: View {
                 .matchedGeometryEffect(id: "research", in: controlsNamespace)
             }
             if isConversation { dictationButton }
-            actionButton
-              .matchedGeometryEffect(id: "action", in: controlsNamespace, properties: isConversation ? [] : .frame)
+            if offersStackedAction {
+              actionButton
+                .matchedGeometryEffect(id: "action", in: controlsNamespace, properties: isConversation ? [] : .frame)
+            }
           }
           .padding(.horizontal, MemoraSpacing.sm)
           .padding(.bottom, MemoraSpacing.sm)
@@ -268,7 +286,7 @@ struct AIComposerBar: View {
       if phase == .background { endVoiceInput() }
     }
     .onChange(of: isSpeakerEnabled, initial: true) { _, enabled in
-      liveSession.setSpeakerEnabled(enabled)
+      liveSession?.setSpeakerEnabled(enabled)
     }
     .sheet(isPresented: $isAttachmentSheetPresented, onDismiss: {
       let shouldRestore = restoresAttachmentFocus && model.selectedTab == .askAI &&
@@ -295,7 +313,7 @@ struct AIComposerBar: View {
         startVoiceConversation()
       }
     }) {
-      if isVoiceConversation {
+      if isVoiceConversation, FeatureFlags.isLiveConversationEnabled, liveSession != nil {
         NavigationStack {
           LocalVoiceModelSetupView {
             startsLiveAfterModelSheet = true
@@ -551,12 +569,16 @@ struct AIComposerBar: View {
   }
 
   private func startVoiceConversation() {
+    guard FeatureFlags.isLiveConversationEnabled else { return }
     guard model.selectedTab == .askAI, model.currentTeamID == nil, !model.isRestoring,
           !model.isStoreProtected, model.composerDraftFailure == nil else { return }
     guard !model.isRecording else {
       speechInput.refuse("録音中はLiveを使用できません。録音を終えてからお試しください。")
       return
     }
+    let session = liveSession ?? LiveConversationSession()
+    liveSession = session
+    session.setSpeakerEnabled(isSpeakerEnabled)
     speechTask?.cancel()
     speechInput.stop()
     model.stopAnswerSpeech()
@@ -565,20 +587,20 @@ struct AIComposerBar: View {
     isFieldFocused = false
     let generation = model.aiWorkspaceGeneration
     let conversationID = model.aiConversationID
-    liveSession.validatesContext = {
+    session.validatesContext = {
       model.aiWorkspaceGeneration == generation && model.aiConversationID == conversationID &&
         model.selectedTab == .askAI && !model.isToolsPresented && model.currentTeamID == nil &&
         !model.isRestoring && !model.isStoreProtected && model.composerDraftFailure == nil
     }
-    liveSession.onUnsentTranscript = { partial in
+    session.onUnsentTranscript = { partial in
       if text.isEmpty { text = partial }
     }
-    liveSession.onInterrupt = { id in
+    session.onInterrupt = { id in
       guard model.aiWorkspaceGeneration == generation, model.aiConversationID == conversationID,
             model.aiMessages.last?.id == id else { return }
       model.stopAIChat()
     }
-    liveSession.onUtterance = { utterance in
+    session.onUtterance = { utterance in
       guard model.aiWorkspaceGeneration == generation, model.aiConversationID == conversationID else { return nil }
       // Existing drafts and explicit attachments need their normal review/prepare flow.
       guard text.isEmpty, attachment == nil, model.composerMentions.isEmpty, !isBusy else {
@@ -591,22 +613,23 @@ struct AIComposerBar: View {
       }
       return model.aiMessages.last.flatMap { $0.role == .assistant ? $0.id : nil }
     }
-    guard !hasContent, !model.isAIChatResponding else { liveSession.requireReview(); return }
+    guard !hasContent, !model.isAIChatResponding else { session.requireReview(); return }
     guard LocalVoiceModel.isInstalled else {
       isModelSheetPresented = true
       return
     }
-    speechTask = Task { await liveSession.start() }
+    speechTask = Task { await session.start() }
   }
 
   private func voiceMicrophone() {
-    if liveSession.isRunning { liveSession.pause() }
+    guard FeatureFlags.isLiveConversationEnabled else { return }
+    if liveSession?.isRunning == true { liveSession?.pause() }
     else { startVoiceConversation() }
   }
 
   private func closeVoiceConversation() {
     speechTask?.cancel()
-    liveSession.disconnect()
+    liveSession?.disconnect()
     isVoiceConversation = false
     isDictating = false
   }
@@ -615,7 +638,7 @@ struct AIComposerBar: View {
     startsLiveAfterModelSheet = false
     speechTask?.cancel()
     speechInput.stop()
-    liveSession.disconnect()
+    liveSession?.disconnect()
     isVoiceConversation = false
     isDictating = false
   }

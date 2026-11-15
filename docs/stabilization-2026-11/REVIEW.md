@@ -44,3 +44,24 @@
 1時間原文の60秒/30秒、実API品質、実機STT/電池/発熱/ピークメモリは未測定。
 モデルdownload・有料API・実ユーザーデータ外部送信・実機操作は検証として実行しない。
 全Phase、全画面レビュー、138件全実行、Jinba再現性は未完了。
+
+## Phase 1 / 単位1: Live入口の無効化
+
+OpenCode Goへの6ファイル限定委譲。run `run-wefqqtor`、初回候補でmotion policy、motion/loading回帰、
+隔離iOS全体ビルド、独立Codexレビュー（findings 0）を通過。監督が実差分を再レビューして反映した。
+
+通常Debug/Releaseはflag false。開発用の `DEBUG && MEMORA_ENABLE_LIVE_CONVERSATION` だけtrue。
+composerはLive sessionを生成せず、idle波形/panel/setupを非表示。start/chat/LLM/installも処理前に拒否する。
+Intent/Deep Linkに別のLive起動入口は見つからなかった。録音Live Activityは対象外。
+SQLite/schema、BYOK、記録/音声/写真、既存GGUF、依存関係は変更しない。
+
+- `run-live-feature-checks.py`: 4コンパイル条件成功、Debug/Releaseで本番LLM/downloaderの各100回拒否成功。
+  native・file・network到達はstubで失敗させる。実native推論や実ダウンロードではない。
+- `test_quality_runner.py`: 9成功、失敗0。Liveを通常集約runnerの11番目の群として追加。
+- composer-layout、既存Live制御、UTF-8/promptの回帰成功。
+- `bitrig preview -platform iOS`: 成功、既存11警告。log `2026-11-16T07-39-08-9806f429.log`。
+- built-in simulator: Liveボタンなし、通常micあり、入力で送信表示、通常モデルsheet、閉じた後のdraft保持をAXで確認。
+  [変更前](screenshots/live-before.png) / [無効化後](screenshots/live-disabled.png)。前者はLive失敗panel、後者は通常チャット。
+  日本語のtypeTextはsimulator toolが非対応で拒否したため、ASCII検証入力を使用。日本語IME実操作の合格証拠にはしない。
+
+安全なモデル解放、停止/ロード競合、保存容量からの本人削除は単位2で実装する。全Phase完了ではない。
