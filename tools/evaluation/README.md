@@ -94,8 +94,79 @@ never manufactured from the gold fixture or the generated answer.
 This runner deliberately reports `raw-provider-request`, **not** the app's
 `real-provider` pipeline timing. Variant/concurrency/cache labels identify the
 exported request's origin, not proof that this runner executed that pipeline.
-Native app cold/warm/SoT/hierarchy exports and measured save boundaries are still
-required for the full seven-way adoption comparison. `summary_report.py` refuses
+Native iOS measured save boundaries are still required for the full adoption
+comparison. The host runner below executes the seven orchestration variants.
+`summary_report.py` refuses
 automatic adoption of these raw measurements. This is a safe limited-evaluation
 runner, not completion evidence for Level 3 or native app performance goals.
 Neither Level 2 nor Level 3 was executed in this change.
+
+## Native orchestration and streaming runner
+
+`native_runner.py` executes the production `MeetingSummarizer`, planner, scheduler,
+cache, CloudAIService, URLSession/SSE decoder, parser and LocalStore in a macOS
+host executable. No app dependency or UI is added. Build it into a new external
+location with `bash tools/evaluation/build-native.sh /external/new-driver`.
+The accompanying `.build.json` binds the binary to a before/after source snapshot.
+Compilation or execution during a source revision invalidates the result.
+
+The manifest example factory `tests/test_native_runner.py:manifest(driver)`
+defines the full schema, including synthetic source metadata, preferences,
+transcript UUIDs, exact model/provider/endpoint, reviewed billing limits, code and
+driver hashes. `integration()` shows all seven runs. Replace the synthetic source
+only with explicitly approved evaluation data and recompute its canonical digest.
+Optional `source.template` uses the existing SummaryTemplateChoice codec, so
+custom formats remain explicit. All runs in one manifest share the same complete
+source, preferences, model, prompt revision and billing contract. Run order and
+repetitions are explicit in `runs`; never treat one repetition as significance.
+
+```sh
+python3 tools/evaluation/native_runner.py --driver /external/new-driver \
+  --manifest /external/reviewed-native-manifest.json --output /external/new-native-plan.json
+```
+
+This default command is offline, has zero API requests and does not read a key.
+Execution requires `--execute --grant /external/native-grant.json`, a new output
+directory, the exact-manifest/source/endpoint/expiry grant and the same dedicated
+evaluation key/external enforced cap as the raw runner. Do not execute without
+the independently established provider-prepaid/billing-proxy guard. No live
+evaluation or billing setup was performed here.
+
+Every dynamic request, including warmup, hierarchical merge and continuation,
+passes a shared request/token/worst-rate USD ledger and rechecks the grant before
+transmission. The original output ceiling and reasoning settings are unchanged.
+When a provider request has no explicit output field, a separately reviewed
+`implicitOutputCeiling` including reasoning is mandatory for reservation only;
+the broker never inserts it into the real body. Unknown ceilings/prices are
+refused. The driver receives a placeholder credential and a minimal environment;
+all URLSession requests are intercepted by a fail-closed URLProtocol. Only the
+broker child holds the evaluation key and may send to the granted HTTPS endpoint.
+Raw SSE bytes pass through without waiting for the full body. Redirects, request
+overflow, 429, expiry and deadlines stop new work without retries or paid fallback.
+Warm-cache setup is a separate recorded phase whose requests consume the same
+limits. Cancellation terminates the corresponding broker network process.
+
+The seven labels are `single-pass` (original UUID source), `capacity-single-pass`
+(current compact source/capacity policy), `hierarchical` (serial),
+`parallel-hierarchical`, `sot`, `cache-cold`, `cache-warm`. Hierarchical comparisons
+require the same explicit `partCapacity` and matching model/output settings;
+the artificial cap can only reduce the production capacity. A single-source
+route that does not fit, or a hierarchical route with only one part, fails before
+inference instead of silently changing its label. The capacity variant currently
+retains UTF-8 conservative token planning; it is not a model-tokenizer benchmark.
+SoT and width 3/4 can be selected only in this development compiler configuration;
+this never installs a production gate approval or guesses an account limit.
+
+`runs.jsonl` retains generated summaries, numeric app diagnostics, actual route
+part counts and separate warmup/measured phases. `matrix.json` groups by variant,
+width and phase, reports successful P50/P95/maximum plus failures separately,
+and keeps missing cost/quality/device measurements unknown. Source-invalid runs
+are explicitly invalidated at collection level. Host streaming and broker IPC
+timings are **not iOS device performance**. Persistence is labelled
+`host-summary-document`: it measures a real SQLite write/readback of the generated
+result, not MemoraModel's full iOS record/task/history transaction. Peak device
+memory, battery, thermal and independent semantic scores remain unmeasured.
+`automaticAdoption` is always false; an independently reviewed real iOS comparison
+is still required before enabling SoT. The free CI checks seven variants/eight
+phases, fragmented SSE, warm reuse, source guards, budget/permission/429/timeout
+failure paths with mock inference only.

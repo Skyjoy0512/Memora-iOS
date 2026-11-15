@@ -12,7 +12,10 @@ enum SummaryGenerationPolicy {
   }
 
   static func parallelParts(_ mode: SummaryProcessingMode, llm: LLMSelection) -> Int {
-    parallelism(capabilities: ModelCapabilityRegistry.capabilities(for: llm),
+#if MEMORA_SUMMARY_EVALUATION
+    if let options = NativeSummaryEvaluation.options { return options.concurrency }
+#endif
+    return parallelism(capabilities: ModelCapabilityRegistry.capabilities(for: llm),
       lowPower: ProcessInfo.processInfo.isLowPowerModeEnabled,
       thermalState: ProcessInfo.processInfo.thermalState.rawValue)
   }

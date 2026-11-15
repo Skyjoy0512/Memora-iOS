@@ -79,7 +79,14 @@ enum MeetingSummarizer {
     progress: @escaping @MainActor (String) -> Void
   ) async -> Result<MeetingSummary, AIAnswerFailure> {
     let endpoint = llm.baseURL.appendingPathComponent(llm.provider.usesAnthropicAPI ? "messages" : "chat/completions")
+    let configuration: URLSessionConfiguration
+#if MEMORA_SUMMARY_EVALUATION
+    configuration = NativeSummaryEvaluation.configuration
+#else
+    configuration = .ephemeral
+#endif
     let transport = CloudHTTPTransport(endpoint: endpoint,
+      configuration: configuration,
       summaryConcurrency: SummaryGenerationPolicy.parallelParts(input.preferences.processingMode, llm: llm),
       requestsPerMinute: ModelCapabilityRegistry.capabilities(for: llm).requestsPerMinute,
       tokensPerMinute: ModelCapabilityRegistry.capabilities(for: llm).tokensPerMinute)
@@ -90,7 +97,12 @@ enum MeetingSummarizer {
     let sourceLegend = sourceIndex.legend
     let compactBytes = sourceLegend.utf8.count + 1 + compactUnits.reduce(0) { $0 + $1.prefix.utf8.count + $1.text.utf8.count + 1 }
     let originalBytes = originalUnits.reduce(0) { $0 + $1.prefix.utf8.count + $1.text.utf8.count + 1 }
-    let compact = compactBytes < originalBytes
+    let compact: Bool
+#if MEMORA_SUMMARY_EVALUATION
+    compact = NativeSummaryEvaluation.options?.variant != "single-pass" && compactBytes < originalBytes
+#else
+    compact = compactBytes < originalBytes
+#endif
     let units = compact ? compactUnits : originalUnits
     let legend = compact ? sourceLegend + "\n" : ""
     let instructions = [SummaryPrompt.document(for: input, transcript: ""),
@@ -101,7 +113,13 @@ enum MeetingSummarizer {
       outputReservation: ModelCapabilityRegistry.outputReservation(for: llm),
       instructionText: SummaryPrompt.system + instructions + legend) else { return .failure(.contextTooLarge) }
     let parts: [[String]]
-    switch SummaryInputPartition.make(units, capacity: budget.sourceCapacity) {
+    let partCapacity: Int
+#if MEMORA_SUMMARY_EVALUATION
+    partCapacity = min(budget.sourceCapacity, NativeSummaryEvaluation.options?.partCapacity ?? budget.sourceCapacity)
+#else
+    partCapacity = budget.sourceCapacity
+#endif
+    switch SummaryInputPartition.make(units, capacity: partCapacity) {
     case .failure(let failure): return .failure(failure)
     case .success(let value): parts = value
     }
@@ -109,6 +127,16 @@ enum MeetingSummarizer {
     SummaryDiagnostics.current?.record(.sourceOriginalBytes, code: originalBytes)
     SummaryDiagnostics.current?.record(.plannedParts, code: parts.count)
     SummaryDiagnostics.current?.record(.planningCapacity, code: budget.sourceCapacity)
+
+#if MEMORA_SUMMARY_EVALUATION
+    if let options = NativeSummaryEvaluation.options {
+      guard options.accepts(parts: parts.count) else { return .failure(.contextTooLarge) }
+      if options.variant == "sot" {
+        return await composeInParallel(input, llm: llm, transcript: legend + parts[0].joined(separator: "\n"),
+          source: sourceIndex, compact: compact, transport: transport, authorize: authorize, progress: progress)
+      }
+    }
+#endif
 
     if parts.count == 1, SummaryOptimizationGate.permitsParallelComposition(input: input, llm: llm,
       sourceBytes: compact ? compactBytes : originalBytes) {

@@ -15,4 +15,5 @@ subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', str(root / '
 subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', str(root / 'tools/evaluation/tests'), '-p', 'test_gold.py', '-v'], check=True)
 subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', str(root / 'tools/evaluation/tests'), '-p', 'test_report.py', '-v'], check=True)
 subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', str(root / 'tools/evaluation/tests'), '-p', 'test_model_runner.py', '-v'], check=True)
+subprocess.run(['bash', str(root / 'tools/checks/run-native-summary-evaluation-checks.sh')], check=True)
 print(json.dumps({'pinnedJMeetEvalRecords': len(records), 'categories': len(categories), 'apiRequests': 0}))
