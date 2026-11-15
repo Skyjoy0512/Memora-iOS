@@ -27,3 +27,20 @@
 未レビュー、mock/host時間、条件不一致、欠測、3回未満のcohortでは自動採用を止める。3回は最低収集条件であり統計的有意差の証明ではない。人手のリリース判断と公式評価は別途必要。実モデルの比較結果はまだない。
 
 最終コードの実装範囲・無料10群の結果・未採用/未検証事項は[2026-11-15統合検証](summary-performance/VALIDATION_2026_11_15.md)を参照。
+
+## 実行中の入力変更を検出する
+
+`run-quality-checks.py` は開始時と各群の前後に、App/Shared・tools/checks・tools/evaluation・tests配下のcode/fixtureと、Project.json等の設定を照合する。拡張子の範囲と件数は出力の `source-snapshot.json` に記録する。画像など全バイナリassetの同一性や、全依存環境の再現を証明するものではない。
+
+内容のSHA256に加えinode/size/mtime/ctimeの指紋を持ち、同じ内容へ保存し直した場合もrun内の変更として扱う。読み取り中の変更・読取不能・symlinkのcode入力ではfail closed。記録するのは指紋と件数であり、ソース本文・APIキー・ユーザーのSQLite原文は出力しない。
+
+変更時は `sourceChanged` / 非0終了にして、後続群を開始しない。子processのexit0も成功扱いに変更せず、実際のexitCodeと観測した指紋を残す。docsのメモや生成ログ/bytecodeは監視対象外。共有working treeから隔離したbuildそのものではなく、各群の前後の検証とSwift compilerのinput変更検出を併用する。
+
+2026-11-15追加検証: runnerの9単体テスト成功。実repoの1,958入力を連続で照合して一致し、同じrunnerで実際のsummary-planning / summary-evaluationの2群成功。これは10群全てを新guardで再実行した結果ではない。直前のアプリ変更については[送信制御の検証記録](summary-performance/SUMMARY_REQUEST_SCHEDULING.md)を参照（9群と、途中失敗後のnext-generation再実行成功を別記）。モデル品質の得点は追加していない。
+
+```sh
+MEMORA_CHECK_TMPDIR=/external/scratch PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tools/checks -p test_quality_runner.py -v
+python3 tools/checks/run-quality-checks.py --output-dir /external/new-frozen-input-checks
+```
+
+開発用SSDの `quality-source-guard-final.log` と `quality-source-guard-smoke/source-snapshot.json` / `summary.json` に今回の結果を保持した。通常の全10群実行にも同じguardが適用される。

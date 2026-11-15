@@ -1,5 +1,6 @@
 """Run independent production-code suites, retaining failures and their logs."""
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -23,6 +24,40 @@ SUITES = (
     ("composer-layout", "bash", "run-composer-layout-checks.sh"),
     ("optimization", "python3", "run-optimization-checks.py"),
 )
+
+
+def source_snapshot():
+    extensions = {".swift", ".py", ".sh", ".json", ".jsonl", ".ts", ".plist", ".entitlements",
+                  ".txt", ".yml", ".yaml", ".toml", ".lock"}
+    roots = ("App", "Shared", "tools/checks", "tools/evaluation", "tests")
+    files = {path for name in roots for path in (ROOT / name).rglob("*")
+             if path.suffix in extensions and path.is_file()}
+    files.update(path for path in ROOT.iterdir() if path.is_file() and
+                 (path.name in {"Project.json", "package.json", "package-lock.json"} or path.name.startswith("e2e.") and path.suffix == ".ts"))
+    digest = hashlib.sha256()
+    revisions = hashlib.sha256()
+    for path in sorted(files):
+        if path.is_symlink():
+            raise ValueError("A code input is a symbolic link")
+        before = path.stat()
+        contents = path.read_bytes()
+        after = path.stat()
+        revision = lambda value: (value.st_ino, value.st_size, value.st_mtime_ns, value.st_ctime_ns)
+        if revision(before) != revision(after):
+            raise ValueError("A code input changed while reading")
+        name = path.relative_to(ROOT).as_posix().encode() + b"\0"
+        digest.update(name + hashlib.sha256(contents).digest())
+        revisions.update(name + json.dumps(revision(after)).encode() + b"\0")
+    return {"schemaVersion": 1, "sha256": digest.hexdigest(), "fileCount": len(files),
+            "fileRevisionsSHA256": revisions.hexdigest(),
+            "scope": list(roots), "extensions": sorted(extensions)}
+
+
+def observed_snapshot():
+    try:
+        return source_snapshot()
+    except (OSError, ValueError):
+        return {"schemaVersion": 1, "sha256": None, "inputUnavailable": True}
 
 
 def external_path(value):
@@ -61,9 +96,23 @@ def main(argv=None):
                MEMORA_CHECK_TMPDIR=str(scratch), SWIFT_BACKTRACE="enable=no", PYTHONDONTWRITEBYTECODE="1")
     results = []
     print("Quality artifacts: " + str(output), flush=True)
+    baseline = observed_snapshot()
+    (output / "source-snapshot.json").write_text(json.dumps(baseline, indent=2) + "\n")
+    if baseline.get("inputUnavailable"):
+        print("Code inputs are unavailable; no suites were started", flush=True)
+        return 1
     for name, interpreter, filename in SUITES:
         log = output / (name + ".log")
-        result = {"suite": name, "status": "failed", "exitCode": None, "log": log.name}
+        result = {"suite": name, "status": "failed", "exitCode": None, "log": log.name,
+                  "sourceSHA256": baseline["sha256"]}
+        before = observed_snapshot()
+        if before != baseline:
+            result.update(status="sourceChanged", observedSnapshot=before)
+            log.write_text("Code inputs changed before this suite; no process was started.\n")
+            results.append(result)
+            (output / "summary.json").write_text(json.dumps(results, indent=2) + "\n")
+            print(name + ": sourceChanged (not started)", flush=True)
+            return 1
         with log.open("x") as stream:
             try:
                 with subprocess.Popen([interpreter, str(ROOT / "tools/checks" / filename)],
@@ -84,12 +133,17 @@ def main(argv=None):
             except OSError as error:
                 result["status"] = "notRun"
                 stream.write(str(error) + "\n")
+        after = observed_snapshot()
+        if after != baseline and result["status"] != "interrupted":
+            result.update(status="sourceChanged", observedSnapshot=after)
         results.append(result)
         # An interrupted run retains only actual results, never placeholders marked passed.
         (output / "summary.json").write_text(json.dumps(results, indent=2) + "\n")
         print(name + ": " + result["status"] + " (exit " + str(result["exitCode"]) + ")", flush=True)
         if result["status"] == "interrupted":
             return 130
+        if result["status"] == "sourceChanged":
+            return 1
     return 0 if all(result["status"] == "passed" for result in results) else 1
 
 

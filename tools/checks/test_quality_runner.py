@@ -74,6 +74,62 @@ class QualityRunnerChecks(unittest.TestCase):
         finally:
             os.chdir(previous)
 
+    def test_source_mutation_does_not_report_a_passing_process_as_valid(self):
+        app = self.repo / "App"
+        app.mkdir()
+        (app / "value.swift").write_text("original")
+        (self.scripts / "change.sh").write_text("printf changed >> App/value.swift\n")
+        (self.scripts / "later.sh").write_text("touch must-not-run\n")
+        output = self.base / "changed"
+        self.assertEqual(self.run_checks("--output-dir", str(output),
+            suites=(("change", "bash", "change.sh"), ("later", "bash", "later.sh"))), 1)
+        result = json.loads((output / "summary.json").read_text())
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["exitCode"], 0)
+        self.assertEqual(result[0]["status"], "sourceChanged")
+        self.assertNotEqual(result[0]["sourceSHA256"], result[0]["observedSnapshot"]["sha256"])
+        self.assertFalse((self.repo / "must-not-run").exists())
+
+    def test_added_and_deleted_inputs_are_detected(self):
+        app = self.repo / "App"
+        app.mkdir()
+        for action, script in [("add", "printf content >App/new.swift\n"), ("delete", "rm App/value.swift\n")]:
+            (app / "value.swift").write_text("original")
+            (self.scripts / "change.sh").write_text(script)
+            output = self.base / action
+            self.assertEqual(self.run_checks("--output-dir", str(output), suites=(("change", "bash", "change.sh"),)), 1)
+            self.assertEqual(json.loads((output / "summary.json").read_text())[0]["status"], "sourceChanged")
+
+    def test_restored_bytes_still_invalidate_the_run(self):
+        (self.repo / "App").mkdir()
+        (self.repo / "App/value.swift").write_text("original")
+        (self.scripts / "change.sh").write_text("printf original >App/value.swift\n")
+        output = self.base / "restored"
+        self.assertEqual(self.run_checks("--output-dir", str(output), suites=(("change", "bash", "change.sh"),)), 1)
+        result = json.loads((output / "summary.json").read_text())[0]
+        self.assertEqual(result["status"], "sourceChanged")
+        self.assertEqual(result["sourceSHA256"], result["observedSnapshot"]["sha256"])
+        original = json.loads((output / "source-snapshot.json").read_text())
+        self.assertNotEqual(original["fileRevisionsSHA256"], result["observedSnapshot"]["fileRevisionsSHA256"])
+
+    def test_unrelated_document_edits_keep_the_same_fingerprint(self):
+        (self.repo / "docs").mkdir()
+        (self.scripts / "check.sh").write_text("printf note >docs/progress.md\n")
+        output = self.base / "stable"
+        self.assertEqual(self.run_checks("--output-dir", str(output), suites=(("check", "bash", "check.sh"),)), 0)
+        snapshot = json.loads((output / "source-snapshot.json").read_text())
+        self.assertEqual(len(snapshot["sha256"]), 64)
+        self.assertEqual(snapshot["fileCount"], 1)
+        self.assertEqual(json.loads((output / "summary.json").read_text())[0]["sourceSHA256"], snapshot["sha256"])
+
+    def test_unreadable_snapshot_cannot_start_a_suite(self):
+        (self.scripts / "check.sh").write_text("touch must-not-run\n")
+        output = self.base / "unreadable"
+        with patch.object(runner, "source_snapshot", side_effect=OSError("fixture unreadable")):
+            self.assertEqual(self.run_checks("--output-dir", str(output), suites=(("check", "bash", "check.sh"),)), 1)
+        self.assertFalse((self.repo / "must-not-run").exists())
+        self.assertTrue(json.loads((output / "source-snapshot.json").read_text())["inputUnavailable"])
+
 
 if __name__ == "__main__":
     unittest.main()

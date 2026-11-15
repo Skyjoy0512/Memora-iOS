@@ -58,3 +58,7 @@ fence付き不完全notes JSONを完了した部分結果として扱わない�
 ## a715fdd2後の追加単位
 
 [要約ジョブ共通の送信制御](SUMMARY_REQUEST_SCHEDULING.md)を実装。上の全job横断rate制御の残課題のうち、要約の同一endpoint/認証scopeの並列数共有、429/Retry-After、FIFO/待機上限/キャンセル/送信前再認可を対応する。未知のRPM/TPMは依然不明、token bucketや全Ask AI処理への統一は未実装。音声パイプラインと実モデル評価の状態は変わらない。
+
+## 送信制御単位の検証後
+
+送信制御は7f224b18。無料10群は9群成功＋next-generation再実行成功、途中の音声fixture失敗は未確定のままログを保持。UI2件/preview成功、詳細はSUMMARY_REQUEST_SCHEDULING.md。続けて、共有treeの変更で成功結果が混在しないようrun-quality-checksに内容/ファイルrevision指紋のguardを追加。9単体テストと実2群のsmoke成功。全10群を新guardで再実行した結果ではない。実モデル/実機、RPM/TPM、音声先行処理、費用上限付きrunnerは引き続き未実施/未実装。

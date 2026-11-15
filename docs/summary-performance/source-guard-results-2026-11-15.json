@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "7f224b18",
+  "measurementKind": "offline-development-runner",
+  "unitTests": {
+    "passed": 9,
+    "log": "quality-source-guard-final.log"
+  },
+  "smokeSuites": [
+    {
+      "suite": "summary-planning",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "summary-planning.log",
+      "sourceSHA256": "27d9894a55b46b5b0063103e39075684ca2b8c4ab0c2cfec1590755ed000e59d"
+    },
+    {
+      "suite": "summary-evaluation",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "summary-evaluation.log",
+      "sourceSHA256": "27d9894a55b46b5b0063103e39075684ca2b8c4ab0c2cfec1590755ed000e59d"
+    }
+  ],
+  "snapshot": {
+    "schemaVersion": 1,
+    "sha256": "27d9894a55b46b5b0063103e39075684ca2b8c4ab0c2cfec1590755ed000e59d",
+    "fileCount": 1958,
+    "fileRevisionsSHA256": "83eda00eadcfa6d9739d5b0ea26b2d863c932147dc94f3d7fd3703fcd9730d0d",
+    "scope": [
+      "App",
+      "Shared",
+      "tools/checks",
+      "tools/evaluation",
+      "tests"
+    ],
+    "extensions": [
+      ".entitlements",
+      ".json",
+      ".jsonl",
+      ".lock",
+      ".plist",
+      ".py",
+      ".sh",
+      ".swift",
+      ".toml",
+      ".ts",
+      ".txt",
+      ".yaml",
+      ".yml"
+    ]
+  },
+  "realModelRequests": 0,
+  "fullTenSuitesRerunWithNewGuard": false
+}
