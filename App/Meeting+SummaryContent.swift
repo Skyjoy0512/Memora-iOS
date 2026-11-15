@@ -20,14 +20,15 @@ extension Meeting {
     return knowledge.facts.filter { fact in
       guard fact.status.isVisible, !fact.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
             fact.content.count <= 4_000, let references = fact.sourceReferences, !references.isEmpty,
-            references.count <= 8, seen.insert(fact.category.rawValue + ":" + fact.status.rawValue + ":" + fact.content).inserted else { return false }
+            references.count <= 8 else { return false }
       var speakers: Set<String> = []
       for reference in references {
         guard let id = UUID(uuidString: reference.sourceSegmentID), let matches = segments[id], matches.count == 1,
               (8...2_000).contains(reference.quote.count), matches[0].text.contains(reference.quote) else { return false }
         if let speaker = matches[0].speakerID { speakers.insert(speaker) }
       }
-      return Set(fact.speakerIDs ?? []).isSubset(of: speakers)
+      guard Set(fact.speakerIDs ?? []).isSubset(of: speakers) else { return false }
+      return seen.insert(fact.category.rawValue + ":" + fact.status.rawValue + ":" + fact.content).inserted
     }
   }
 

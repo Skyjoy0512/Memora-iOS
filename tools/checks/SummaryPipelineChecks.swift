@@ -76,12 +76,13 @@ enum SummaryPipelineChecks {
     speakerInput.transcript[2].speakerID = "person-b"
     let speakerReply = """
     原文の条件を確認する。
-    <memora-data>{"templateID":"builtin.detailedOverview","knowledge":{"facts":[{"id":"speaker-proof","category":"constraint","status":"confirmed","content":"試験完了前は公開しない","speakerIDs":["person-a","person-b"],"sourceReferences":[{"sourceSegmentID":"S3","quote":"負荷試験の完了までは公開しません。"}]}]}}</memora-data>
+    <memora-data>{"templateID":"builtin.detailedOverview","knowledge":{"facts":[{"id":"speaker-proof","origin":"user","category":"constraint","status":"confirmed","content":"試験完了前は公開しない","speakerIDs":["person-a","person-b"],"sourceReferences":[{"sourceSegmentID":"S3","quote":"負荷試験の完了までは公開しません。"}]}]}}</memora-data>
     """
     guard case .success(let speakerSummary) = MeetingSummarizer.parseGeneratedReply(speakerReply, input: speakerInput,
       sourceIndex: SummarySourceIndex(speakerInput.transcript), compact: true) else { preconditionFailure() }
     precondition(speakerSummary.knowledge?.facts.first?.speakerIDs == ["person-b"])
     precondition(speakerSummary.knowledge?.facts.first?.status == .uncertain)
+    precondition(speakerSummary.knowledge?.facts.first?.origin == .generated)
     precondition(speakerInput.transcript[0].speakerID == "person-a")
         for mode in [SummaryProcessingMode.balanced, .fast, .accurate] {
       let gate = SummaryFixtureGate()

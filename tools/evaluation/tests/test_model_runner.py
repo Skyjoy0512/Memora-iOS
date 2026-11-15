@@ -116,6 +116,16 @@ class ModelRunnerTests(unittest.TestCase):
                 rows = runner.execute(item, grant(item), Path(directory) / 'run', sender=lambda *a: {'choices': [choice]}, credential=lambda: 'synthetic')
                 self.assertEqual(rows[0]['status'], 'failed')
 
+    def test_malformed_paid_response_is_recorded_as_failed(self):
+        for response in ([], {'choices': [12]}, {'choices': [{'message': []}]}, {'choices': None}):
+            item = manifest()
+            with tempfile.TemporaryDirectory() as directory:
+                rows = runner.execute(item, grant(item), Path(directory) / 'run',
+                    sender=lambda *a: response, credential=lambda: 'synthetic')
+                self.assertEqual(rows[0]['status'], 'failed')
+                self.assertEqual(rows[0]['apiRequests'], 1)
+                self.assertEqual(rows[0]['errorKind'], 'ValueError')
+
     def test_elapsed_deadline_marks_unknown_billing_failure(self):
         item = manifest()
         readings = iter([0, 0, 0, 11, 11])

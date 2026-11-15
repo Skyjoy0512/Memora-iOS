@@ -245,14 +245,21 @@ def execute(manifest, grant, output, sender=bounded_send, credential=None, clock
                       thermalState=None, apiRequests=1)
         try:
             response = sender(row, key, min(remaining, 300))
+            if not isinstance(response, dict):
+                raise ValueError('Invalid response object')
             elapsed = clock() - before
             if elapsed > remaining:
                 raise TimeoutError()
             if row['protocol'] == 'anthropic-messages':
+                content = response.get('content')
+                if not isinstance(content, list) or any(not isinstance(block, dict) for block in content):
+                    raise ValueError('Invalid content blocks')
                 valid = response.get('stop_reason') == 'end_turn' and all(b.get('type') in ('text', 'thinking', 'redacted_thinking') for b in response.get('content', []))
                 text = ''.join(b.get('text', '') for b in response.get('content', []) if b.get('type') == 'text')
             else:
                 choices = response.get('choices', [])
+                if not isinstance(choices, list) or len(choices) != 1 or not isinstance(choices[0], dict) or not isinstance(choices[0].get('message'), dict):
+                    raise ValueError('Invalid choices')
                 message = choices[0].get('message', {}) if choices else {}
                 valid = bool(choices and choices[0].get('finish_reason') == 'stop' and not message.get('tool_calls') and not message.get('refusal'))
                 text = message.get('content', '')

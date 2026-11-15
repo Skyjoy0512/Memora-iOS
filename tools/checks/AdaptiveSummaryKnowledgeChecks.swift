@@ -49,6 +49,11 @@ enum AdaptiveSummaryKnowledgeChecks {
     forgedRecord = record
     forgedRecord.summaryVersions[0].knowledge!.facts[0].sourceReferences = []
     precondition(forgedRecord.reusableSummaryFacts.count == 3)
+    forgedRecord = record
+    var invalidDuplicate = forgedRecord.summaryVersions[0].knowledge!.facts[0]
+    invalidDuplicate.sourceReferences![0].quote = "原文にない引用を検出します。"
+    forgedRecord.summaryVersions[0].knowledge!.facts.insert(invalidDuplicate, at: 0)
+    precondition(forgedRecord.reusableSummaryFacts.count == 4, "An invalid duplicate hid its valid sibling")
     let encoded = try JSONEncoder().encode(record)
     let roundtrip = try JSONDecoder().decode(Meeting.self, from: encoded)
     precondition(roundtrip.currentSummaryKnowledge == validated && roundtrip.title == "本人のタイトル")
