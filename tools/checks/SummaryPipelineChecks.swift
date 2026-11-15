@@ -192,15 +192,15 @@ enum SummaryPipelineChecks {
       }
       precondition(SummaryArtifactIdentity.identity(scope: scope, input: input, llm: llm) != identity)
     }
-    for pass in 0..<2 {
+    for pass in 0..<3 {
       let gate = SummaryFixtureGate()
       CloudAIService.gate = gate
       let snapshot = input
       let work = Task { await MeetingSummarizer.summarize(snapshot, engine: .cloud, llm: llm,
         artifactCache: cache, authorize: { true }, progress: { _ in }) }
-      if pass == 0 {
+      if pass != 1 {
         var finished = 0
-        while finished < 4 {
+        while finished < (pass == 0 ? 4 : 1) {
           await wait { !gate.pending.isEmpty }
           for call in gate.pending.keys.sorted() {
             let index = (0..<4).first { gate.calls[call].user.contains("S\($0 + 1) A") || gate.calls[call].user.contains(input.transcript[$0].id.uuidString) }!
@@ -217,12 +217,16 @@ enum SummaryPipelineChecks {
       }
       await wait { gate.pending.count == 1 }
       let last = gate.pending.keys.first!
-      precondition(gate.calls.count == (pass == 0 ? 5 : 1))
+      precondition(gate.calls.count == (pass == 0 ? 5 : (pass == 1 ? 1 : 2)))
       for index in 0..<4 { precondition(gate.calls[last].user.contains("区間\(index)")) }
       gate.finish(last, .answer("## 公開条件\n原文の条件と否定・150万円を保持。"))
       guard case .success = await work.value else { preconditionFailure("Cache path failed") }
       input.preferences.length = .detailed
       input.preferences.displayOrder = .chronological
+      if pass == 1 {
+        input.transcript[3].endTime = 7_199
+        cache.revoke(owners: [input.artifactScope!.ownerID], retainingEntries: true)
+      }
     }
     let gate = SummaryFixtureGate()
     CloudAIService.gate = gate
@@ -233,7 +237,7 @@ enum SummaryPipelineChecks {
     let index = SummarySourceIndex(input.transcript)
     let forged = SummaryPartArtifact(notes: "未検証", sourceReferences: [.init(sourceSegmentID: "S99", quote: "原文の条件と否定・150万円を保持。")])
     precondition(!forged.validated(in: index, part: index.lines(hasTimestamps: true), compact: true))
-    print("Cached regeneration: actual production orchestration mock requests 5 → 1 across length/order change, source/model/account/permission keys and revoked access checked; no API latency or semantic quality claim.")
+    print("Cached regeneration: actual production orchestration mock requests 5 → 1 → 2 across length/order change then one part revision, source/model/account/permission keys and revoked access checked; no API latency or semantic quality claim.")
   }
 
   static func rejectedPartChecks() async throws {

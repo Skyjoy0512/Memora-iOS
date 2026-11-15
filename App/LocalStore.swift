@@ -105,6 +105,17 @@ final class LocalStore {
     }
   }
 
+  /// Detect both writes on this connection and changes committed by another
+  /// process before reusing a bounded, derived in-memory document.
+  var changeToken: String? {
+    lock.lock()
+    defer { lock.unlock() }
+    guard let db, let statement = try? prepared("PRAGMA data_version;") else { return nil }
+    defer { reset(statement) }
+    guard sqlite3_step(statement) == SQLITE_ROW else { return nil }
+    return "\(sqlite3_total_changes64(db)):\(sqlite3_column_int64(statement, 0))"
+  }
+
   /// Replaces the document for `key` inside a transaction, so a failure leaves
   /// the previous version in place.
   func write(_ key: String, data: Data) throws {

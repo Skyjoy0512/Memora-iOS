@@ -2,9 +2,9 @@ import CryptoKit
 import Foundation
 
 enum SummaryArtifactIdentity {
-  /// Full source metadata binds reuse even when a change is outside this part.
+  /// The caller binds only the actual part metadata; final integration always reruns.
   /// Presentation length/order are absent from the part analysis prompt.
-  static func identity(scope: SummaryArtifactScope, input: MeetingSummaryInput, llm: LLMSelection) -> String? {
+  static func identity(scope: SummaryArtifactScope, input: MeetingSummaryInput, llm: LLMSelection, segments: [TranscriptSegment]? = nil) -> String? {
     let encoder = JSONEncoder()
     encoder.outputFormatting = .sortedKeys
     guard let scopeData = try? encoder.encode(scope),
@@ -13,7 +13,7 @@ enum SummaryArtifactIdentity {
     let budget = "\(capability.contextWindowTokens):\(capability.maximumOutputTokens):\(ModelCapabilityRegistry.outputReservation(for: llm))"
     let fields: [Data] = [scopeData, selection, Data(budget.utf8),
       Data(input.preferences.processingMode.rawValue.utf8), Data(SummaryPrompt.system.utf8),
-      Data("summary-part-analysis.v1".utf8)]
+      Data("summary-part-analysis.v2".utf8)]
     // Length-prefix framing avoids ambiguous concatenations. Secrets are hashed
     // in memory and never retained in the artifact or a diagnostic.
     var digest = SHA256()
@@ -21,7 +21,7 @@ enum SummaryArtifactIdentity {
       digest.update(data: Data("\(field.count):".utf8))
       digest.update(data: field)
     }
-    for segment in input.transcript {
+    for segment in segments ?? input.transcript {
       guard let data = try? encoder.encode(segment) else { return nil }
       digest.update(data: Data("\(data.count):".utf8))
       digest.update(data: data)

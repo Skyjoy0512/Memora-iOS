@@ -124,7 +124,6 @@ enum MeetingSummarizer {
     } else {
       guard parts.count <= 512 else { return .failure(.executionLimit) }
       let cacheLease = artifactCache.lease(ownerID: input.artifactScope?.ownerID)
-      let cacheIdentity = input.artifactScope.flatMap { SummaryArtifactIdentity.identity(scope: $0, input: input, llm: llm) }
       let collected = await SummaryPartScheduler.collect(count: parts.count,
         maximumConcurrent: SummaryGenerationPolicy.parallelParts(input.preferences.processingMode, llm: llm)) { index in
         let part = parts[index]
@@ -133,6 +132,16 @@ enum MeetingSummarizer {
         let range = timeRange(of: part)
         let prompt = SummaryPrompt.partNotes(for: input, part: index + 1, of: parts.count,
           range: range, transcript: legend + part.joined(separator: "\n"))
+        let partSegments = sourceIndex.entries.filter { entry in
+          let marker = compact ? "] \(entry.shortID) \(entry.speakerAlias): " : "] [segmentID=\(entry.segment.id.uuidString)] "
+          return part.contains { line in
+            guard let end = line.firstIndex(of: "]") else { return false }
+            return line[end...].hasPrefix(marker)
+          }
+        }.map(\.segment)
+        let cacheIdentity = input.artifactScope.flatMap {
+          SummaryArtifactIdentity.identity(scope: $0, input: input, llm: llm, segments: partSegments)
+        }
         let key = cacheIdentity.map { SummaryArtifactIdentity.key(identity: $0, prompt: prompt) }
         if let key, let authorize {
           guard authorize() else { return .failure(.contextChanged) }

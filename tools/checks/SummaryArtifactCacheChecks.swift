@@ -86,6 +86,34 @@ import SQLite3
     precondition(tampered == nil)
     guard case .data(let original) = store.readOutcome("existing-record") else { preconditionFailure() }
     precondition(original == Data("unchanged".utf8))
+    await cache.clear()
+    let otherOwner = UUID(), otherKey = String(repeating: "d", count: 64)
+    let beforeEdit = cache.lease(ownerID: owner)
+    await cache.write("owner-before", key: key, ownerID: owner, lease: beforeEdit)
+    await cache.write("unrelated", key: otherKey, ownerID: otherOwner, lease: beforeEdit)
+    cache.revoke(owners: [owner], retainingEntries: true)
+    let afterEdit = cache.lease(ownerID: owner)
+    let oldRead = await cache.read(key, lease: beforeEdit)
+    let retainedRead = await cache.read(key, lease: afterEdit)
+    let unrelatedRead = await cache.read(otherKey, lease: beforeEdit)
+    precondition(oldRead == nil && retainedRead == "owner-before" && unrelatedRead == "unrelated")
+    await cache.write("stale-write", key: key, ownerID: owner, lease: beforeEdit)
+    let afterStaleWrite = await cache.read(key, lease: afterEdit)
+    precondition(afterStaleWrite == "owner-before")
+    cache.revoke(owners: [owner])
+    let afterDelete = cache.lease(ownerID: owner)
+    let deletedRead = await cache.read(key, lease: afterDelete)
+    let stillUnrelated = await cache.read(otherKey, lease: afterDelete)
+    precondition(deletedRead == nil && stillUnrelated == "unrelated")
+    // A later edit must not revive data revoked by a permission change,
+    // even if asynchronous physical cleanup has not run yet.
+    cache.revoke(owners: [owner], retainingEntries: true, erasing: false)
+    let reedited = await cache.read(key, lease: cache.lease(ownerID: owner))
+    precondition(reedited == nil)
+    let ioBefore = await cache.storageReads
+    for _ in 0..<10 { _ = await cache.read(otherKey, lease: cache.lease(ownerID: otherOwner)) }
+    let ioAfter = await cache.storageReads
+    precondition(ioAfter - ioBefore <= 1, "Repeated cache hits decoded the whole SQLite document")
     print("SummaryArtifactCacheChecks: PASS; 10 hits/unchanged cleanup cause zero SQLite data_version changes; restart, lease revocation, stale write/cleanup refusal, TTL/LRU/bounds, owner erasure, corruption and existing data preservation. No network.")
   }
 }
