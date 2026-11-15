@@ -127,9 +127,21 @@ VoicePipeline、SharedAudioEngine、SentenceBufferを日本語Live向けに部�
 世代管理を採用した。日本語の句読点・空白なし長文・Unicode書記素、再生完了の判定、
 非同期の古い結果の拒否、ロック付き入力橋渡し、バッファ上限を追加した。
 
-英語向けParakeet EOU / PocketTTS、llama.cpp / Qwenおよびモデルダウンロード機構は
-同梱しない。音声認識は日本語のオンデバイスDictationTranscriber / SpeechAnalyzer、音声合成は日本語の
-AVSpeechSynthesizerのPCM出力を使い、回答はMemoraの選択中AIへ既存経路で依頼する。
-クラウドモデルを選んだ場合、認識済みテキストはそのクラウドへ送られるため、完全ローカル
-動作とは表示しない。音声で承認カードの承認を代行しない。
+英語向けParakeet EOU / PocketTTSは同梱しない。音声認識は日本語のオンデバイスDictationTranscriber / SpeechAnalyzer、音声合成は日本語の
+AVSpeechSynthesizerのPCM出力を使う。Liveの回答は端末内Qwenで生成し、APIへの
+フォールバックは行わない。音声で承認カードの承認を代行しない。
 MIT全文は `App/Resources/Volocal-LICENSE.txt`、設定のライセンス一覧にも掲載。
+
+## Liveのローカル会話モデルと推論ランタイム
+
+- [llama.swift](https://github.com/mattt/llama.swift/tree/2.10327.0)、2.10327.0、MIT、Copyright 2025 Mattt。
+- [llama.cpp](https://github.com/ggml-org/llama.cpp/tree/b10327)、b10327、MIT、Copyright (c) 2023-2026 The ggml authors。
+  公式XCFrameworkはSwiftPMの固定checksumで取得する。VolocalのLlamaContextを日本語・
+  有界batch・UTF-8ストリーミング・キャンセル向けに変更した。
+- [Qwen3.5-2B](https://huggingface.co/Qwen/Qwen3.5-2B)、Qwen Team / Alibaba Cloud、Apache-2.0。
+  [bartowskiのGGUF量子化](https://huggingface.co/bartowski/Qwen_Qwen3.5-2B-GGUF)、
+  revision `7d26695454df6de5fbcce2e58681e62dae06ce43`、Q4_K_S。
+  重みはアプリに同梱せず、利用者のダウンロード操作後にサイズとSHA-256を検証して端末へ保存。
+  固定値・保存場所・実機検証の境界は `docs/LIVE_CONVERSATION.md` を参照。
+
+ライセンス全文はApp/ResourcesのLlamaSwift-LICENSE.txt、LlamaCPP-LICENSE.txt、Qwen35-LICENSE.txt。

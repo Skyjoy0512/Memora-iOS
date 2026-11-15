@@ -64,10 +64,9 @@ final class LiveConversationSession {
     interruptionObserver = nil
   }
 
-  func start(unavailableReason: String? = nil) async {
+  func start() async {
     installLifecycleObservers()
     stop(preserveTranscript: false)
-    if let unavailableReason { fail(unavailableReason); return }
     let run = authority.begin()
     phase = .preparing
     let speechPermission = await speechAuthorized()
@@ -76,6 +75,18 @@ final class LiveConversationSession {
     let microphonePermission = await AVAudioApplication.requestRecordPermission()
     guard authority.sessionID == run, validatesContext?() == true, !Task.isCancelled else { return }
     guard microphonePermission else { fail("マイクへのアクセスを設定で許可してください。"); return }
+    do {
+      phase = .loadingConversationModel
+      try await LocalVoiceLLM.shared.prepare()
+    } catch {
+      guard authority.sessionID == run, !Task.isCancelled else { return }
+      let error = error as NSError
+      print("[Live] conversation model failed: domain=\(error.domain) code=\(error.code)")
+      fail("会話モデルを読み込めませんでした。ほかのアプリを閉じて、Liveを再開してください。")
+      return
+    }
+    guard authority.sessionID == run, validatesContext?() == true, !Task.isCancelled else { return }
+    phase = .preparing
     do {
       try await recognizer.prepare {
         guard self.authority.sessionID == run, self.validatesContext?() == true else { return }

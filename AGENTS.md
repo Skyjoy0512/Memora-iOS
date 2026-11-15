@@ -148,7 +148,7 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   transaction. Processing states are display fixtures without jobs, audio or
   external requests. See `docs/SCREEN_REVIEW_SAMPLES.md`.
 - Cloud storage, the ChatGPT (MCP) server screen, Google Drive, on-device
-  Whisper and local LLM are preferences only; the services behind them are not implemented. The app says
+  Whisper and the ordinary Ask AI local-LLM setting are preferences only; the services behind them are not implemented. The app says
   so rather than returning sample results.
 - Recording, transcription and summarization never fill in sample content: when
   no engine can run, the record keeps its audio and shows the failure with a
@@ -228,8 +228,12 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   tool that changes data waits for the approval card, and a declined change is
   reported back to the model.
 - Ask AIの波形ボタンは日本語Live (`LiveConversationSession`) を開始する。
-  Volocal由来の共有音声エンジン・文分割・割り込み制御を使い、質問は選択中のAIへ
-  通常の送信経路で渡す。音声認識は日本語オンデバイス、TTSは日本語PCM合成。
+  Volocal由来の共有音声エンジン・文分割・割り込み制御を使う。LiveはQwen3.5-2Bの
+  ローカル専用。未導入時は約1.33 GBのダウンロード/検証画面を開き、完了するまで開始しない。
+  `sendLocalVoiceChat`は会話テキストだけを使い、クラウド選択・API・URL取得・記録検索・
+  ツールへフォールバックしない。通常のAsk AIの選択モデルは変えない。
+  モデルはApplication Supportへ保存しバックアップから除外、サイズと固定SHA-256で検証する。
+  音声認識は日本語オンデバイス、TTSは日本語PCM合成。
   日本語認識はDictationTranscriber / SpeechAnalyzerでモデルを準備してから接続する。
   「聞いています」は認識準備と実際のマイクバッファ受信後に表示する。
   入力レベルは専用の小さなViewだけで更新し、マイク停止や認識無反応を表示する。
@@ -237,7 +241,7 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   発話の区切りで自動送信するが、既存の下書き/添付/メンションは自動送信しない。
   承認/質問カードでは認識を一時停止し、音声で承認を代行しない。
   会話/ワークスペース変更、バックグラウンド、ストア保護、録音の開始で停止する。
-  Volocal原版の英語モデル/専用LLMは採用しない。`docs/LIVE_CONVERSATION.md` を参照。
+  Volocal原版の英語STT/TTSは採用しない。`docs/LIVE_CONVERSATION.md` を参照。
 - While a reply is being formed, `ThinkingTraceView` shows one live status line
   (考えています / 記録を探しています / 回答を書いています / 作業しています /
   確認を待っています) with elapsed time. Actual `agentSteps` are available in a

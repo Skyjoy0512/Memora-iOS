@@ -46,7 +46,7 @@ struct AIChatVoicePanel: View {
       }
       .buttonStyle(.plain)
       .accessibilityLabel(isRunning ? "Liveを一時停止" : "Liveを再開")
-      .accessibilityHint("話し終わると選択中のAIへ自動送信します。回答中も話しかけて割り込めます")
+      .accessibilityHint("話し終わると、このiPhone内で回答します。回答中も話しかけて割り込めます")
       Spacer(minLength: 8)
       HStack(spacing: 8) {
         voiceButton("チャットに追加", icon: .plus, action: onAttach)
@@ -58,7 +58,7 @@ struct AIChatVoicePanel: View {
           .padding(.horizontal, 16).frame(minHeight: 44)
           .memoraGlass(in: Capsule(), interactive: true, backed: false)
           .contentShape(Capsule())
-        }.buttonStyle(.plain).accessibilityLabel("モデルを選択、\(modelName)")
+        }.buttonStyle(.plain).accessibilityLabel("会話モデル、\(modelName)")
         Spacer(minLength: 0)
         if isSpeaking { voiceButton("読み上げを停止", icon: .stopFill, action: onStop) }
         Toggle(isOn: $isSpeakerEnabled) {

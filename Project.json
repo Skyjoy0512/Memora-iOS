@@ -12,6 +12,10 @@
     "transitivelyLinkDependencies" : false
   },
   "packages" : {
+    "LlamaSwift" : {
+      "exactVersion" : "2.10327.0",
+      "url" : "https://github.com/mattt/llama.swift.git"
+    },
     "MCPSwift" : {
       "exactVersion" : "0.12.1",
       "url" : "https://github.com/modelcontextprotocol/swift-sdk.git"
@@ -31,6 +35,10 @@
   "targets" : {
     "Memora" : {
       "dependencies" : [
+        {
+          "package" : "LlamaSwift",
+          "product" : "LlamaSwift"
+        },
         {
           "package" : "MCPSwift",
           "product" : "MCP"

@@ -62,7 +62,7 @@ enum AIEngine: String, CaseIterable, Identifiable, Codable {
     case .foundation:
       "iOS 26以降のFoundation Modelsで、端末内で整理します。"
     case .local:
-      "ローカルLLMはモデルの同梱が必要で、この版では未接続です。"
+      "通常のAsk AIでの利用は準備中です。Live専用モデルは、音声会話のモデル画面から導入できます。"
     case .cloud:
       "APIキーを保存すると、選んだプロバイダーのAPIで回答します。"
     }

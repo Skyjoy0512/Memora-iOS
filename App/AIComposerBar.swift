@@ -45,6 +45,7 @@ struct AIComposerBar: View {
   @State private var capturedPhoto: Data?
   @State private var attachmentImportContext: AIComposerRequestContext?
   @State private var isModelSheetPresented = false
+  @State private var startsLiveAfterModelSheet = false
   @State private var restoresModelFocus = false
   @State private var isDictating = false
   @State private var isVoiceConversation = false
@@ -117,7 +118,7 @@ struct AIComposerBar: View {
         AIChatVoicePanel(isRunning: liveSession.isRunning, status: liveSession.phase.label,
           transcript: liveSession.transcript.isEmpty ? text : liveSession.transcript,
           session: liveSession,
-          modelName: model.askAIModelName, attachmentName: attachment?.displayName,
+          modelName: LocalVoiceModel.name, attachmentName: attachment?.displayName,
           onRemoveAttachment: { attachment = nil }, isSpeaking: liveSession.isSpeaking,
           isSpeakerEnabled: $isSpeakerEnabled,
           onAttach: { liveSession.pause(); isAttachmentSheetPresented = true },
@@ -289,7 +290,21 @@ struct AIComposerBar: View {
     .sheet(isPresented: $isModelSheetPresented, onDismiss: {
       if restoresModelFocus { isFieldFocused = true }
       restoresModelFocus = false
-    }) { AIChatModelSheet() }
+      if startsLiveAfterModelSheet {
+        startsLiveAfterModelSheet = false
+        startVoiceConversation()
+      }
+    }) {
+      if isVoiceConversation {
+        NavigationStack {
+          LocalVoiceModelSetupView {
+            startsLiveAfterModelSheet = true
+            isModelSheetPresented = false
+          }
+        }
+        .presentationDetents([.medium, .large])
+      } else { AIChatModelSheet() }
+    }
     .fullScreenCover(isPresented: $isCameraPresented, onDismiss: {
       guard let data = capturedPhoto else { return }
       capturedPhoto = nil
@@ -536,6 +551,8 @@ struct AIComposerBar: View {
   }
 
   private func startVoiceConversation() {
+    guard model.selectedTab == .askAI, model.currentTeamID == nil, !model.isRestoring,
+          !model.isStoreProtected, model.composerDraftFailure == nil else { return }
     guard !model.isRecording else {
       speechInput.refuse("録音中はLiveを使用できません。録音を終えてからお試しください。")
       return
@@ -568,14 +585,18 @@ struct AIComposerBar: View {
         if text.isEmpty { text = utterance }
         return nil
       }
-      text = utterance
-      guard onSubmit(nil) else { return nil }
-      text = ""
+      guard model.sendLocalVoiceChat(utterance) else {
+        if text.isEmpty { text = utterance }
+        return nil
+      }
       return model.aiMessages.last.flatMap { $0.role == .assistant ? $0.id : nil }
     }
     guard !hasContent, !model.isAIChatResponding else { liveSession.requireReview(); return }
-    let unavailableReason = model.liveAIUnavailableReason
-    speechTask = Task { await liveSession.start(unavailableReason: unavailableReason) }
+    guard LocalVoiceModel.isInstalled else {
+      isModelSheetPresented = true
+      return
+    }
+    speechTask = Task { await liveSession.start() }
   }
 
   private func voiceMicrophone() {
@@ -591,6 +612,7 @@ struct AIComposerBar: View {
   }
 
   private func endVoiceInput() {
+    startsLiveAfterModelSheet = false
     speechTask?.cancel()
     speechInput.stop()
     liveSession.disconnect()
