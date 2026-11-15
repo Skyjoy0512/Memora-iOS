@@ -2,13 +2,12 @@ import SwiftUI
 
 struct AIChatVoicePanel: View {
   @Environment(\.dynamicTypeSize) private var typeSize
-  var speechInput: SpeechInputService
+  var isRunning: Bool
   var status: String
   var transcript: String
   var modelName: String
   var attachmentName: String?
   var onRemoveAttachment: () -> Void
-  var isResponding: Bool
   var isSpeaking: Bool
   @Binding var isSpeakerEnabled: Bool
   var onAttach: () -> Void
@@ -19,7 +18,7 @@ struct AIChatVoicePanel: View {
 
   var body: some View {
     VStack(spacing: 20) {
-      Text(status).font(.subheadline).foregroundStyle(.secondary)
+      Text(status).font(.subheadline).multilineTextAlignment(.center).foregroundStyle(.secondary)
         .accessibilityAddTraits(.updatesFrequently)
       if !transcript.isEmpty {
         Text(transcript).font(.body).lineLimit(3).multilineTextAlignment(.center)
@@ -36,14 +35,14 @@ struct AIChatVoicePanel: View {
       }
       Spacer(minLength: 8)
       Button(action: onMicrophone) {
-        Image(icon: isSpeaking || isResponding ? .stopFill : .mic, size: 32)
+        Image(icon: isRunning ? .pauseFill : .mic, size: 32)
           .frame(width: 64, height: 64)
           .memoraGlass(in: Circle(), interactive: true, backed: false)
           .contentShape(Circle())
       }
       .buttonStyle(.plain)
-      .accessibilityLabel(isResponding ? "回答を停止" : isSpeaking ? "読み上げを停止" : speechInput.isListening ? "音声入力を終えて送信" : "話し始める")
-      .accessibilityHint("入力した音声を、選択中のAIに送信します")
+      .accessibilityLabel(isRunning ? "Liveを一時停止" : "Liveを再開")
+      .accessibilityHint("話し終わると選択中のAIへ自動送信します。回答中も話しかけて割り込めます")
       Spacer(minLength: 8)
       HStack(spacing: 8) {
         voiceButton("チャットに追加", icon: .plus, action: onAttach)

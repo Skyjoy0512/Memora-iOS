@@ -221,6 +221,13 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Notion pages, tasks and documents. Reading tools run straight away; every
   tool that changes data waits for the approval card, and a declined change is
   reported back to the model.
+- Ask AIの波形ボタンは日本語Live (`LiveConversationSession`) を開始する。
+  Volocal由来の共有音声エンジン・文分割・割り込み制御を使い、質問は選択中のAIへ
+  通常の送信経路で渡す。音声認識は日本語オンデバイス、TTSは日本語PCM合成。
+  発話の区切りで自動送信するが、既存の下書き/添付/メンションは自動送信しない。
+  承認/質問カードでは認識を一時停止し、音声で承認を代行しない。
+  会話/ワークスペース変更、バックグラウンド、ストア保護、録音の開始で停止する。
+  Volocal原版の英語モデル/専用LLMは採用しない。`docs/LIVE_CONVERSATION.md` を参照。
 - While a reply is being formed, `ThinkingTraceView` shows one live status line
   (考えています / 記録を探しています / 回答を書いています / 作業しています /
   確認を待っています) with elapsed time. Actual `agentSteps` are available in a

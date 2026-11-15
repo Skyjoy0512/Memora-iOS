@@ -117,3 +117,19 @@ Copyright 2026 Nishika, Inc. Apache License 2.0. Pinned upstream code and public
 synthetic benchmark data are under `tools/evaluation/vendor/jmeeteval`, including
 its unmodified LICENSE and NOTICE. They are excluded from app targets. See
 [the integration and exact revisions](JMEETEVAL_INTEGRATION.md).
+
+## Live音声会話（2026-11-15）
+
+[Volocal](https://github.com/fikrikarim/volocal)、固定コミット
+`b731963bac43ab29ca430d7f0e55f7b843cc46e5`、MIT、Copyright (c) 2026 Fikri Karim。
+VoicePipeline、SharedAudioEngine、SentenceBufferを日本語Live向けに部分移植。
+共有AVAudioEngineとエコーキャンセル、文単位のストリーミング読み上げ、割り込み時の
+世代管理を採用した。日本語の句読点・空白なし長文・Unicode書記素、再生完了の判定、
+非同期の古い結果の拒否、ロック付き入力橋渡し、バッファ上限を追加した。
+
+英語向けParakeet EOU / PocketTTS、llama.cpp / Qwenおよびモデルダウンロード機構は
+同梱しない。音声認識は日本語のオンデバイスSFSpeechRecognizer、音声合成は日本語の
+AVSpeechSynthesizerのPCM出力を使い、回答はMemoraの選択中AIへ既存経路で依頼する。
+クラウドモデルを選んだ場合、認識済みテキストはそのクラウドへ送られるため、完全ローカル
+動作とは表示しない。音声で承認カードの承認を代行しない。
+MIT全文は `App/Resources/Volocal-LICENSE.txt`、設定のライセンス一覧にも掲載。

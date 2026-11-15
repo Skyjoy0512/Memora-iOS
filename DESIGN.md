@@ -699,3 +699,25 @@ model selection, plus dark appearance and accessibility-large text. The simulato
 completed speech and microphone permission prompts but did not establish an
 actual speech-to-provider-to-read-aloud round trip. Camera/photo import and
 physical-device audio still require their respective runtime checks.
+
+### Live follow-up — Volocal integration
+
+The waveform button now starts foreground Live conversation, superseding the
+manual-turn voice behavior described above. Volocal's pipeline, shared
+AVAudioEngine with voice-processing echo cancellation, and sentence buffer are
+adapted at b731963bac43ab29ca430d7f0e55f7b843cc46e5. Japanese local speech
+recognition and Japanese PCM speech synthesis replace the English model stack;
+answers still use Memora's selected model and existing submission/approval path.
+This is a partial port, not Volocal's completely local Qwen/Parakeet/PocketTTS app.
+
+After one second without a changed transcription, Live submits the utterance.
+It streams bounded sentences into the same audio engine while leaving the mic
+open for interruption. Speaking during a reply invalidates its generation/audio
+revision before stopping that reply. Approval and question cards temporarily
+suspend recognition; only their existing visual controls can resolve them.
+Pause, close, background, recording takeover, store protection and workspace or
+conversation changes stop capture and discard stale callbacks. A nonempty draft,
+attachment or mention pauses automatic sending for the existing composer flow;
+Live never silently overwrites or auto-sends it. Speaker preference persists.
+
+See `docs/LIVE_CONVERSATION.md` for validation boundaries.
