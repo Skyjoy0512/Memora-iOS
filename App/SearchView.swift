@@ -6,6 +6,7 @@ struct SearchView: View {
   @State private var isSearchSheetPresented = false
   @State private var isHistoryPresented = false
   @State private var filters = SearchFilters()
+  var isComposing = false
   var onOpenSidebar: () -> Void
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -120,7 +121,7 @@ struct SearchView: View {
   }
 
   private var chatEmptyState: some View {
-    AgentPromptSuggestionsView()
+    AgentPromptSuggestionsView(isComposing: isComposing)
   }
 
   private var assistantHeader: some View {

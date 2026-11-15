@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AIComposerAttachmentAction: String, CaseIterable, Identifiable {
-  case photo, audio, file, mention, integrations
+  case camera, photo, audio, file, mention, integrations
 
   var id: Self { self }
 
@@ -9,6 +9,7 @@ enum AIComposerAttachmentAction: String, CaseIterable, Identifiable {
     switch self {
     case .mention: "プラグイン・スキル・ソース"
     case .integrations: "コネクタ…"
+    case .camera: "カメラ…"
     case .photo: "写真を選択…"
     case .audio: "音声を選択…"
     case .file: "ファイルを選択…"
@@ -19,6 +20,7 @@ enum AIComposerAttachmentAction: String, CaseIterable, Identifiable {
     switch self {
     case .mention: .puzzle
     case .integrations: .plugsConnected
+    case .camera: .camera
     case .photo: .photo
     case .audio: .waveform
     case .file: .paperclip
@@ -29,6 +31,7 @@ enum AIComposerAttachmentAction: String, CaseIterable, Identifiable {
     switch self {
     case .mention: "プラグイン"
     case .integrations: "コネクタ"
+    case .camera: "カメラ"
     case .photo: "写真"
     case .audio: "音声"
     case .file: "ファイル"

@@ -660,3 +660,42 @@ Copy stays directly available under AI replies; sharing, reading aloud and other
 answer actions live in its options menu. Active speech retains an immediate stop.
 Sources expand without changing their live access checks. Technical settings
 explanations expand; availability and send/permission information remain visible.
+
+
+## Ask AI reference refresh — 2026-11-15
+
+The empty conversation centers the existing, faint Memora mark with three
+suggestion capsules above the composer. Suggestions still stage revalidated,
+editable requests without sending. The idle composer has a plus, native input,
+dictation microphone and a separate voice-conversation waveform button.
+Focusing it expands the same native editor above a controls row; model selection
+uses AIChatModelSheet, preserves the draft and restores keyboard focus.
+
+The plus opens AIChatAttachmentSheet: camera, photos and files first, then recent
+photos, sources/skills, connectors, audio import and Web search. Dispatch picker
+presentation after sheet dismissal. Revalidate the originating request context
+before importing an attachment. Existing permission strings and camera capture,
+photo editor, file import and connector flows are reused.
+
+Dictation shows actual microphone levels, cancel, stop/resume and send. Partial
+transcripts append to the existing draft; cancellation restores the pre-dictation
+text, including after a pause/resume. The waveform button opens a bounded blue
+voice panel. Tapping its microphone finishes and sends the turn through the normal
+Ask AI path, including its existing approvals. Finished answers can be read aloud;
+the speaker preference persists. Closing leaves the transcript as a draft and
+stops listening/reading. Changing workspace, conversation, destination or entering
+the background stops voice input. There is no continuous background conversation.
+
+Only Auto and real registered models appear. No fictional model, plan badge or
+effort setting is shown. Microphone/provider round trips require actual audio and
+a configured AI provider; compilation and UI checks do not prove those paths.
+
+Validation: `bitrig preview -platform iOS` succeeded with the iOS 27.2 SDK.
+Composer layout/suggestion checks, composer request race checks, SQLite draft
+recovery checks and all eight chat-surface structural guards passed. On Bitrig's
+iPhone 18 Pro Max, inspected the idle/typing/attachment/model/dictation/voice
+states, file-picker handoff, draft retention and keyboard restoration after
+model selection, plus dark appearance and accessibility-large text. The simulator
+completed speech and microphone permission prompts but did not establish an
+actual speech-to-provider-to-read-aloud round trip. Camera/photo import and
+physical-device audio still require their respective runtime checks.

@@ -195,7 +195,8 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   agent-action suggestions, personalized only from real cloud-permitted personal
   records/tasks and never from sample content. A selection revalidates sources
   and stages an editable draft without sending; existing drafts/attachments win.
-  Keep no random greeting, logo or idle glow. `AskAIHeader` is one compact row:
+  Keep no random greeting or idle glow. The empty chat has a static, faint Memora
+  mark above the suggestion chips. `AskAIHeader` is one compact row:
   sidebar / Memora (history and search menu) / new chat. Replies remain plain
   text with no bubble, only the person's messages in `aiBubble`. `AskAIGlow`
   keeps its processing mesh only while an answer is being formed, still under
@@ -328,8 +329,9 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   notification is posted only if already allowed.
 - Ask AI defaults to Auto, which follows the configured `AIEngine` and cloud
   selection. A registered model is chosen in Settings › AIと要約 › AIモデル (saved in
-  `RegisteredLLMStore`), not from the composer: a menu there dropped the
-  keyboard and cancelled the choice. Both Ask AI paths capture
+  `RegisteredLLMStore`), and from the expanded Ask AI composer through
+  `AIChatModelSheet`. The native sheet preserves the draft and restores focus
+  after dismissal; do not use a composer Menu. Both Ask AI paths capture
   `askAIConfiguration` once per question. The summary sheet starts on the model
   Ask AI is using (`defaultSummaryEngineChoice`) and can switch to the settings
   engine, the on-device model, or any registered model for that summary.

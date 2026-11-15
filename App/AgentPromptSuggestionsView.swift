@@ -2,42 +2,40 @@ import SwiftUI
 
 struct AgentPromptSuggestionsView: View {
   @Environment(MemoraModel.self) private var model
+  var isComposing = false
 
   var body: some View {
     let suggestions = model.agentPromptSuggestions
     GeometryReader { proxy in
-      ScrollView {
-        VStack(spacing: 0) {
-          Spacer(minLength: 0)
-          if !suggestions.isEmpty {
-            VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
-              VStack(spacing: 0) {
-                ForEach(suggestions.prefix(3)) { suggestion in
-                  AgentPromptSuggestionRow(suggestion: suggestion) {
-                    InteractionFeedback.shared.send(.selection)
-                    model.stageAgentSuggestion(suggestion)
-                  }
-                  .disabled(!model.composerDraft.isEmpty || model.composerAttachment != nil || model.isAIChatResponding)
+      ZStack {
+        MemoraBrandMark(width: min(190, proxy.size.width * 0.46))
+          .opacity(0.10)
+          .accessibilityHidden(true)
+          .position(x: proxy.size.width / 2,
+            y: max(32, proxy.size.height / 2 - 32))
+        if !isComposing && model.composerDraft.isEmpty && model.composerAttachment == nil {
+          ScrollView {
+            VStack(alignment: .leading, spacing: 10) {
+              ForEach(suggestions.prefix(3)) { suggestion in
+                AgentPromptSuggestionRow(suggestion: suggestion) {
+                  InteractionFeedback.shared.send(.selection)
+                  model.stageAgentSuggestion(suggestion)
                 }
-              }
-              if !model.composerDraft.isEmpty || model.composerAttachment != nil {
-                Text("入力中の内容を送信または消去すると、提案を選べます。")
-                  .font(.footnote)
-                  .foregroundStyle(.secondary)
-                  .fixedSize(horizontal: false, vertical: true)
+                .disabled(model.isAIChatResponding)
               }
             }
-            .padding(.horizontal, MemoraSpacing.screen)
-            .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityIdentifier("ai.agentSuggestions")
+            .padding(.horizontal, 14).padding(.top, 12)
+            .padding(.bottom, model.bottomContentClearance)
           }
+          .scrollBounceBehavior(.basedOnSize)
+          .fixedSize(horizontal: false, vertical: true)
+          .frame(maxWidth: MemoraSpacing.readingWidth)
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+          .accessibilityIdentifier("ai.agentSuggestions")
         }
-        .padding(.bottom, model.bottomContentClearance)
-        .frame(minHeight: proxy.size.height, alignment: .bottom)
       }
-      .scrollBounceBehavior(.basedOnSize)
-      .scrollDismissesKeyboard(.interactively)
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
   }
 }

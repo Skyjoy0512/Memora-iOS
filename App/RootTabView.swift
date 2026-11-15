@@ -315,7 +315,7 @@ struct RootTabView: View {
         .scrollDismissesKeyboard(.immediately)
         .tag(RootTab.home)
 
-      SearchView(onOpenSidebar: openSidebar)
+      SearchView(isComposing: isComposing, onOpenSidebar: openSidebar)
         .accessibilityHidden(model.isToolsPresented || isSidebarOpen)
         .hidesSystemTabBar()
         .tag(RootTab.askAI)

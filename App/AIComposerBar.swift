@@ -37,6 +37,21 @@ struct AIComposerBar: View {
   @ScaledMetric(relativeTo: .body) private var editorLineHeight: CGFloat = 24
 
   @State private var speechInput = SpeechInputService()
+  @State private var isAttachmentSheetPresented = false
+  @State private var pendingAttachmentAction: AIComposerAttachmentAction?
+  @State private var isCameraPresented = false
+  @State private var capturedPhoto: Data?
+  @State private var attachmentImportContext: AIComposerRequestContext?
+  @State private var isModelSheetPresented = false
+  @State private var restoresModelFocus = false
+  @State private var isDictating = false
+  @State private var isVoiceConversation = false
+  @State private var speechOriginalText = ""
+  @State private var dictationOriginalText = ""
+  @State private var speechTask: Task<Void, Never>?
+  @State private var voiceReplyID: UUID?
+  @AppStorage("memora.askAI.voiceSpeakerEnabled") private var isSpeakerEnabled = true
+  @Environment(\.scenePhase) private var scenePhase
   @State private var isIntegrationsPresented = false
   @State private var isImporterPresented = false
   @State private var isAudioImporterPresented = false
@@ -49,8 +64,7 @@ struct AIComposerBar: View {
 
   /// The capsule's height while collapsed; its corners make it fully round.
   private static let collapsedHeight: CGFloat = 56
-  /// The Ask AI layout keeps two rows; the field row grows with the taller
-  /// composer instead of leaving the extra height to the controls.
+  /// The focused field grows above the controls without replacing its editor.
   private static let stackedFieldHeight: CGFloat = 32
 
   /// Open while typing, or while there is text or an attachment to send.
@@ -59,8 +73,8 @@ struct AIComposerBar: View {
   }
 
   // A waiting draft is not active editing: keep navigation available after blur.
-  private var isInteracting: Bool { isFieldFocused || speechInput.isListening }
-  private var usesStackedLayout: Bool { isConversation || isExpanded }
+  private var isInteracting: Bool { isFieldFocused || speechInput.isListening || isDictating || isVoiceConversation }
+  private var usesStackedLayout: Bool { isExpanded }
 
   private var cornerRadius: CGFloat {
     usesStackedLayout ? MemoraRadius.composer : Self.collapsedHeight / 2
@@ -77,6 +91,7 @@ struct AIComposerBar: View {
       .accessibilityLabel("メッセージ")
       .accessibilityHint(contextHint)
       .accessibilityIdentifier("ai.composer.input")
+      .accessibilityHidden(isDictating || isVoiceConversation)
       .padding(.vertical, MemoraSpacing.sm)
       // The field takes the width it needs and grows as text is added; the
       // controls keep their size instead of being pushed out by a long entry.
@@ -92,80 +107,102 @@ struct AIComposerBar: View {
   }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 0) {
-      if let removeMention, !model.composerMentions.isEmpty {
-        ComposerMentionStrip(mentions: model.composerMentions, scope: mentionScope, remove: removeMention)
-          .padding(.horizontal, MemoraSpacing.md)
-          .padding(.top, MemoraSpacing.sm)
+    VStack(spacing: 0) {
+      if isConversation && isVoiceConversation {
+        AIChatVoicePanel(speechInput: speechInput, status: voiceStatus, transcript: text,
+          modelName: model.askAIModelName, attachmentName: attachment?.displayName,
+          onRemoveAttachment: { attachment = nil }, isResponding: model.isAIChatResponding, isSpeaking: model.answerSpeech.speakingMessageID != nil,
+          isSpeakerEnabled: $isSpeakerEnabled,
+          onAttach: { speechInput.stop(); isAttachmentSheetPresented = true },
+          onModel: { speechInput.stop(); isModelSheetPresented = true },
+          onMicrophone: voiceMicrophone, onStop: { model.stopAnswerSpeech() }, onClose: closeVoiceConversation)
       }
-      if attachment != nil {
-        attachmentStrip
-          .padding(.horizontal, MemoraSpacing.lg)
-          .padding(.top, MemoraSpacing.sm)
+      VStack(alignment: .leading, spacing: 0) {
+        if let removeMention, !model.composerMentions.isEmpty {
+          ComposerMentionStrip(mentions: model.composerMentions, scope: mentionScope, remove: removeMention)
+            .padding(.horizontal, MemoraSpacing.md)
+            .padding(.top, MemoraSpacing.sm)
+        }
+        if attachment != nil {
+          attachmentStrip
+            .padding(.horizontal, MemoraSpacing.lg)
+            .padding(.top, MemoraSpacing.sm)
 
-        Divider()
-          .padding(.horizontal, MemoraSpacing.lg)
-          .padding(.top, MemoraSpacing.sm)
-      }
-
-      // Conversation controls stay below the field even without focus. The
-      // native field keeps its identity while compact contextual controls move.
-      HStack(alignment: .center, spacing: 4) {
-        if !usesStackedLayout {
-          Color.clear.frame(width: 44, height: 44)
-            .accessibilityHidden(true)
+          Divider()
+            .padding(.horizontal, MemoraSpacing.lg)
+            .padding(.top, MemoraSpacing.sm)
         }
 
-        textField
-
-        if !usesStackedLayout {
-          if onResearch != nil {
-            researchButton
-              .matchedGeometryEffect(id: "research", in: controlsNamespace)
+        // Keep the native editor mounted while controls move between rows.
+        HStack(alignment: .center, spacing: 4) {
+          if !usesStackedLayout {
+            Color.clear.frame(width: 44, height: 44)
+              .accessibilityHidden(true)
           }
-          if offersIdleVoiceInput || onStop != nil || isBusy || speechInput.isListening {
+
+          textField
+
+          if !usesStackedLayout {
+            if isConversation && offersIdleVoiceInput {
+              dictationButton
+            }
+            if !isConversation && onResearch != nil {
+              researchButton
+                .matchedGeometryEffect(id: "research", in: controlsNamespace)
+            }
+            if offersIdleVoiceInput || onStop != nil || isBusy || speechInput.isListening {
+              actionButton
+                .matchedGeometryEffect(id: "action", in: controlsNamespace)
+            }
+          }
+        }
+        .padding(.horizontal, usesStackedLayout ? MemoraSpacing.lg : MemoraSpacing.xs)
+        .padding(.top, usesStackedLayout ? MemoraSpacing.sm : 0)
+        .frame(minHeight: usesStackedLayout ? Self.stackedFieldHeight : Self.collapsedHeight)
+
+        if usesStackedLayout {
+          HStack(spacing: 6) {
+            Color.clear.frame(width: 44, height: 44)
+              .accessibilityHidden(true)
+            if isConversation {
+              modelButton
+            }
+            if isEditorTall || AIComposerLayoutPolicy.offersExpansion(for: text) {
+              MemoraIconButton(isEditorTall ? "入力欄を小さくする" : "入力欄を広げる",
+                icon: isEditorTall ? .chevronDown : .chevronUp) {
+                isEditorTall.toggle()
+              }
+              .accessibilityValue(isEditorTall ? "拡大" : "通常")
+            }
+            Spacer(minLength: 8)
+            if !isConversation && onResearch != nil {
+              researchButton
+                .matchedGeometryEffect(id: "research", in: controlsNamespace)
+            }
+            if isConversation { dictationButton }
             actionButton
               .matchedGeometryEffect(id: "action", in: controlsNamespace)
           }
+          .padding(.horizontal, MemoraSpacing.sm)
+          .padding(.bottom, MemoraSpacing.sm)
+          .transition(.opacity)
         }
       }
-      .padding(.horizontal, usesStackedLayout ? MemoraSpacing.lg : MemoraSpacing.xs)
-      .padding(.top, usesStackedLayout ? MemoraSpacing.sm : 0)
-      .frame(minHeight: usesStackedLayout ? Self.stackedFieldHeight : Self.collapsedHeight)
-
-      if usesStackedLayout {
-        HStack(spacing: 6) {
-          Color.clear.frame(width: 44, height: 44)
-            .accessibilityHidden(true)
-          if isEditorTall || AIComposerLayoutPolicy.offersExpansion(for: text) {
-            MemoraIconButton(isEditorTall ? "入力欄を小さくする" : "入力欄を広げる",
-              icon: isEditorTall ? .chevronDown : .chevronUp) {
-              isEditorTall.toggle()
-            }
-            .accessibilityValue(isEditorTall ? "拡大" : "通常")
-          }
-          Spacer(minLength: 8)
-          if onResearch != nil {
-            researchButton
-              .matchedGeometryEffect(id: "research", in: controlsNamespace)
-          }
-          actionButton
-            .matchedGeometryEffect(id: "action", in: controlsNamespace)
-        }
-        .padding(.horizontal, MemoraSpacing.sm)
-        .padding(.bottom, MemoraSpacing.sm)
-        .transition(.opacity)
+      .memoraGlass(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous),
+        interactive: true, backed: false)
+      .overlay(alignment: usesStackedLayout ? .bottomLeading : .leading) {
+        attachmentMenu
+          .padding(.leading, usesStackedLayout ? MemoraSpacing.sm : MemoraSpacing.xs)
+          .padding(.bottom, usesStackedLayout ? MemoraSpacing.sm : 0)
       }
-    }
-    .background { listeningBackdrop }
-    .memoraGlass(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous),
-      interactive: true, backed: false)
-    // The native menu must sit outside the glass's foreground; otherwise iOS
-    // lifts the whole composer as its source and hides it while the menu is open.
-    .overlay(alignment: usesStackedLayout ? .bottomLeading : .leading) {
-      attachmentMenu
-        .padding(.leading, usesStackedLayout ? MemoraSpacing.sm : MemoraSpacing.xs)
-        .padding(.bottom, usesStackedLayout ? MemoraSpacing.sm : 0)
+      .opacity(isDictating || isVoiceConversation ? 0 : 1)
+      .frame(height: isDictating || isVoiceConversation ? 0 : nil)
+      .clipped()
+      .accessibilityHidden(isDictating || isVoiceConversation)
+      .allowsHitTesting(!isDictating && !isVoiceConversation)
+      if isDictating && !isVoiceConversation {
+        dictationBar
+      }
     }
     .preservesComposerFocus()
     .animation(reduceMotion ? nil : MemoraMotion.control, value: attachment)
@@ -206,7 +243,44 @@ struct AIComposerBar: View {
     }
     .onDisappear {
       externalFocusTask?.cancel()
-      speechInput.stop()
+      endVoiceInput()
+    }
+    .onChange(of: model.selectedTab) { _, _ in endVoiceInput() }
+    .onChange(of: model.aiConversationID) { _, _ in endVoiceInput() }
+    .onChange(of: model.aiWorkspaceGeneration) { _, _ in endVoiceInput() }
+    .onChange(of: scenePhase) { _, phase in
+      if phase == .background { endVoiceInput() }
+    }
+    .onChange(of: model.isAIChatResponding) { wasResponding, responding in
+      guard isVoiceConversation, wasResponding, !responding, let id = voiceReplyID,
+            let reply = model.aiMessages.first(where: { $0.id == id }), !reply.isThinking else { return }
+      voiceReplyID = nil
+      if isSpeakerEnabled { model.toggleAnswerSpeech(reply) }
+    }
+    .onChange(of: isSpeakerEnabled) { _, enabled in
+      if !enabled { model.stopAnswerSpeech() }
+    }
+    .sheet(isPresented: $isAttachmentSheetPresented, onDismiss: {
+      guard let action = pendingAttachmentAction else { return }
+      pendingAttachmentAction = nil
+      performAttachmentAction(action)
+    }) {
+      AIChatAttachmentSheet(offersMentions: onMentionMenu != nil, researchSelected: researchSelected,
+        onResearch: onResearch, onSelect: { pendingAttachmentAction = $0 })
+    }
+    .sheet(isPresented: $isModelSheetPresented, onDismiss: {
+      if restoresModelFocus { isFieldFocused = true }
+      restoresModelFocus = false
+    }) { AIChatModelSheet() }
+    .fullScreenCover(isPresented: $isCameraPresented, onDismiss: {
+      guard let data = capturedPhoto else { return }
+      capturedPhoto = nil
+      editingPhoto = PhotoEditRequest(data: data)
+    }) {
+      CameraCaptureView { data in
+        capturedPhoto = data
+        isCameraPresented = false
+      }
     }
     .fileImporter(
       isPresented: $isImporterPresented,
@@ -245,13 +319,17 @@ struct AIComposerBar: View {
     }
     .sheet(item: $editingPhoto) { request in
       PhotoEditorView(source: request.data) { edited in
-        let generation = model.aiWorkspaceGeneration
+        let context = attachmentImportContext
         let previous = attachment
         Task {
           do {
+            guard let context, context.isCurrent(in: model, scope: mentionScope) else {
+              importErrorMessage = "保存先や入力が変わりました。もう一度選択してください。"
+              return
+            }
             guard (previous?.files.count ?? 0) < 10 else { importErrorMessage = "添付は10件までです。"; return }
             let file = try await model.importAIPhoto(data: edited, fileExtension: "jpg")
-            guard generation == model.aiWorkspaceGeneration, attachment == previous, !model.isRestoring, !model.isStoreProtected else {
+            guard context.isCurrent(in: model, scope: mentionScope), attachment == previous else {
               try? FileManager.default.removeItem(at: file.url); return
             }
             if attachment == nil { attachment = file } else { attachment?.append(file) }
@@ -271,16 +349,6 @@ struct AIComposerBar: View {
     }
   }
 
-  /// While the mic is live a glow gathers along the bottom edge, reacting to
-  /// the voice without changing the card's appearance.
-  @ViewBuilder
-  private var listeningBackdrop: some View {
-    if speechInput.isListening {
-      VoiceGlow(level: speechInput.audioLevel)
-        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-    }
-  }
-
   private var attachmentStrip: some View {
     HStack(spacing: 8) {
       Image(icon: .paperclip)
@@ -297,7 +365,11 @@ struct AIComposerBar: View {
   }
 
   private var attachmentMenu: some View {
-    AIComposerAttachmentButton(offersMentions: onMentionMenu != nil) {
+    AIComposerAttachmentButton(offersMentions: onMentionMenu != nil,
+      usesChatSheet: isConversation, onPresentChatSheet: {
+        isFieldFocused = false
+        isAttachmentSheetPresented = true
+      }) {
       dismissMentionMenu?()
     } onSelect: { action in
       performAttachmentAction(action)
@@ -310,10 +382,19 @@ struct AIComposerBar: View {
     case .mention:
       isFieldFocused = true
       onMentionMenu?()
+    case .camera:
+      attachmentImportContext = AIComposerRequestContext(scope: mentionScope, in: model)
+      isCameraPresented = true
     case .integrations: isIntegrationsPresented = true
-    case .photo: isPhotoPickerPresented = true
-    case .audio: isAudioImporterPresented = true
-    case .file: isImporterPresented = true
+    case .photo:
+      attachmentImportContext = AIComposerRequestContext(scope: mentionScope, in: model)
+      isPhotoPickerPresented = true
+    case .audio:
+      attachmentImportContext = AIComposerRequestContext(scope: mentionScope, in: model)
+      isAudioImporterPresented = true
+    case .file:
+      attachmentImportContext = AIComposerRequestContext(scope: mentionScope, in: model)
+      isImporterPresented = true
     }
   }
 
@@ -345,22 +426,23 @@ struct AIComposerBar: View {
       else if canSend {
         submit()
       } else if !isBusy {
-        toggleSpeechInput()
+        if isConversation { startVoiceConversation() }
+        else { toggleSpeechInput() }
       }
     } label: {
       Group {
         if onStop == nil, !canSend, !isBusy, !speechInput.isListening {
-          Image(icon: .mic, size: MemoraIconMetrics.glyph)
+          Image(icon: isConversation ? .waveform : .mic, size: MemoraIconMetrics.glyph)
         } else {
           Image(icon: actionSymbol)
         }
       }
         .font(.system(size: 20, weight: .semibold))
-        .foregroundStyle(onStop != nil || canSend || isBusy || speechInput.isListening
+        .foregroundStyle(isConversation || onStop != nil || canSend || isBusy || speechInput.isListening
           ? MemoraPalette.actionLabel : MemoraPalette.textPrimary)
         .contentTransition(.opacity)
         .frame(width: 36, height: 36)
-        .background(Circle().fill(onStop != nil || canSend || isBusy || speechInput.isListening
+        .background(Circle().fill(isConversation || onStop != nil || canSend || isBusy || speechInput.isListening
           ? MemoraPalette.action : .clear))
         // The circle stays small; the target around it does not.
         .frame(width: 44, height: 44)
@@ -381,7 +463,7 @@ struct AIComposerBar: View {
     if onStop != nil { return "回答を停止" }
     if canSend { return "送信" }
     if model.isRecording { return "録音中は音声入力を使用できません" }
-    return speechInput.isListening ? "音声入力を停止" : "音声で入力"
+    return isConversation ? "音声会話を開始" : speechInput.isListening ? "音声入力を停止" : "音声で入力"
   }
 
   private var hasContent: Bool {
@@ -407,38 +489,157 @@ struct AIComposerBar: View {
   }
 
   private func toggleSpeechInput() {
-    // A recording owns the shared audio session, so voice input waits its turn
-    // rather than stopping the recording.
     guard !model.isRecording else {
       speechInput.refuse("録音中は音声入力を使用できません。録音を終えてからお試しください。")
       return
     }
-    Task {
-      await speechInput.toggle { transcript in
-        text = transcript
-      }
+    if speechInput.isListening { speechInput.stop(); return }
+    speechOriginalText = text
+    if isConversation {
+      if !isDictating { dictationOriginalText = text }
+      isDictating = true
+      isFieldFocused = false
     }
+    let generation = model.aiWorkspaceGeneration
+    let conversationID = model.aiConversationID
+    let prefix = speechOriginalText
+    speechTask?.cancel()
+    speechTask = Task {
+      guard !Task.isCancelled else { return }
+      await speechInput.toggle { transcript in
+        guard generation == model.aiWorkspaceGeneration, conversationID == model.aiConversationID else { return }
+        text = prefix + (prefix.isEmpty ? "" : "\n") + transcript
+      }
+      if speechInput.errorMessage != nil { isDictating = false; isVoiceConversation = false }
+    }
+  }
+
+  private func startVoiceConversation() {
+    guard !model.isRecording else {
+      speechInput.refuse("録音中は音声会話を使用できません。録音を終えてからお試しください。")
+      return
+    }
+    isVoiceConversation = true
+    isFieldFocused = false
+    if !hasContent { toggleSpeechInput() }
+  }
+
+  private func voiceMicrophone() {
+    if model.answerSpeech.speakingMessageID != nil { model.stopAnswerSpeech(); return }
+    if let onStop { onStop(); voiceReplyID = nil; return }
+    if speechInput.isListening || hasContent {
+      speechInput.stop()
+      submit()
+      if model.isAIChatResponding { voiceReplyID = model.aiMessages.last?.id }
+    } else { toggleSpeechInput() }
+  }
+
+  private func closeVoiceConversation() {
+    speechTask?.cancel()
+    speechInput.stop()
+    model.stopAnswerSpeech()
+    voiceReplyID = nil
+    isVoiceConversation = false
+    isDictating = false
+  }
+
+  private func endVoiceInput() {
+    speechTask?.cancel()
+    speechInput.stop()
+    if isVoiceConversation { model.stopAnswerSpeech() }
+    voiceReplyID = nil
+    isVoiceConversation = false
+    isDictating = false
+  }
+
+  private var voiceStatus: String {
+    if model.isAIChatResponding { return "回答を準備しています" }
+    if model.answerSpeech.speakingMessageID != nil { return "読み上げています" }
+    if speechInput.isListening { return "聞いています。マイクを押して送信" }
+    return hasContent ? "マイクを押して送信" : "マイクを押して話してください"
+  }
+
+  private var modelButton: some View {
+    Button {
+      restoresModelFocus = isFieldFocused
+      isFieldFocused = false
+      isModelSheetPresented = true
+    } label: {
+      HStack(spacing: 5) {
+        Text(model.askAIModelName).font(.subheadline).lineLimit(1)
+        Image(icon: .chevronDown, size: 12)
+      }
+      .padding(.horizontal, 14).frame(minHeight: 36)
+      .background(MemoraPalette.card, in: Capsule())
+      .frame(minHeight: 44).contentShape(Capsule())
+    }
+    .buttonStyle(.plain).accessibilityLabel("モデルを選択、\(model.askAIModelName)")
+    .accessibilityIdentifier("ai.composer.model")
+  }
+
+  private var dictationButton: some View {
+    Button { toggleSpeechInput() } label: {
+      Image(icon: .mic, size: 21)
+        .frame(width: 36, height: 36)
+        .background(MemoraPalette.card, in: Circle())
+        .frame(width: 44, height: 44).contentShape(Circle())
+    }
+    .buttonStyle(.plain).disabled(isBusy || onStop != nil)
+    .accessibilityLabel("音声で入力")
+    .accessibilityIdentifier("ai.composer.dictate")
+  }
+
+  private var dictationBar: some View {
+    HStack(spacing: 4) {
+      MemoraIconButton("音声入力をキャンセル", icon: .xmark) {
+        speechTask?.cancel()
+        speechInput.stop(); text = dictationOriginalText; isDictating = false
+      }
+      AIInputWaveform(speechInput: speechInput)
+      MemoraIconButton(speechInput.isListening ? "音声入力を停止" : "音声入力を再開",
+        icon: speechInput.isListening ? .stopFill : .mic) {
+        if speechInput.isListening { speechInput.stop() }
+        else { toggleSpeechInput() }
+      }
+      Button {
+        speechInput.stop(); isDictating = false
+        submit()
+      } label: {
+        Image(icon: .arrowUp, size: 24)
+          .foregroundStyle(.white).frame(width: 36, height: 36)
+          .background(Color(red: 0.82, green: 0.30, blue: 0.16), in: Circle())
+          .frame(width: 44, height: 44).contentShape(Circle())
+      }.buttonStyle(.plain).disabled(!canSend).accessibilityLabel("音声入力を送信")
+    }
+    .padding(6)
+    .memoraGlass(in: Capsule(), interactive: true, backed: false)
   }
 
   private func submit() {
     guard canSend, (mentionInput ?? fallbackInput).snapshot()?.hasMarkedText != true else { return }
+    speechTask?.cancel()
     speechInput.stop()
     guard onSubmit(attachment) else { return }
     InteractionFeedback.shared.send(.tap)
     text = ""
     attachment = nil
     // The Ask AI chat keeps the keyboard up for the next turn; a sheet does not.
-    isFieldFocused = keepsFocusAfterSubmit
+    isFieldFocused = keepsFocusAfterSubmit && !isVoiceConversation
   }
 
   private func importFile(_ result: Result<[URL], any Error>) {
     let generation = model.aiWorkspaceGeneration
     let conversationID = model.aiConversationID
     let previous = attachment
+    let context = attachmentImportContext
     Task { @MainActor in
       var created: [AIAttachment] = []
       do {
         let urls = try result.get()
+        guard let context, context.isCurrent(in: model, scope: mentionScope) else {
+          importErrorMessage = "保存先や入力が変わりました。もう一度選択してください。"
+          return
+        }
         let capacity = 10 - (previous?.files.count ?? 0)
         guard !urls.isEmpty, urls.count <= capacity else { importErrorMessage = "添付は10件までです。"; return }
         var combined = previous
@@ -451,7 +652,8 @@ struct AIComposerBar: View {
           if combined == nil { combined = file } else { combined?.append(file) }
         }
         try Task.checkCancellation()
-        guard model.aiWorkspaceGeneration == generation, model.currentTeamID == nil,
+        guard context.isCurrent(in: model, scope: mentionScope),
+              model.aiWorkspaceGeneration == generation, model.currentTeamID == nil,
               model.aiConversationID == conversationID,
               !model.isRestoring, !model.isStoreProtected, attachment == previous else {
           for file in created.flatMap(\.files) { try? FileManager.default.removeItem(at: file.url) }
