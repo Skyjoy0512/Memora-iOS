@@ -2,6 +2,12 @@ import Foundation
 
 @main enum ModelCapabilityChecks {
   static func main() {
+    precondition(LLMProvider.restored(nil, hasLegacyOpenAIConfiguration: false) == .deepSeek)
+    precondition(LLMProvider.restored(nil, hasLegacyOpenAIConfiguration: true) == .openAI)
+    for provider in LLMProvider.allCases {
+      precondition(LLMProvider.restored(provider.rawValue, hasLegacyOpenAIConfiguration: false) == provider)
+      precondition(LLMProvider.restored(provider.rawValue, hasLegacyOpenAIConfiguration: true) == provider)
+    }
     for provider in LLMProvider.allCases {
       for id in provider.suggestedModels.map(\.id) + ["unknown-custom", "deepseek-v4-pro"] {
         let official = LLMSelection(provider: provider, modelID: id)

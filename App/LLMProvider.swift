@@ -15,6 +15,15 @@ enum LLMProvider: String, CaseIterable, Identifiable, Codable {
   case qwen
   case openRouter
 
+  static var defaultCloudProvider: Self { .deepSeek }
+
+  /// New setups use DeepSeek. A saved selection or an older explicit OpenAI
+  /// model/key remains authoritative; upgrading must not switch its destination.
+  static func restored(_ savedValue: String?, hasLegacyOpenAIConfiguration: Bool) -> Self {
+    if let savedValue, let provider = Self(rawValue: savedValue) { return provider }
+    return hasLegacyOpenAIConfiguration ? .openAI : defaultCloudProvider
+  }
+
   var id: Self { self }
 
   /// The name people know the models by.

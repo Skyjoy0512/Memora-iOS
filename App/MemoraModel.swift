@@ -524,7 +524,7 @@ final class MemoraModel {
     }
   }
   /// The bring-your-own-key provider used when the engine is cloud.
-  var aiProvider: LLMProvider = .openAI {
+  var aiProvider: LLMProvider = .defaultCloudProvider {
     didSet {
       UserDefaults.standard.set(aiProvider.rawValue, forKey: StorageKey.aiProvider)
       guard aiProvider != oldValue else { return }
@@ -637,7 +637,10 @@ final class MemoraModel {
     defaults.set(loadedSubscription, forKey: StorageKey.isSubscribed)
     hasOfferedPlus = defaults.bool(forKey: StorageKey.hasOfferedPlus)
     aiEngine = AIEngine(rawValue: defaults.string(forKey: StorageKey.aiEngine) ?? "") ?? .automatic
-    let storedProvider = LLMProvider(rawValue: defaults.string(forKey: StorageKey.aiProvider) ?? "") ?? .openAI
+    let hasLegacyOpenAI = !(defaults.string(forKey: StorageKey.aiModel(.openAI)) ?? "").isEmpty ||
+      KeychainStore.string(forKey: LLMProvider.openAI.keychainAccount)?.isEmpty == false
+    let storedProvider = LLMProvider.restored(defaults.string(forKey: StorageKey.aiProvider),
+      hasLegacyOpenAIConfiguration: hasLegacyOpenAI)
     aiProvider = storedProvider
     aiModelID = Self.storedModelID(for: storedProvider)
     var composerStoreReadFailed = false
