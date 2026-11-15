@@ -91,7 +91,8 @@ extension MemoraModel {
     主担当へ、要点・記録idとタイトル・未確認事項・次の作業の提案を短く報告してください。実行したと装わないでください。
     \(ReadabilityGuide.rules)
     """
-    guard let session = CloudAgentSession(llm: llm, system: system, tools: tools, runBudget: runBudget, contextTask: .research) else {
+    guard let session = CloudAgentSession(llm: llm, system: system, tools: tools, runBudget: runBudget, contextTask: .research,
+      authorize: { requestID == self.aiChatRequestID && teamID == self.currentTeamID && self.isCloudSessionAuthorized(messageID) }) else {
       return (index, "クラウドモデルの接続設定がありません。", false)
     }
     session.addUserMessage(assignment.request)

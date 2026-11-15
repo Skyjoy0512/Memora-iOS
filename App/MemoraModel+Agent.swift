@@ -333,7 +333,8 @@ extension MemoraModel {
 
   /// Runs model turns and tools until the model answers without calling one.
   private func runAgent(session: CloudAgentSession, messageID: UUID, scope: AIChatScope, llm: LLMSelection) async -> AIAnswerResult {
-    defer { session.runBudget.cancel() }
+    session.authorize = { [weak self] in self?.isCloudSessionAuthorized(messageID) == true }
+    defer { session.authorize = nil; session.runBudget.cancel() }
     let result = await AgentConversationLoop.run(
       limits: .init(turns: Self.agentMaxTurns),
       isAuthorized: { isCloudSessionAuthorized(messageID) },

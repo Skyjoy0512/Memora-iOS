@@ -38,7 +38,8 @@ enum CloudAIService {
       let messages = anthropicAPI ? [["role": "user", "content": user]] :
         [["role": "system", "content": system], ["role": "user", "content": user]]
       let request = try streamingRequest(system: system, messages: messages, llm: llm, key: key)
-      let response = try await CloudTurnStreaming.response(for: request, provider: anthropicAPI ? .anthropic : .chatCompletions, onText: onText)
+      let response = try await CloudTurnStreaming.response(for: request, provider: anthropicAPI ? .anthropic : .chatCompletions, onText: onText,
+        authorize: { KeychainStore.string(forKey: llm.keychainAccount) == key })
       let part = try CloudSummaryResponse(response, provider: anthropicAPI ? .anthropic : .chatCompletions)
       guard !part.wasCutOff else { throw AIAnswerFailure.executionLimit }
       return .answer(part.text.trimmingCharacters(in: .whitespacesAndNewlines))
@@ -105,7 +106,9 @@ enum CloudAIService {
 
     let endpoint = llm.baseURL.appendingPathComponent(llm.provider.usesAnthropicAPI ? "messages" : "chat/completions")
     let receiver = transport ?? CloudHTTPTransport(endpoint: endpoint, configuration: sessionConfiguration,
-      summaryConcurrency: SummaryGenerationPolicy.parallelParts(processingMode, llm: llm), admission: admission)
+      summaryConcurrency: SummaryGenerationPolicy.parallelParts(processingMode, llm: llm), admission: admission,
+      requestsPerMinute: ModelCapabilityRegistry.capabilities(for: llm).requestsPerMinute,
+      tokensPerMinute: ModelCapabilityRegistry.capabilities(for: llm).tokensPerMinute)
     defer { if transport == nil { receiver.invalidate() } }
     let anthropicAPI = llm.provider.usesAnthropicAPI
     let provider: CloudStreamAccumulator.Provider = anthropicAPI ? .anthropic : .chatCompletions
@@ -216,7 +219,11 @@ enum CloudAIService {
     }
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-    let (data, response) = try await URLSession.shared.data(for: request)
+    let receiver = CloudHTTPTransport(endpoint: request.url!)
+    defer { receiver.invalidate() }
+    let (data, response) = try await receiver.data(for: request) {
+      KeychainStore.string(forKey: llm.keychainAccount) == key
+    }
     try validate(response)
     return try completedText(data, provider: .chatCompletions)
   }
@@ -239,7 +246,11 @@ enum CloudAIService {
     ]
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-    let (data, response) = try await URLSession.shared.data(for: request)
+    let receiver = CloudHTTPTransport(endpoint: request.url!)
+    defer { receiver.invalidate() }
+    let (data, response) = try await receiver.data(for: request) {
+      KeychainStore.string(forKey: llm.keychainAccount) == key
+    }
     try validate(response)
     return try completedText(data, provider: .anthropic)
   }

@@ -54,3 +54,32 @@ reading suite（mock request数5→1、1区間のみ改版時は2、毎回final 
 ログはWorkspaceSSD/MemoraSummaryPerformanceValidation/common-ai-cache-*。
 Single-flightは検討したが、共有taskのsubscriber単位キャンセル/再認可契約が未整備のため未導入。
 cache容量の増量や新DBはない。実モデル性能・端末RAM/電池の改善量は未計測。
+
+## 単位3: 共有API admission
+
+既存SummaryRequestAdmissionを全CloudTurnStreamingとCloudAIServiceの非stream経路、
+CloudAgentSessionの非stream経路へ共有。endpoint + 認証headerのhashで分離し、modelを越えて
+同じ資格情報の制限を共有。connection poolや本文/秘密値は共有しない。permitは本文受信完了まで
+保持し、tool実行前に解放する。tool実行中にslotを保持する親子deadlockを避ける。
+
+3段階の優先順位と最大3回の追越しを導入し、低優先度の永久待機を防止。常駐agentはbackground。
+既存16待機/64scope/120秒/キャンセル/429 fail-stop/Retry-Afterを維持。
+RPM/TPMは明示されたaccount契約だけを使用し、未知値はnil。TPMは本文byte上界+出力予約+
+framingの保守的な送信予約で、実usageや費用とは呼ばない。枠不足は送信前に拒否し自動再送しない。
+
+能力表の明示maximumConcurrentRequestsは1〜4に有界化。未知BYOKは従来の1/2を維持。
+端末の低電力/serious thermalで送信時にも1へ下げる。高並列のaccount契約は現在カタログに
+登録しておらず、単に最大2を全providerで解除したものではない。メモリ余裕を入力できるpolicyは
+あるが、実端末の空きRAMを使う接続やlatencyに基づく自動昇格は未実装。
+
+送信待ち後にcredentialと既存agent/project/record/research/resident認可closureを再確認。
+既存tool承認は引き続き実行時にも再確認する。要約以外の任意クラウド処理の全ライフサイクルを
+一つの新serviceへ移行したとは扱わない。未確認価格・usageは従来どおり不明。
+
+検証: planning（1/2/3/4、FIFO、優先度aging、RPM/TPM予約、scope、cancel、429、期限）成功。
+cloud-session（本番HTTP/SSE/JSON/parser/agent/SQLite、要約slot待機中agentの送信前認可取消、
+両stream方式の送信0件）成功。外部network/API/keyは使わない。iOS Preview成功、11既存警告。
+途中に共有429状態を独立HTTP status fixture間で持ち越す失敗があり、fixtureに独立admissionを注入。
+別のassertConsumed失敗は再現しなかったためログを保持し、期待値は緩めず診断を詳細化。
+新testのclosure型推論compile失敗は明示Task型/分岐へ修正。
+ログ: common-ai-admission-planning.log / common-ai-cloud-session*.log（WorkspaceSSDの検証directory）。

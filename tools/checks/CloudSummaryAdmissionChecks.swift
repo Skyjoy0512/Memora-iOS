@@ -35,6 +35,25 @@ import Synchronization
     await transport.release(occupied)
     Wire.state.assertConsumed(0)
 
+    for streaming in [false, true] {
+      let occupied = try await transport.admit(request)
+      var authorized = true
+      let agent = CloudAgentSession(llm: llm, system: "fixture", tools: [],
+        sessionConfiguration: CloudSessionChecks.configuration(), admission: admission,
+        authorize: { authorized })!
+      agent.addUserMessage("fixture")
+      let pending = Task<AgentTurn, Error> {
+        if streaming { return try await agent.next { _ in } }
+        return try await agent.next()
+      }
+      await queued(admission)
+      authorized = false
+      await transport.release(occupied)
+      do { _ = try await pending.value; preconditionFailure("Queued agent sent revoked context") }
+      catch AIAnswerFailure.contextChanged {}
+      Wire.state.assertConsumed(0)
+    }
+
     let anotherJob = CloudHTTPTransport(endpoint: endpoint, configuration: CloudSessionChecks.configuration(),
       summaryConcurrency: 1, admission: admission)
     defer { anotherJob.invalidate() }

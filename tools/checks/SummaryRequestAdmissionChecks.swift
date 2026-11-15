@@ -106,6 +106,56 @@ import Synchronization
     await expiring.release(busy)
     let expiredCounts = await expiring.counts
     precondition(expiredCounts.active == 0 && expiredCounts.waiting == 0)
+    for width in 1...4 {
+      let queue = SummaryRequestAdmission()
+      var running: [SummaryRequestAdmission.Permit] = []
+      for _ in 0..<width { running.append(try await queue.acquire(scope: key, maximumConcurrent: width)) }
+      let overflow = Task { try await queue.acquire(scope: key, maximumConcurrent: width) }
+      await wait(queue, waiting: 1)
+      await queue.release(running.removeFirst())
+      let overflowPermit = try await overflow.value
+      for permit in running { await queue.release(permit) }
+      await queue.release(overflowPermit)
+    }
+    let quotas = SummaryRequestAdmission(now: { clock.withLock { $0 } })
+    let quotaOne = try await quotas.acquire(scope: key, maximumConcurrent: 4,
+      requestsPerMinute: 2, tokensPerMinute: 100, tokenReservation: 60)
+    await quotas.release(quotaOne)
+    do {
+      _ = try await quotas.acquire(scope: key, maximumConcurrent: 4, tokenReservation: 41)
+      preconditionFailure("Exceeded known TPM")
+    } catch AIAnswerFailure.rateLimited {}
+    let quotaTwo = try await quotas.acquire(scope: key, maximumConcurrent: 4, tokenReservation: 40)
+    await quotas.release(quotaTwo)
+    do {
+      _ = try await quotas.acquire(scope: key, maximumConcurrent: 4, tokenReservation: 1)
+      preconditionFailure("Exceeded known RPM")
+    } catch AIAnswerFailure.rateLimited {}
+    clock.withLock { $0 = $0.advanced(by: .seconds(60)) }
+    let nextMinute = try await quotas.acquire(scope: key, maximumConcurrent: 1, tokenReservation: 100)
+    await quotas.release(nextMinute)
+
+    let priorities = SummaryRequestAdmission()
+    let occupied = try await priorities.acquire(scope: key, maximumConcurrent: 1)
+    let oldest = Task { try await priorities.acquire(scope: key, maximumConcurrent: 1, priority: .background) }
+    await wait(priorities, waiting: 1)
+    let interactive = Task { try await priorities.acquire(scope: key, maximumConcurrent: 1, priority: .interactive) }
+    await wait(priorities, waiting: 2)
+    await priorities.release(occupied)
+    var current = try await interactive.value
+    for _ in 0..<2 {
+      let urgent = Task { try await priorities.acquire(scope: key, maximumConcurrent: 1, priority: .interactive) }
+      await wait(priorities, waiting: 2)
+      await priorities.release(current)
+      current = try await urgent.value
+    }
+    let finalUrgent = Task { try await priorities.acquire(scope: key, maximumConcurrent: 1, priority: .interactive) }
+    await wait(priorities, waiting: 2)
+    await priorities.release(current)
+    let aged = try await oldest.value
+    await wait(priorities, waiting: 1)
+    await priorities.release(aged)
+    await priorities.release(try await finalUrgent.value)
     print("SummaryRequestAdmissionChecks: PASS; cross-job bound, strict FIFO, cancellation, credential isolation, 429 fail-stop, Retry-After seconds/all HTTP date formats, cooldown and recovery with virtual time, bounded scopes. No network or model.")
   }
 

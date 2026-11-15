@@ -44,6 +44,7 @@ struct ModelCapabilities: Hashable, Sendable {
   var usageSupport: Support = .unknown
   var tokenizerSupport: Support = .unknown
   var promptCachePolicy: Cache = .unknown
+  var maximumConcurrentRequests: Int?
   var requestsPerMinute: Int?
   var tokensPerMinute: Int?
   var cachedInputPricePerMillionTokens: Double?

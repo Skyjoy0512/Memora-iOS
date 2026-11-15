@@ -6,6 +6,7 @@ struct CloudSessionChecks {
   typealias Response = CloudSessionFixtureResponse
 
   @MainActor static func main() async throws {
+    setbuf(stdout, nil)
     try await CloudHTTPTransportChecks.run()
     try await CloudSummaryAdmissionChecks.run()
     try await selectedModelAndEndpointChecks()
@@ -74,7 +75,7 @@ struct CloudSessionChecks {
   @MainActor static func session(_ provider: LLMProvider, tools: [AgentTool] = [.readPerson, .draftEmail], budget: AgentRunBudget? = nil) -> CloudAgentSession {
     let model = provider.usesAnthropicAPI ? "claude-sonnet-5" : "gpt-6-sol"
     return CloudAgentSession(llm: LLMSelection(provider: provider, modelID: model), system: "架空データだけの検証", tools: tools,
-      runBudget: budget, sessionConfiguration: configuration())!
+      runBudget: budget, sessionConfiguration: configuration(), admission: SummaryRequestAdmission())!
   }
 
   @MainActor static func next(_ session: CloudAgentSession, streaming: Bool) async throws -> AgentTurn {

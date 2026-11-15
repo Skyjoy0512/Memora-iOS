@@ -13,6 +13,9 @@ final class CloudAgentSession {
   private let toolDescriptions: [AgentTool: String]
   /// A copied configuration lets offline checks intercept every request without
   /// replacing the production request builder, stream reader or turn decoder.
+  private let admission: SummaryRequestAdmission
+  private let priority: SummaryRequestAdmission.Priority
+  var authorize: (@MainActor () -> Bool)?
   private let sessionConfiguration: URLSessionConfiguration
   /// Tools from connected MCP servers, loaded before the first turn.
   var externalTools: [MCPTool] = []
@@ -25,10 +28,14 @@ final class CloudAgentSession {
   /// `tools` narrows what the model is offered; resident agents get only the
   /// reading tools.
   init?(llm: LLMSelection, system: String, tools: [AgentTool]? = nil, toolDescriptions: [AgentTool: String] = [:], runBudget: AgentRunBudget? = nil, sessionConfiguration: URLSessionConfiguration = .ephemeral,
-        contextTask: ContextTaskKind = .agent, capabilityOverrides: [String: ModelCapabilityOverride]? = nil) {
+        contextTask: ContextTaskKind = .agent, capabilityOverrides: [String: ModelCapabilityOverride]? = nil,
+        admission: SummaryRequestAdmission = .shared, priority: SummaryRequestAdmission.Priority = .interactive, authorize: (@MainActor () -> Bool)? = nil) {
     guard llm.supportsToolCalling, let key = KeychainStore.string(forKey: llm.keychainAccount), !key.isEmpty else {
       return nil
     }
+    self.admission = admission
+    self.priority = priority
+    self.authorize = authorize
     self.llm = llm
     self.key = key
     self.system = system
@@ -110,17 +117,26 @@ final class CloudAgentSession {
     return data
   }
 
+  private func requestIsAuthorized() -> Bool {
+    !Task.isCancelled && KeychainStore.string(forKey: llm.keychainAccount) == key && (authorize?() ?? true)
+  }
+
+  private func makeTransport(for request: URLRequest) -> CloudHTTPTransport {
+    CloudHTTPTransport(endpoint: request.url!, configuration: sessionConfiguration,
+      summaryConcurrency: SummaryGenerationPolicy.parallelism(capabilities: capabilities,
+        lowPower: ProcessInfo.processInfo.isLowPowerModeEnabled, thermalState: ProcessInfo.processInfo.thermalState.rawValue),
+      admission: admission, priority: priority,
+      requestsPerMinute: capabilities.requestsPerMinute, tokensPerMinute: capabilities.tokensPerMinute)
+  }
+
   private func boundedResponse(for request: URLRequest) async throws -> [String: Any] {
-    let session = URLSession(configuration: sessionConfiguration)
-    defer { session.invalidateAndCancel() }
-    let (bytes, response) = try await session.bytes(for: request)
-    try CloudAIService.validate(response)
-    var data = Data()
-    for try await byte in bytes {
-      try Task.checkCancellation()
-      guard data.count < AgentSessionBudget.maximumResponseBytes else { throw AIAnswerFailure.executionLimit }
-      data.append(byte)
+    let receiver = makeTransport(for: request)
+    defer { receiver.invalidate() }
+    let (data, response) = try await receiver.data(for: request) {
+      self.requestIsAuthorized()
     }
+    try CloudAIService.validate(response)
+    guard data.count <= AgentSessionBudget.maximumResponseBytes else { throw AIAnswerFailure.executionLimit }
     guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw AIAnswerFailure.server }
     return object
   }
@@ -175,7 +191,10 @@ final class CloudAgentSession {
     try runBudget.reserveRequest(bytes: request.httpBody?.count ?? 0)
     let decoded: [String: Any]
     if let onText {
-      decoded = try await CloudTurnStreaming.response(for: request, provider: .anthropic, onText: onText, sessionConfiguration: sessionConfiguration)
+      let receiver = makeTransport(for: request)
+      defer { receiver.invalidate() }
+      decoded = try await CloudTurnStreaming.response(for: request, provider: .anthropic, onText: onText, sessionConfiguration: sessionConfiguration, transport: receiver, admission: admission,
+        authorize: { self.requestIsAuthorized() })
     } else {
       decoded = try await boundedResponse(for: request)
     }
@@ -229,7 +248,10 @@ final class CloudAgentSession {
     try runBudget.reserveRequest(bytes: request.httpBody?.count ?? 0)
     let decoded: [String: Any]
     if let onText {
-      decoded = try await CloudTurnStreaming.response(for: request, provider: .chatCompletions, onText: onText, sessionConfiguration: sessionConfiguration)
+      let receiver = makeTransport(for: request)
+      defer { receiver.invalidate() }
+      decoded = try await CloudTurnStreaming.response(for: request, provider: .chatCompletions, onText: onText, sessionConfiguration: sessionConfiguration, transport: receiver, admission: admission,
+        authorize: { self.requestIsAuthorized() })
     } else {
       decoded = try await boundedResponse(for: request)
     }

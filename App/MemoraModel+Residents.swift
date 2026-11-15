@@ -148,7 +148,8 @@ extension MemoraModel {
       limits.permits($0.rawValue, availableReadTools: request.readToolNames)
     }
     guard !runningResidentIDs.contains(agent.id),
-          let session = CloudAgentSession(llm: llm, system: Self.residentInstructions(agent), tools: readTools) else { return false }
+          let session = CloudAgentSession(llm: llm, system: Self.residentInstructions(agent), tools: readTools, priority: .background,
+            authorize: { [weak self] in self?.residentRunIsCurrent(request) == true }) else { return false }
     runningResidentIDs.insert(agent.id)
     defer { runningResidentIDs.remove(agent.id) }
 

@@ -6,7 +6,10 @@ import Foundation
 final class CloudHTTPTransport: @unchecked Sendable {
   private let endpoint: URL
   private let session: URLSession
-  private let summaryConcurrency: Int?
+  private let summaryConcurrency: Int
+  private let priority: SummaryRequestAdmission.Priority
+  private let requestsPerMinute: Int?
+  private let tokensPerMinute: Int?
   private let admission: SummaryRequestAdmission
   private let lock = NSLock()
   private var identity: Data?
@@ -14,9 +17,14 @@ final class CloudHTTPTransport: @unchecked Sendable {
   private var requests = 0
 
   init(endpoint: URL, configuration: URLSessionConfiguration = .ephemeral,
-    summaryConcurrency: Int? = nil, admission: SummaryRequestAdmission = .shared) {
+    summaryConcurrency: Int? = nil, admission: SummaryRequestAdmission = .shared,
+    priority: SummaryRequestAdmission.Priority = .userInitiated,
+    requestsPerMinute: Int? = nil, tokensPerMinute: Int? = nil) {
     self.endpoint = endpoint
-    self.summaryConcurrency = summaryConcurrency
+    self.summaryConcurrency = min(4, max(1, summaryConcurrency ?? 2))
+    self.priority = priority
+    self.requestsPerMinute = requestsPerMinute
+    self.tokensPerMinute = tokensPerMinute
     self.admission = admission
     let configuration = (configuration.copy() as? URLSessionConfiguration) ?? .ephemeral
     configuration.timeoutIntervalForResource = 600
@@ -36,12 +44,20 @@ final class CloudHTTPTransport: @unchecked Sendable {
   deinit { session.invalidateAndCancel() }
 
   func admit(_ request: URLRequest) async throws -> SummaryRequestAdmission.Permit? {
-    guard let summaryConcurrency else { return nil }
     _ = try bind(request, countRequest: false)
     let fields = [endpoint.absoluteString, request.value(forHTTPHeaderField: "Authorization") ?? "",
       request.value(forHTTPHeaderField: "x-api-key") ?? ""]
     let key = SHA256.hash(data: try JSONEncoder().encode(fields)).map { String(format: "%02x", $0) }.joined()
-    return try await admission.acquire(scope: key, maximumConcurrent: summaryConcurrency)
+    var tokenReservation: Int?
+    if let data = request.httpBody, let body = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+       let output = (body["max_completion_tokens"] ?? body["max_tokens"]) as? Int,
+       output > 0, output <= 16_000_000 {
+      // This is a conservative admission reservation, never billable usage.
+      tokenReservation = data.count + output + 2_048
+    }
+    let currentLimit = ProcessInfo.processInfo.isLowPowerModeEnabled || ProcessInfo.processInfo.thermalState.rawValue >= 2 ? 1 : summaryConcurrency
+    return try await admission.acquire(scope: key, maximumConcurrent: currentLimit, priority: priority,
+      requestsPerMinute: requestsPerMinute, tokensPerMinute: tokensPerMinute, tokenReservation: tokenReservation)
   }
 
   func release(_ permit: SummaryRequestAdmission.Permit?) async {
@@ -62,6 +78,29 @@ final class CloudHTTPTransport: @unchecked Sendable {
     SummaryDiagnostics.current?.record(.request)
     if SummaryDiagnostics.isContinuation { SummaryDiagnostics.current?.record(.continuation) }
     return try await session.bytes(for: request)
+  }
+
+  /// Non-streaming AI paths share the same credential/endpoint admission.
+  func data(for request: URLRequest, maximumBytes: Int = 2 * 1_024 * 1_024, authorize: (@MainActor () -> Bool)? = nil) async throws -> (Data, URLResponse) {
+    guard (1...16 * 1_024 * 1_024).contains(maximumBytes) else { throw AIAnswerFailure.executionLimit }
+    let permit = try await admit(request)
+    do {
+      try Task.checkCancellation()
+      if let authorize, !(await authorize()) { throw AIAnswerFailure.contextChanged }
+      let (bytes, response) = try await self.bytes(for: request)
+      await observe(response, permit: permit)
+      var data = Data()
+      for try await byte in bytes {
+        try Task.checkCancellation()
+        guard data.count < maximumBytes else { throw AIAnswerFailure.executionLimit }
+        data.append(byte)
+      }
+      await release(permit)
+      return (data, response)
+    } catch {
+      await release(permit)
+      throw error
+    }
   }
 
   func invalidate() {

@@ -46,7 +46,7 @@ extension MemoraModel {
     \(ReadabilityGuide.rules)
     \(selection.guidance)
     """
-    guard let session = CloudAgentSession(llm: llm, system: system, tools: tools, toolDescriptions: descriptions) else {
+    guard let session = CloudAgentSession(llm: llm, system: system, tools: tools, toolDescriptions: descriptions, authorize: authorized) else {
       return ScopedAgentAnswer(result: .failure(.missingKey), references: [])
     }
     session.addUserMessage(AIAnswerPrompt.text(question: question, scopeLabel: space(id: projectID)?.name ?? "プロジェクト",

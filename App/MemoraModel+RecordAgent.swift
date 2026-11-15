@@ -28,7 +28,7 @@ extension MemoraModel {
     関連タスクは現在のアプリ内の状態で、元の発言と同じとは限りません。必要な変更は提案に留めてください。
     \(ReadabilityGuide.rules)
     """
-    guard let session = CloudAgentSession(llm: llm, system: system, tools: tools, toolDescriptions: descriptions) else {
+    guard let session = CloudAgentSession(llm: llm, system: system, tools: tools, toolDescriptions: descriptions, authorize: isCurrent) else {
       return (.failure(.missingKey), [])
     }
     session.addUserMessage("今回の記録id: \(record.id.uuidString)\n" + AIAnswerPrompt.text(question: content.question,

@@ -113,7 +113,8 @@ final class CloudSessionFixtureProtocol: URLProtocol, @unchecked Sendable {
     }
     func assertConsumed(_ count: Int) {
       lock.lock(); defer { lock.unlock() }
-      precondition(captured.count == count && replies.isEmpty && pending == nil && unexpected == 0)
+      precondition(captured.count == count && replies.isEmpty && pending == nil && unexpected == 0,
+        "expected=\(count) captured=\(captured.count) replies=\(replies.count) pending=\(pending != nil) unexpected=\(unexpected)")
     }
   }
 }
