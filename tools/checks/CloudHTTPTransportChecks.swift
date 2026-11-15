@@ -16,10 +16,10 @@ import Foundation
                          Response.json(provider: .openAI, text: "次の区間")])
     await SummaryDiagnostics.$current.withValue(diagnostic) {
       let continued = await CloudAIService.completeStreaming(system: "架空", user: "架空", llm: llm,
-        sessionConfiguration: configuration, transport: transport, onProgress: { _ in })
+        sessionConfiguration: configuration, admission: SummaryRequestAdmission(), transport: transport, onProgress: { _ in })
       precondition(continued.text == "前半後半" && continued.failure == nil)
       let next = await CloudAIService.completeStreaming(system: "架空", user: "架空", llm: llm,
-        sessionConfiguration: configuration, transport: transport, onProgress: { _ in })
+        sessionConfiguration: configuration, admission: SummaryRequestAdmission(), transport: transport, onProgress: { _ in })
       precondition(next.text == "次の区間" && next.failure == nil)
     }
     Wire.state.assertConsumed(3)
@@ -54,7 +54,7 @@ import Foundation
     Wire.state.reset([.init(data: Data("{}".utf8), status: 429)])
     await SummaryDiagnostics.$current.withValue(diagnostic) {
       let limited = await CloudAIService.completeStreaming(system: "fixture", user: "fixture", llm: llm,
-        sessionConfiguration: configuration, onProgress: { _ in })
+        sessionConfiguration: configuration, admission: SummaryRequestAdmission(), onProgress: { _ in })
       precondition(limited.failure == .rateLimited)
     }
     Wire.state.assertConsumed(1)

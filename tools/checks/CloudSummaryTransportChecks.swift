@@ -85,14 +85,14 @@ enum CloudSummaryTransportChecks {
     Wire.state.reset([])
     check(await CloudAIService.completeStreaming(system: "fixture", user: "fixture",
       llm: LLMSelection(provider: .deepSeek, modelID: "deepseek-v4-pro"),
-      sessionConfiguration: CloudSessionChecks.configuration(), processingMode: .fast,
+      sessionConfiguration: CloudSessionChecks.configuration(), admission: SummaryRequestAdmission(), processingMode: .fast,
       authorize: { false }, onProgress: { _ in }), .failure(.cancelled))
     Wire.state.assertConsumed(0)
     Wire.state.reset(try [reply(.deepSeek, text: "途中の本文", finish: "length")])
     var authorized = true
     check(await CloudAIService.completeStreaming(system: "fixture", user: "fixture",
       llm: LLMSelection(provider: .deepSeek, modelID: "deepseek-v4-pro"),
-      sessionConfiguration: CloudSessionChecks.configuration(), processingMode: .fast,
+      sessionConfiguration: CloudSessionChecks.configuration(), admission: SummaryRequestAdmission(), processingMode: .fast,
       authorize: { authorized }, onProgress: { _ in authorized = false }), .failure(.cancelled))
     Wire.state.assertConsumed(1)
     for provider in LLMProvider.allCases {
@@ -104,7 +104,7 @@ enum CloudSummaryTransportChecks {
               credentialAccount: "ai.deepSeek")
             Wire.state.reset(try [reply(provider, text: "決定は条件付き。予算150万円、期限は未定。")])
             let result = await CloudAIService.completeStreaming(system: "fixture", user: "fixture", llm: llm,
-              sessionConfiguration: CloudSessionChecks.configuration(), processingMode: mode, onProgress: { _ in })
+              sessionConfiguration: CloudSessionChecks.configuration(), admission: SummaryRequestAdmission(), processingMode: mode, onProgress: { _ in })
             check(result, .answer("決定は条件付き。予算150万円、期限は未定。"))
             let body = try CloudSessionChecks.body(Wire.state.requests[0])
             precondition(body["fallbacks"] == nil && Wire.state.requests[0].value(forHTTPHeaderField: "anthropic-beta") == nil)
@@ -145,7 +145,7 @@ enum CloudSummaryTransportChecks {
   static func complete(_ provider: LLMProvider, onProgress: @escaping @MainActor (Int) -> Void = { _ in }) async -> AIAnswerResult {
     await CloudAIService.completeStreaming(system: "架空の検査用", user: "要約してください",
       llm: LLMSelection(provider: provider, modelID: "offline-fixture-model"),
-      sessionConfiguration: CloudSessionChecks.configuration(), onProgress: onProgress)
+      sessionConfiguration: CloudSessionChecks.configuration(), admission: SummaryRequestAdmission(), onProgress: onProgress)
   }
 
   static func reply(_ provider: LLMProvider, text: String, streaming: Bool = true, finish: String? = nil) throws -> Wire.Reply {

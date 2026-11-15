@@ -79,7 +79,8 @@ enum MeetingSummarizer {
     progress: @escaping @MainActor (String) -> Void
   ) async -> Result<MeetingSummary, AIAnswerFailure> {
     let endpoint = llm.baseURL.appendingPathComponent(llm.provider.usesAnthropicAPI ? "messages" : "chat/completions")
-    let transport = CloudHTTPTransport(endpoint: endpoint)
+    let transport = CloudHTTPTransport(endpoint: endpoint,
+      summaryConcurrency: SummaryGenerationPolicy.parallelParts(input.preferences.processingMode, llm: llm))
     defer { transport.invalidate() }
     let sourceIndex = SummarySourceIndex(input.transcript)
     let originalUnits = sourceIndex.units(hasTimestamps: input.duration > 0, compact: false)

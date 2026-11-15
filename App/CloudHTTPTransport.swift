@@ -6,13 +6,18 @@ import Foundation
 final class CloudHTTPTransport: @unchecked Sendable {
   private let endpoint: URL
   private let session: URLSession
+  private let summaryConcurrency: Int?
+  private let admission: SummaryRequestAdmission
   private let lock = NSLock()
   private var identity: Data?
   private var closed = false
   private var requests = 0
 
-  init(endpoint: URL, configuration: URLSessionConfiguration = .ephemeral) {
+  init(endpoint: URL, configuration: URLSessionConfiguration = .ephemeral,
+    summaryConcurrency: Int? = nil, admission: SummaryRequestAdmission = .shared) {
     self.endpoint = endpoint
+    self.summaryConcurrency = summaryConcurrency
+    self.admission = admission
     let configuration = (configuration.copy() as? URLSessionConfiguration) ?? .ephemeral
     configuration.timeoutIntervalForResource = 600
     configuration.httpCookieStorage = nil
@@ -29,6 +34,25 @@ final class CloudHTTPTransport: @unchecked Sendable {
   }
 
   deinit { session.invalidateAndCancel() }
+
+  func admit(_ request: URLRequest) async throws -> SummaryRequestAdmission.Permit? {
+    guard let summaryConcurrency else { return nil }
+    _ = try bind(request, countRequest: false)
+    let fields = [endpoint.absoluteString, request.value(forHTTPHeaderField: "Authorization") ?? "",
+      request.value(forHTTPHeaderField: "x-api-key") ?? ""]
+    let key = SHA256.hash(data: try JSONEncoder().encode(fields)).map { String(format: "%02x", $0) }.joined()
+    return try await admission.acquire(scope: key, maximumConcurrent: summaryConcurrency)
+  }
+
+  func release(_ permit: SummaryRequestAdmission.Permit?) async {
+    if let permit { await admission.release(permit) }
+  }
+
+  func observe(_ response: URLResponse, permit: SummaryRequestAdmission.Permit?) async {
+    if let permit, let http = response as? HTTPURLResponse, http.statusCode == 429 {
+      await admission.rateLimited(permit, retryAfter: http.value(forHTTPHeaderField: "Retry-After"))
+    }
+  }
 
   func bytes(for request: URLRequest) async throws -> (URLSession.AsyncBytes, URLResponse) {
     try Task.checkCancellation()
@@ -47,7 +71,7 @@ final class CloudHTTPTransport: @unchecked Sendable {
     session.invalidateAndCancel()
   }
 
-  private func bind(_ request: URLRequest) throws -> Bool {
+  private func bind(_ request: URLRequest, countRequest: Bool = true) throws -> Bool {
     lock.lock(); defer { lock.unlock() }
     guard !closed, request.url == endpoint,
           request.value(forHTTPHeaderField: "Cookie") == nil else { throw AIAnswerFailure.cancelled }
@@ -57,7 +81,7 @@ final class CloudHTTPTransport: @unchecked Sendable {
     let fingerprint = Data(SHA256.hash(data: encoded))
     if let identity, identity != fingerprint { throw AIAnswerFailure.cancelled }
     identity = fingerprint
-    defer { requests += 1 }
+    defer { if countRequest { requests += 1 } }
     return requests > 0
   }
 

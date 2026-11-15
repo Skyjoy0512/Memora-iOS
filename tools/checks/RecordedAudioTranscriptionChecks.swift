@@ -29,7 +29,10 @@ enum RecordedAudioTranscriptionChecks {
     precondition(firstCount == 2)
     let complete = await RecordedAudioTranscription.transcribe(url, locale: Locale(identifier: "ja-JP"), vocabulary: [],
       checkpointStore: SourceMediaCheckpointStore(directory: directory), staging: staging, checkReadiness: { try AudioProcessingReadiness.check(thermalState: .nominal) }) { await calls.recognize($0) }
-    guard case .segments(let parts) = complete else { preconditionFailure("Could not resume") }
+    guard case .segments(let parts) = complete else {
+      if case .failed(let reason) = complete { preconditionFailure("Could not resume: \(reason)") }
+      preconditionFailure("Could not resume: unexpected outcome \(complete)")
+    }
     let resumedCount = await calls.count
     precondition(resumedCount == 3 && parts.count == 2)
     precondition(parts[0].timestamp == 0.25 && parts[1].timestamp == 900.25)

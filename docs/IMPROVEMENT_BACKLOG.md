@@ -1858,3 +1858,7 @@ Simulatorで履歴の再開、Library往復、終了後の再起動、明示new 
 - 継続時は [要約アーキテクチャ](SUMMARY_ARCHITECTURE.md) と [検証記録](summary-performance/VALIDATION.md) を参照。
 
 - 2026-11-15の追加実装と検証範囲は[統合検証](summary-performance/VALIDATION_2026_11_15.md)に記録。未計測の速度目標を達成扱いにしない。
+
+## 2026-11-15: 要約ジョブ間の送信制御
+
+同じendpoint/認証scopeでの有界FIFO・共有並列上限、429/Retry-After、待機後の再認可、16待機/120秒上限を追加。HTTP本文完了まで枠を保持し、キャンセル・許可取り消し・cooldown中は追加送信しない。自動課金retry/モデル変更は行わない。詳細・途中失敗を含む検証結果は[追加記録](summary-performance/SUMMARY_REQUEST_SCHEDULING.md)。実機/実API、RPM/TPM推定、音声先行処理、課金runnerは残課題。

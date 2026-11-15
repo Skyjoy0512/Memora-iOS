@@ -25,16 +25,21 @@ final class CloudSessionFixtureProtocol: URLProtocol, @unchecked Sendable {
     Self.state.didStop(self)
   }
 
-  func deliver(_ reply: Reply) {
+  func deliver(_ reply: Reply, headersAlreadySent: Bool = false) {
     deliveryLock.lock(); defer { deliveryLock.unlock() }
     guard !stopped else { return }
     if let error = reply.error {
       client?.urlProtocol(self, didFailWithError: error)
       return
     }
-    let response = HTTPURLResponse(url: request.url!, statusCode: reply.status, httpVersion: "HTTP/1.1",
-      headerFields: ["Content-Type": reply.contentType])!
-    client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+    var headers = ["Content-Type": reply.contentType]
+    if let retryAfter = reply.retryAfter { headers["Retry-After"] = retryAfter }
+    let response = HTTPURLResponse(url: request.url!, statusCode: reply.status, httpVersion: "HTTP/1.1", headerFields: headers)!
+    if !headersAlreadySent { client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed) }
+    if reply.isBodySuspended && !headersAlreadySent {
+      Self.state.suspend(self, reply: reply, headersAlreadySent: true)
+      return
+    }
     var offset = 0
     while offset < reply.data.count {
       let end = min(offset + reply.chunkSize, reply.data.count)
@@ -51,13 +56,15 @@ final class CloudSessionFixtureProtocol: URLProtocol, @unchecked Sendable {
     var chunkSize = 31
     var error: URLError?
     var isSuspended = false
+    var retryAfter: String?
+    var isBodySuspended = false
   }
 
   final class State: @unchecked Sendable {
     private let lock = NSLock()
     private var replies: [Reply] = []
     private var captured: [URLRequest] = []
-    private var pending: (CloudSessionFixtureProtocol, Reply)?
+    private var pending: (CloudSessionFixtureProtocol, Reply, Bool)?
     private var stoppedCount = 0
     private var unexpected = 0
 
@@ -84,14 +91,14 @@ final class CloudSessionFixtureProtocol: URLProtocol, @unchecked Sendable {
       guard !replies.isEmpty else { unexpected += 1; return nil }
       return replies.removeFirst()
     }
-    func suspend(_ connection: CloudSessionFixtureProtocol, reply: Reply) {
+    func suspend(_ connection: CloudSessionFixtureProtocol, reply: Reply, headersAlreadySent: Bool = false) {
       lock.lock(); defer { lock.unlock() }
       precondition(pending == nil)
-      pending = (connection, reply)
+      pending = (connection, reply, headersAlreadySent)
     }
     func release() {
       lock.lock(); let value = pending; pending = nil; lock.unlock()
-      if let (connection, reply) = value { connection.deliver(reply) }
+      if let (connection, reply, headersAlreadySent) = value { connection.deliver(reply, headersAlreadySent: headersAlreadySent) }
     }
     func didStop(_ connection: CloudSessionFixtureProtocol) {
       lock.lock(); defer { lock.unlock() }

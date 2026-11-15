@@ -91,6 +91,7 @@ enum CloudAIService {
     user: String,
     llm: LLMSelection,
     sessionConfiguration: URLSessionConfiguration = .ephemeral,
+    admission: SummaryRequestAdmission = .shared,
     transport: CloudHTTPTransport? = nil,
     processingMode: SummaryProcessingMode = .balanced,
     authorize: (@MainActor () -> Bool)? = nil,
@@ -103,7 +104,8 @@ enum CloudAIService {
     guard !llm.modelID.isEmpty else { return .failure(.modelUnavailable) }
 
     let endpoint = llm.baseURL.appendingPathComponent(llm.provider.usesAnthropicAPI ? "messages" : "chat/completions")
-    let receiver = transport ?? CloudHTTPTransport(endpoint: endpoint, configuration: sessionConfiguration)
+    let receiver = transport ?? CloudHTTPTransport(endpoint: endpoint, configuration: sessionConfiguration,
+      summaryConcurrency: SummaryGenerationPolicy.parallelParts(processingMode, llm: llm), admission: admission)
     defer { if transport == nil { receiver.invalidate() } }
     let anthropicAPI = llm.provider.usesAnthropicAPI
     let provider: CloudStreamAccumulator.Provider = anthropicAPI ? .anthropic : .chatCompletions
@@ -123,7 +125,7 @@ enum CloudAIService {
           try await CloudTurnStreaming.response(for: request, provider: provider,
             onText: { text in onProgress(alreadyWritten + text.count) },
             sessionConfiguration: sessionConfiguration, transport: receiver, onActivity: onActivity,
-            responseKind: .textCompletion, encoding: .streamAlreadyConfigured)
+            responseKind: .textCompletion, encoding: .streamAlreadyConfigured, authorize: authorize)
         }
         try Task.checkCancellation()
         let part = try CloudSummaryResponse(response, provider: provider)

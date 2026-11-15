@@ -88,3 +88,5 @@ partNotesは従来の事実メモに加えて、任意の単一JSON notes/source
 Single Passのuser promptは記録metadata→原文→個別の構成/抽出契約。同一原文でlength/order/templateだけを変えた場合、原文までのprefixが同一であることをhostで検証。prompt cache対応は共有能力で表し、未確認のAPIパラメーターを送らない。自動prefix cacheを持つproviderへ適した配置だが、実ヒット率・cache write/read費用・速度は未測定。Anthropic等の明示TTL/外部保持期間は追加しない。
 
 最終コードの実装範囲・無料10群の結果・未採用/未検証事項は[2026-11-15統合検証](summary-performance/VALIDATION_2026_11_15.md)を参照。
+
+2026-11-15追加: [要約ジョブ間の送信上限・Retry-After・待機後の再認可](summary-performance/SUMMARY_REQUEST_SCHEDULING.md)を実装。RPM/TPMの推測や自動課金retryは追加しない。

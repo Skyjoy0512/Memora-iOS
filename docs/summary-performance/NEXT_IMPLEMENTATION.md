@@ -54,3 +54,7 @@ fence付き不完全notes JSONを完了した部分結果として扱わない�
 ## 統合確認後に残る作業
 
 通常利用の並列文章生成gateは閉鎖を維持。Phase 5の音声先行処理、実費上限を保証する生成/Judge runner、全job横断rate制御は未実装。実APIの品質/速度/費用と実機の電池/発熱等は未検証。PNG復旧UIの入口は既存フラグで無効のため未検証。最終10群はquality-2026-11-15-final、UIはsummary-performance-narrow-focused / summary-performance-supported-confirmedに記録。次回は完了済みの無料確認を繰り返す前に統合検証の残存課題を確認する。
+
+## a715fdd2後の追加単位
+
+[要約ジョブ共通の送信制御](SUMMARY_REQUEST_SCHEDULING.md)を実装。上の全job横断rate制御の残課題のうち、要約の同一endpoint/認証scopeの並列数共有、429/Retry-After、FIFO/待機上限/キャンセル/送信前再認可を対応する。未知のRPM/TPMは依然不明、token bucketや全Ask AI処理への統一は未実装。音声パイプラインと実モデル評価の状態は変わらない。

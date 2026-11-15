@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "a715fdd2",
+  "appSwiftSourceSHA256": "e5fdab54998640c363a4d9eebb58c85c4102ca2ba859f9a79657cce5b4678662",
+  "measurementKind": "host-and-simulator-no-model",
+  "realModelRequests": 0,
+  "aggregateRun": [
+    {
+      "suite": "summary-planning",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "summary-planning.log"
+    },
+    {
+      "suite": "summary-evaluation",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "summary-evaluation.log"
+    },
+    {
+      "suite": "next-generation",
+      "status": "failed",
+      "exitCode": 137,
+      "log": "next-generation.log"
+    },
+    {
+      "suite": "design-refresh",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "design-refresh.log"
+    },
+    {
+      "suite": "background-summary",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "background-summary.log"
+    },
+    {
+      "suite": "summary-reliability",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "summary-reliability.log"
+    },
+    {
+      "suite": "adaptive-summary",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "adaptive-summary.log"
+    },
+    {
+      "suite": "adaptive-summary-quality",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "adaptive-summary-quality.log"
+    },
+    {
+      "suite": "composer-layout",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "composer-layout.log"
+    },
+    {
+      "suite": "optimization",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "optimization.log"
+    }
+  ],
+  "independentReruns": [
+    {
+      "suite": "next-generation",
+      "exitCode": 0,
+      "log": "admission-nextgen-final.log"
+    },
+    {
+      "suite": "source-extraction-cache",
+      "exitCode": 0,
+      "log": "admission-audio-recheck.log"
+    }
+  ],
+  "initialAudioFailureCause": "unconfirmed",
+  "ui": {
+    "runID": "01a1dcae-c9e3-7da7-8ed8-1544fa4d9dc9",
+    "summary": {
+      "discovered": 138,
+      "selected": 2,
+      "executed": 2,
+      "passed": 2,
+      "failed": 0,
+      "interrupted": 0,
+      "flaky": 0,
+      "skipped": 0
+    },
+    "modelTokens": 0,
+    "maxModelCallsInStep": 0
+  },
+  "preview": {
+    "result": "success",
+    "log": "2026-11-15T09-50-05-69fda42b.log",
+    "existingWarnings": 11
+  },
+  "unverified": [
+    "real-provider latency/cost/quality",
+    "device battery/thermal",
+    "RPM/TPM token bucket",
+    "recording-ahead analysis"
+  ]
+}

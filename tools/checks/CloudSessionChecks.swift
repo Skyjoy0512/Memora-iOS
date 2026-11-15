@@ -7,6 +7,7 @@ struct CloudSessionChecks {
 
   @MainActor static func main() async throws {
     try await CloudHTTPTransportChecks.run()
+    try await CloudSummaryAdmissionChecks.run()
     try await selectedModelAndEndpointChecks()
     try await CloudSummaryTransportChecks.run()
     if ProcessInfo.processInfo.environment["MEMORA_REALTIME_SUMMARY_CHECKS"] == "1" {
@@ -42,7 +43,7 @@ struct CloudSessionChecks {
             Response.json(provider: .anthropic, text: "選択したモデルの回答")
           Wire.state.reset([response])
           let result = await CloudAIService.completeStreaming(system: "架空検査", user: "架空検査", llm: llm,
-            sessionConfiguration: configuration(), onProgress: { _ in })
+            sessionConfiguration: configuration(), admission: SummaryRequestAdmission(), onProgress: { _ in })
           precondition(result.text == "選択したモデルの回答" && result.failure == nil)
           let session = CloudAgentSession(llm: llm, system: "架空検査", tools: [], sessionConfiguration: configuration(), capabilityOverrides: [:])!
           session.addUserMessage("架空検査")
