@@ -1,6 +1,7 @@
 import Foundation
 
-/// Eligibility for reuse is stricter than accepting a legacy intermediate note.
+/// Transport completion, evidence eligibility and persistence are separate gates.
+/// Matching a quote proves provenance, not semantic entailment of free prose.
 struct SummaryPartArtifact: Codable {
   var notes: String
   var sourceReferences: [Reference]
@@ -21,6 +22,30 @@ struct SummaryPartArtifact: Codable {
           return line[content...].contains(reference.quote)
         }
     }
+  }
+
+  enum Acceptance {
+    case structured(SummaryPartArtifact)
+    case legacy(String)
+    case rejected
+  }
+
+  /// A declared JSON response cannot fall through to the legacy prose route.
+  /// Invalid references reject the whole note: an undifferentiated notes string
+  /// cannot safely be repaired by deleting one reference and keeping its claims.
+  static func acceptance(_ text: String, in index: SummarySourceIndex,
+                         part: [String], compact: Bool) -> Acceptance {
+    let payload = jsonPayload(text)
+    guard !payload.isEmpty, text.utf8.count <= SummaryArtifactCache.maximumEntryBytes else { return .rejected }
+    if let artifact = decode(text) {
+      return artifact.validated(in: index, part: part, compact: compact) ? .structured(artifact) : .rejected
+    }
+    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    if payload.hasPrefix("{") || payload.hasPrefix("[") || trimmed.hasPrefix("```json") ||
+        payload.contains("\"sourceReferences\"") || payload.contains("\"notes\":") {
+      return .rejected
+    }
+    return .legacy(text)
   }
 
   static func decode(_ text: String) -> Self? {

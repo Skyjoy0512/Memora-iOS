@@ -6,6 +6,7 @@ enum SummaryPipelineChecks {
   static func main() async throws {
     try await ParallelCompositionChecks.run()
     try await cacheChecks()
+    try await rejectedPartChecks()
     for empty in ["", " \n\t　"] {
       CloudAIService.gate = SummaryFixtureGate()
       var input = makeInput(mode: .fast)
@@ -233,6 +234,36 @@ enum SummaryPipelineChecks {
     let forged = SummaryPartArtifact(notes: "未検証", sourceReferences: [.init(sourceSegmentID: "S99", quote: "原文の条件と否定・150万円を保持。")])
     precondition(!forged.validated(in: index, part: index.lines(hasTimestamps: true), compact: true))
     print("Cached regeneration: actual production orchestration mock requests 5 → 1 across length/order change, source/model/account/permission keys and revoked access checked; no API latency or semantic quality claim.")
+  }
+
+  static func rejectedPartChecks() async throws {
+    let input = makeInput(mode: .balanced)
+    let index = SummarySourceIndex(input.transcript)
+    let part = [index.units(hasTimestamps: true, compact: true)[0].line]
+    let invalid = [
+      "{\"notes\":\"missing references\"}", "{\"sourceReferences\":[]}", "{}", "[]",
+      "```json\n{\"notes\":\"cut off", "{\"notes\":12,\"sourceReferences\":[]}",
+      "{\"notes\":\"unsupported\",\"sourceReferences\":[]}",
+      "{\"notes\":\"forged\",\"sourceReferences\":[{\"sourceSegmentID\":\"S99\",\"quote\":\"原文の条件と否定・150万円を保持。\"}]}",
+      "{\"notes\":\"wrong part\",\"sourceReferences\":[{\"sourceSegmentID\":\"S2\",\"quote\":\"原文の条件と否定・150万円を保持。\"}]}",
+      "{\"notes\":\"invented quote\",\"sourceReferences\":[{\"sourceSegmentID\":\"S1\",\"quote\":\"予算は999万円で確定しました。\"}]}"
+    ]
+    for response in invalid {
+      guard case .rejected = SummaryPartArtifact.acceptance(response, in: index, part: part, compact: true) else {
+        preconditionFailure("Invalid structured notes accepted")
+      }
+      let gate = SummaryFixtureGate()
+      CloudAIService.gate = gate
+      // No cache scope or authorization closure: merge eligibility must still run.
+      let task = Task { await MeetingSummarizer.summarize(input, engine: .cloud,
+        llm: .init(provider: .deepSeek, modelID: "deepseek-v4-pro"), progress: { _ in }) }
+      await wait { !gate.pending.isEmpty }
+      gate.finish(0, .answer(response))
+      guard case .failure(.generationFailed) = await task.value else { preconditionFailure("Invalid notes reached merge") }
+      precondition(gate.calls.count <= 2 && gate.pending.isEmpty, "Failure made a merge or repair request")
+    }
+    guard case .legacy = SummaryPartArtifact.acceptance("## 従来のメモ\n条件と訂正を保持する。", in: index, part: part, compact: true) else { preconditionFailure() }
+    print("Part acceptance: malformed/missing JSON, empty evidence, foreign ID/part and fabricated quotes rejected before merge, no repair calls; legacy prose preserved. Semantic entailment requires independent evaluation.")
   }
 
   static func wait(_ condition: () -> Bool) async {

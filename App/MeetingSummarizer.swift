@@ -158,14 +158,14 @@ enum MeetingSummarizer {
         }
         switch result {
         case .answer(let text):
-          if let key, let authorize, let scope = input.artifactScope,
-             let artifact = SummaryPartArtifact.decode(text), artifact.validated(in: sourceIndex, part: part, compact: compact) {
-            guard authorize(), !Task.isCancelled else { return .failure(.contextChanged) }
-            await artifactCache.write(text, key: key, ownerID: scope.ownerID, lease: cacheLease)
-          } else if SummaryPartArtifact.hasMalformedStructuredNotes(text) {
-            // A declared structured note must not hide truncated JSON inside a
-            // successful final merge. Legacy prose is still accepted, uncached.
-            return .failure(.generationFailed)
+          switch SummaryPartArtifact.acceptance(text, in: sourceIndex, part: part, compact: compact) {
+          case .rejected: return .failure(.generationFailed)
+          case .legacy: break // Existing prose remains usable, but never cacheable.
+          case .structured:
+            if let key, let authorize, let scope = input.artifactScope {
+              guard authorize(), !Task.isCancelled else { return .failure(.contextChanged) }
+              await artifactCache.write(text, key: key, ownerID: scope.ownerID, lease: cacheLease)
+            }
           }
           return .success("# 部分\(index + 1)（\(range)）\n\(text)")
         case .failure(let failure): return .failure(failure)
