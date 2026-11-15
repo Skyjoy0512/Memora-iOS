@@ -60,3 +60,42 @@ No comparison results for real models have been generated in this work.
 The official-rule runner needs the locked development environment; setup,
 licenses, pins, and the deliberately unexecuted paid-evaluation boundary are in
 `docs/JMEETEVAL_INTEGRATION.md`.
+
+## Opt-in request runner (Level 2 building block)
+
+`model_runner.py` accepts an explicit immutable request manifest. The unit-test
+`manifest()` in `tests/test_model_runner.py` is a complete synthetic example.
+`--manifest <file> --output <new-plan.json>` is a dry run: zero requests, no
+credential reads. `--execute --grant <file> --output <new-directory>` additionally
+requires a grant for the exact manifest digest, endpoints, source transmission,
+expiry and an independent `MEMORA_EVALUATION_API_KEY`. A separately provisioned
+prepaid account or billing proxy must enforce a hard cap no higher than the
+approved limit. A client timeout/rate estimate is not that guarantee; without
+an external spend guard do not execute. The grant is an operator attestation,
+not a cryptographic verification of the provider's billing configuration.
+
+The manifest declares total requests/tokens/USD/deadline, exact model/protocol,
+source and actual request hashes, version IDs, reviewed context/framing/output
+(including hidden reasoning) and maximum uncached rates. Unknown rates,
+competing output caps, implicit multi-output/server-tool/media options, invalid
+source hashes and insufficient budget are refused before a credential is read.
+The live HTTP path is isolated in a process with an absolute deadline, refuses
+redirects, bounds response bytes, and never retries 429/errors/truncation.
+Reservations remain upper estimates, not measured usage or cost. In-flight
+billing may remain unknown after a timeout. Retain the external hard cap.
+
+Outputs are appended per actual attempted request; an existing output directory
+is refused. Only error kinds/status/Retry-After are stored, not exception text.
+Provider usage is preserved without filling missing counters. Reasoning time,
+TTFT, app persistence, SQLite I/O, CPU/RAM/battery/thermal and total summary
+latency are null when unobserved. Semantic annotations and judge scores are
+never manufactured from the gold fixture or the generated answer.
+
+This runner deliberately reports `raw-provider-request`, **not** the app's
+`real-provider` pipeline timing. Variant/concurrency/cache labels identify the
+exported request's origin, not proof that this runner executed that pipeline.
+Native app cold/warm/SoT/hierarchy exports and measured save boundaries are still
+required for the full seven-way adoption comparison. `summary_report.py` refuses
+automatic adoption of these raw measurements. This is a safe limited-evaluation
+runner, not completion evidence for Level 3 or native app performance goals.
+Neither Level 2 nor Level 3 was executed in this change.
