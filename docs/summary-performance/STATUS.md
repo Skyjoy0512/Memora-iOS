@@ -10,26 +10,30 @@
 | モデル共通処理 | 既存能力カタログ、保守的なtoken容量計画、短縮ID、選択モデル/推論/送信許可の保持 |
 | 通常/超長文 | 一括、端末内、階層統合の既存経路を拡張。通常記録へ追加の計画呼出しを強制しない |
 | 並列作文 | 全文と共通計画を使うSoT候補をmock検証。通常利用のgateは閉鎖 |
-| 再利用 | 検証済み長文partのSQLite cache、失効lease、TTL/LRU。全文を分析済みとする横断利用は未完 |
+| 再利用 | 所有者・区間単位のSQLite cache、失効lease、TTL/LRU、変更token付きRAM再利用。現行Knowledgeの根拠を再検証してAsk AI/Project検索へ利用。全文分析済みとは扱わない |
 | 通信 | job内session再利用、SSE/JSON off-main、通知抑制、数値診断。実TCP/実APIの改善量は未測定 |
-| 送信制御 | 同一endpoint/認証の要約job間上限、FIFO、待機上限、429/Retry-After、送信前再認可。RPM/TPM token bucketは未実装 |
+| 送信制御 | 同一endpoint/認証の要約・Ask AI・agent共通上限、優先度/aging、待機上限、429/Retry-After、送信前再認可。明示RPM/TPMの保守的予約。未知値は設定しない |
 | 音声準備 | 保存済み音声の1区間先読み変換を候補実装/host検証。通常gateは閉鎖 |
 | 確定区間 | 既存STT checkpointへ区間の版/範囲/現行照合を追加。旧cache/本文を維持。先行AI分析は未接続 |
-| 評価基盤 | 固定J-MeetEval 197件/16カテゴリ、公式ルール、独自gold、数値集計、比較レポート。実生成/Judge/総合スコアは未取得 |
+| 評価基盤 | 固定J-MeetEval 197件/16カテゴリ、公式ルール、gold25件、数値集計、比較レポート。独立spend guard必須のraw request runnerを追加。native全方式runner/Judge/実生成スコアは未完 |
 
 Geminiは既存OpenAI互換経路。Gemini native API、将来のlocal LLM実行、Memora専用サーバーを実装済みとは扱わない。詳細は[モデル能力表](../MODEL_CAPABILITY_MATRIX.md)。
 
 ## 無料で進められる残作業
 
-1. 録音中に完全性を保証できる確定区間と版更新イベントの設計/接続。表示用ライブSTTを完全な原文とみなさない。今回のcheckpoint版は保存済み音声の基盤まで。
-2. 確定区間の分析を既存要約パイプラインへ接続し、後続の訂正/撤回と話者変更を統合する。新たな課金/送信を通常利用で増やさない採用条件が必要。
-3. 検証済み分析のAsk AI/RAG/人物/プロジェクトへの横断利用。原文参照、権限、重複排除を維持し、未確認の解釈を記憶へ昇格しない。
-4. 既知quotaを扱うRPM/TPM制御、必要な範囲のAsk AIとの共有、provider別の明示cache/推論制御の対応拡充。未知値を推測せずmockで検証する。
-5. 独立した評価資格情報、request/費用上限、再現条件を持つLevel 2/3生成/Judge runner。実行は別扱いとし、通常CIから起動しない。
+1. ModelCapabilityRegistryへexact modelに対応したローカルtokenizer/検証済み推定器を接続。未確認比率でcontextを拡張しない。
+2. 全方式を同条件で実行するnative評価exporter、raw request runnerとの接続と絶対費用上限の運用検証。Level 2/3を自動起動しない。
+3. Knowledgeの人物・長期記憶・資料等への追加consumer。本人編集/原文参照/権限/訂正/撤回を維持し、未確認解釈を確定memoryへ昇格しない。
+4. account別の検証済み並列3/4契約、実メモリ余裕・latencyの観測接続、subscriber別キャンセルを備えたSingle-flight。
+5. 引用一致を越えた意味的整合性/網羅性の評価。全UIケースの最終状態での実行と既存警告の解消。
+
+録音中の先行AI分析、ライブSTTによる先行要約、録音中のクラウドAPI呼出しは今回の対象外。
+確定区間revisionは保存済み原文の変更検知・再利用のため維持し、先行分析consumerは追加しない。
+既存Source Adapter → Canonical input → 既存planner/理解 → SummaryKnowledge → 適応型本文/各consumerを拡張する。
 
 ## 未検証・通常有効化しないもの
 
-利用者指定により実モデル評価は行わない。品質/費用/速度の実モデル比較とJ-MeetEval総合スコアは未取得。60秒/30秒/録音後10〜20秒の達成も未確認。SoTの採用gateは閉じたまま。
+利用者指定により実モデル評価は行わない。品質/費用/速度の実モデル比較とJ-MeetEval総合スコアは未取得。60秒/30秒の達成は未確認。過去の録音後10〜20秒目標は先行AI分析を前提とする今回の目標にしない。SoTの採用gateは閉じたまま。
 
 実機のSTT/要約/総処理時間、P50/P95、電池、発熱、メモリ、録音安定性、音声への実シーク、VoiceOver/日本語IME/実サービス認証などは別途必要。音声先読みgateも閉鎖を維持する。
 
@@ -43,3 +47,5 @@ PNG復旧UIは既存の機能flagで入口が無効なため未検証。flagや�
 - [確定区間の版管理](SETTLED_CHUNK_REVISIONS.md): 今回の追加単位。ガード付き全10群/E2E選択2件/iOS preview成功。実モデル/実機は未検証。
 
 全10群の成功は実モデル品質/実機性能の証明ではなく、限定E2Eの成功は全138 UIケースの成功でもない。
+
+- [共通AI処理の追加改善](../common-ai/IMPLEMENTATION.md): 部分応答ゲート、粒度別cache、共有admission、Knowledge再検証、SoT容量、限定runner。成功/失敗・未完成を分けて記録。

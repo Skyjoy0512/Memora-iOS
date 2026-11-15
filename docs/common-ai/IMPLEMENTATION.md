@@ -1,4 +1,4 @@
-# 共通AI処理改善（2026-11-16）
+# 共通AI処理改善（2026-11-15）
 
 基準HEAD: a16d3edd（依頼のe61f674eより新しい）。開始時mainはclean。
 
@@ -115,7 +115,7 @@ J-MeetEval197件/16分類・gold25件と既存公式/決定論的評価は変更
 このrunnerはraw API requestの測定用。ネイティブ要約pipelineの7方式を実行/計測するexporterは
 未実装であり、Level 3完了とは報告しない。measurementKindはraw-provider-requestで、既存の
 本番採用比較へ混入できない。source内の数値やgoldを生成結果の正解欄へ補完しない。
-7単体testと既存evaluation suite成功、外部requestは0件。実API評価は実行していない。
+8単体testと既存evaluation suite成功、外部requestは0件。実API評価は実行していない。
 外部prepaid/proxyが費用上限を実際に強制する設定は実施していない。詳細はtools/evaluation/README.md。
 
 ## Tokenizer調査
@@ -130,3 +130,64 @@ DeepSeekの文字比率は概算で、モデルにより異なる。公開offlin
 framing等を完全計測できないとする。Anthropicの計測APIは原文送信が必要。
 今回その外部計測は行わず、未検証比率でcontextを拡張しない。アプリへのtokenizer資産の追加、
 モデル別計測の本番接続、UTF8容量計画の置換は残存課題。安全なfallbackは維持する。
+
+## ビルド警告の分類
+
+iOS 27.2 SDK / iOS 26 deploymentのPreviewで11件を確認:
+
+| 件数 | 発生箇所 | 原因・扱い |
+| --- | --- | --- |
+| 3 | PlaceNameResolver | CLGeocoder/reverseGeocodeLocation、MKMapItem.placemarkの非推奨。地名のfallback/API応答を変えるため今回変更しない |
+| 2 | JournalMapSheet | MKPlacemark、MKMapItem(placemark:)の非推奨。MapKit移行時にMapsへの引渡しを確認する |
+| 3 | JournalPlacePicker | placemarkの非推奨。位置の保存/Map検索回帰を伴う別単位で移行する |
+| 2 | GmailAuthorizationSession/MCPOAuthBrowser | sceneに結び付かないfallback window初期化。認証UI/scene切替検証が必要で未変更 |
+| 1 | appintentsmetadataprocessor | extensionのAppIntents.framework依存が無い抽出skip。本体buildを妨げず、警告抑制のための不要依存追加はしない |
+
+bitrig test -listはProject.jsonにXcode test targetが無いためexit78。xcodebuildへ切り替えず、
+既存のproduction Swiftを直接compileするhost test、実SQLite、e2eとPreviewを使う。
+
+## 最終レビューの補修
+
+- 新規cloud provider既定をDeepSeekに変更。保存済みprovider、登録済みmodel、旧OpenAIの
+  明示model/keyは移行時に尊重する。端末内/自動というengine設定や実行中requestは変更しない。
+  provider復元全caseとlegacy有無をhost testで検査。
+- 再利用factの重複除去を根拠検証後に実施。不正な先行duplicateで正しい後続factを隠さない。
+- modelがorigin=userを返してもappがgeneratedを割り当てる既存対応を確認し、回帰testを追加。
+  重複したorigin実装は追加しない。
+- raw runnerの不正応答shapeも、課金状態不明の失敗として保存し停止。runner単体testは8件。
+- resident fixtureの新しいpriority/authorize契約を更新し、background指定もassert。
+- 138 UIケースをinventory化。設定UI testは旧文言・旧配置ではなく、実際に対応providerを選び、
+  詳細設定を展開して独立した詳しさ/処理設定/送信先/生成なしを検査する。生成/APIキー入力はしない。
+
+P0の/tmpログはWorkspaceSSD/MemoraSummaryPerformanceValidationにも複製して保持した。
+
+
+## 最終統合検証
+
+`common-ai-quality-note-capacity`は全10群成功。source SHA256は
+`22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803`で開始/終了/最終確認まで一致。
+その前の`common-ai-quality-final`も全10群成功したが、その後にdefault/認可callback等を補修したため、
+最終結果の正本はnote-capacity側とする。初回integratedの9成功/1失敗は上書きしない。
+
+最終UI: 同一runで適応型要約166.50秒、原文保存失敗の復旧89.95秒、処理設定101.31秒の3件成功。
+これらはUI操作全体の所要時間であり要約生成latencyではない。
+全138件のうち3件成功/135件未実行。初回の旧文言、native BackButton、provider/詳細設定前提、
+DisclosureGroupによる子ID継承の失敗を保存し、既存UIを変更せずfixtureとlocatorを補修した。
+agent/model tokens=0、実API評価=0。最終UIもsource fingerprint不変。
+
+認可の最終補修はCloudAIService.complete/answerとAIEngineService.answerに既存context closureを渡し、
+待機後にcredentialだけでなくsource/workspace/snapshotを確認。実HTTP fixtureでqueued completionも
+contextChanged/送信0件を確認した。公開serviceの追加呼出しや自動retryは無い。
+
+詳細な18項目の結果は[REPORT.md](REPORT.md)、機械可読情報は[VALIDATION.json](VALIDATION.json)、
+UI全件の実行状態と失敗を含む履歴は[UI_TEST_STATUS.json](UI_TEST_STATUS.json)。
+
+## 中間notesの容量境界の補修
+
+キャッシュ保存256KiBと最終統合への受理上限を分離した。検証用の有界decodeは4MiBまで、
+選択modelのsourceCapacityを超えるnotesは受信直後に停止する。256KiB超でもmodelに収まる
+正当なnotesはuncachedのまま保持し、本文の切詰めで速度を稼がない。cache hitもheader込みで
+model容量を再確認する。大きいnotesを最終mergeへ渡すmock回帰、容量超過後の追加dispatch禁止を検査。
+最初のfixtureは短いIDだけを仮定し失敗したため実UUID/短IDの両方に対応した。
+先行note-boundsの品質/UI実行は容量guardを追加する前に中断し、その結果を最終成功と扱わない。
+最終note-capacityの10群/UI3件はいずれも同一source指紋のまま終了した。

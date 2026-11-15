@@ -1,0 +1,1064 @@
+{
+  "schemaVersion": 1,
+  "discovered": 138,
+  "latestStatuses": {
+    "passed": 3,
+    "failed": 0,
+    "notRun": 135
+  },
+  "apiEvaluationRequests": 0,
+  "finalUISourceGuard": {
+    "unchanged": true,
+    "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803",
+    "fileCount": 1965
+  },
+  "reasonForNotRun": "Only the bounded offline regression subset was executed; no certification of all UI scenarios or paid model evaluation.",
+  "tests": [
+    {
+      "file": "tests/adaptive-structured-summary.e2e.ts",
+      "title": "adaptive reading retains task operations, facts and transcript evidence",
+      "target": "ios",
+      "status": "passed",
+      "history": [
+        {
+          "runID": "01a1de0d-9928-7a3c-9770-a43f4e20c5ad",
+          "report": ".e2e/common-ai-focused/report.json",
+          "status": "passed",
+          "startedAt": "2026-11-15T07:13:35.102Z",
+          "modelTokens": 0
+        },
+        {
+          "runID": "01a1de32-fcfc-745b-bc97-b79a77834240",
+          "report": ".e2e/common-ai-ui-final/report.json",
+          "status": "passed",
+          "startedAt": "2026-11-15T07:54:10.944Z",
+          "modelTokens": 0
+        },
+        {
+          "runID": "01a1de59-239f-71fc-8bda-1beb1b86a3bf",
+          "report": ".e2e/common-ai-ui-note-capacity/report.json",
+          "status": "passed",
+          "startedAt": "2026-11-15T08:35:51.336Z",
+          "modelTokens": 0
+        }
+      ]
+    },
+    {
+      "file": "tests/agent-approval.e2e.ts",
+      "title": "local agent approval edits and selects a candidate before a real SQLite save",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/agent-approval.e2e.ts",
+      "title": "local agent decline and stop resolve the approval without saving",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/agent-entry.e2e.ts",
+      "title": "agent entry: suggestions stage an editable request without sending",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/agent-entry.e2e.ts",
+      "title": "agent entry: native attachment menu preserves draft and all existing routes",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/agent-entry.e2e.ts",
+      "title": "agent entry: recorder hub exposes direct pairing and honest generic import",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/answer-actions.e2e.ts",
+      "title": "answer actions open selectable text and hide an unavailable retry",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/answer-actions.e2e.ts",
+      "title": "a long composer draft can expand and collapse without submitting",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/answer-actions.e2e.ts",
+      "title": "reusable skills: review an answer, save the procedure and reuse it after restart",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/background-summary.e2e.ts",
+      "title": "paused background summary preserves text and offers explicit retry after restart",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/calendar-context.e2e.ts",
+      "title": "calendar context: disabled AI use persists and re-enabling does not grant device access",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/capture-audio-picker.e2e.ts",
+      "title": "top-right audio picker cancellation preserves Library capture and native morph",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/capture-menu-layout.e2e.ts",
+      "title": "attachment menu retains the composer and capture sheet only shows four actions",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/capture-menu-layout.e2e.ts",
+      "title": "calendar day tile can be reviewed without Calendar access or saved events",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/chat-surface.e2e.ts",
+      "title": "chat surface: capture composer and sidebar in both appearances",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/chat-surface.e2e.ts",
+      "title": "chat surface: stacked controls keep draft navigation available after dismissing the keyboard",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/chat-surface.e2e.ts",
+      "title": "chat surface: flat title menu still opens history and search",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/collection-polish.e2e.ts",
+      "title": "collection polish: people search keeps notes, detail navigation and cancellation",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/collection-polish.e2e.ts",
+      "title": "collection polish: documents menu keeps existing actions and search empty state",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/collection-polish.e2e.ts",
+      "title": "collection polish: compact document menu opens mail drafts and company templates",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/collection-polish.e2e.ts",
+      "title": "collection polish: document edits confirm discard, save and restore after restart",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/connector-presets.e2e.ts",
+      "title": "GitHub and Linear have read-only setup with no empty-token connection",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/design-accessibility.e2e.ts",
+      "title": "design: mention controls remain below navigation and above native input",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/design-accessibility.e2e.ts",
+      "title": "design: toolbar search clears without dismissing input and cancels back to tabs",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/design-refresh.e2e.ts",
+      "title": "design: navigation and settings in light and dark",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/design-refresh.e2e.ts",
+      "title": "design: mentions search, select twice, preserve focus, remove and use plus",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/design-refresh.e2e.ts",
+      "title": "design: unavailable integrations explain their state",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/design-refresh.e2e.ts",
+      "title": "design: project mentions preserve scope and the workspace three tabs",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/design-refresh.e2e.ts",
+      "title": "design: long Markdown edits use real SQLite persistence across restart",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/design-refresh.e2e.ts",
+      "title": "design: conversation typography renders Japanese prose in both appearances",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/draft-protection.e2e.ts",
+      "title": "an unreadable summary draft blocks editing and retains its original bytes",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/draft-protection.e2e.ts",
+      "title": "an unreadable composer draft protects the store during launch",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/experience-polish.e2e.ts",
+      "title": "experience: journal, library and create menu remain coherent in both appearances",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/experience-polish.e2e.ts",
+      "title": "experience: empty task action creates a task, completes it and keeps it after restart",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/experience-polish.e2e.ts",
+      "title": "experience: search states clear their real query and hide the underlying project list",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/experience-polish.e2e.ts",
+      "title": "experience: document action returns to Ask AI without clearing the draft",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/experience-polish.e2e.ts",
+      "title": "experience: source-only search reports a real match instead of zero",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/experience-polish.e2e.ts",
+      "title": "experience: selected day returns to today through a real 44-point action",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/experience-polish.e2e.ts",
+      "title": "experience: capture actions scroll at large text and open the real preparation screen",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/experience-polish.e2e.ts",
+      "title": "experience: task, people and document screens retain their working actions",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/experience-polish.e2e.ts",
+      "title": "experience: journal creation keeps the selected date across restart and the system memo link opens the shared editor",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/gmail-connection.e2e.ts",
+      "title": "unconfigured Gmail stays disconnected and explains read-only access in Light and Dark",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/journal-failure.e2e.ts",
+      "title": "journal SQLite failures retain drafts and records, then recover through the UI",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/library-selection-layout.e2e.ts",
+      "title": "Library selection keeps wrapped text inside its rows through repeated mode changes",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/markdown-replacement.e2e.ts",
+      "title": "Japanese replacement, Unicode paste and navigation keep exact committed text",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/markdown-replacement.e2e.ts",
+      "title": "formatting, list and table edits change only their own source lines",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/marketplace-discovery.e2e.ts",
+      "title": "purpose catalogs preserve search and stage a learning skill without sending",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/mcp-connection.e2e.ts",
+      "title": "unconnected MCP keeps setup reachable and cancels an unsaved server in Light and Dark",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/memora.e2e.ts",
+      "title": "onboarding completion survives a normal restart",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/memora.e2e.ts",
+      "title": "the app opens on the library",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/memora.e2e.ts",
+      "title": "the side menu switches between home, library and Ask AI",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/memora.e2e.ts",
+      "title": "the side menu lists the main destinations",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/memora.e2e.ts",
+      "title": "the top navigation controls are round",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/memora.e2e.ts",
+      "title": "the top-right create control opens capture actions",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/memora.e2e.ts",
+      "title": "the tools hub reaches skills, templates and connectors",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/memora.e2e.ts",
+      "title": "Settings opens from the side menu",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/memora.e2e.ts",
+      "title": "the footer settings control opens settings",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/memora.e2e.ts",
+      "title": "the journal add-record action opens the capture sheet",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/memora.e2e.ts",
+      "title": "the tasks list opens from the journal",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/memora.e2e.ts",
+      "title": "the structured answer example renders the comparison table and Row",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/memora.e2e.ts",
+      "title": "the structured answer example replays its streaming state",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/memora.e2e.ts",
+      "title": "the source list and progress fixture renders",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/minimal-polish.e2e.ts",
+      "title": "minimal polish: sidebar switching keeps the conversation and settles on one canvas",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/minimal-polish.e2e.ts",
+      "title": "minimal polish: Tools menus, article actions and connectors stay usable",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/native-header.e2e.ts",
+      "title": "native header: recorder status opens the real hub and search lives in the sidebar",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/native-header.e2e.ts",
+      "title": "native header: journal sidebar search preserves its destination and flat content",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/native-header.e2e.ts",
+      "title": "native header: Ask AI sidebar search retains the existing chat actions",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/native-header.e2e.ts",
+      "title": "native header: empty Library capture action retains its native dialog route",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/notion-connection.e2e.ts",
+      "title": "unconfigured Notion keeps native parent editing durable without claiming a connection",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/polish-accessibility.e2e.ts",
+      "title": "transcript and purpose catalogs remain usable at largest Dynamic Type",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/project-source-interruption.e2e.ts",
+      "title": "interrupted source status recovers on launch without fetching content",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/project-source-note-attach-order.e2e.ts",
+      "title": "a note saves attached sources in tap order and keeps it after restart",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/project-source-note.e2e.ts",
+      "title": "a note is saved, extracted, listed as text and restored after restart",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/project-source-office.e2e.ts",
+      "title": "Office source import preserves partial coverage and reopens extracted text",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/project-source-photo.e2e.ts",
+      "title": "selected photo survives SQL failure, same-photo retry, deduplication and restart",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/project-source-pickers.e2e.ts",
+      "title": "source native photo and file pickers cancel without losing the note text",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/project-source-recovery.e2e.ts",
+      "title": "project source notes retain failed creates and edits, persist drafts, and recover after restart",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/reading-text-motion.e2e.ts",
+      "title": "record detail keeps a full-width Ask AI field while creation returns on the list",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/reading-text-motion.e2e.ts",
+      "title": "synthetic streaming settles without losing Markdown text or structure",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/recording-lifecycle.e2e.ts",
+      "title": "background low-power recording keeps the same draft and a complete decodable AAC",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/recording-lifecycle.e2e.ts",
+      "title": "SIGKILL recovers one recording without replacing the audio or restarting capture",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/recording-lifecycle.e2e.ts",
+      "title": "a finalized AAC staged as a recovery draft still offers manual transcription",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/recording-power.e2e.ts",
+      "title": "power mode changes and pause preserve the AAC recording and SQLite draft",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/screen-polish.e2e.ts",
+      "title": "screen polish: Library is the default and leads Journal in the drawer",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/screen-polish.e2e.ts",
+      "title": "screen polish: Settings opens after the drawer closes on every main destination",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/screen-polish.e2e.ts",
+      "title": "screen polish: onboarding remains readable and can finish without recording",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/screen-polish.e2e.ts",
+      "title": "screen polish: account and plan retain honest states and usable controls",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/screen-polish.e2e.ts",
+      "title": "screen polish: the task editor still saves to the local store",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/screen-polish.e2e.ts",
+      "title": "screen polish: secondary lists and presentation fixtures remain navigable",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/screen-review-samples.e2e.ts",
+      "title": "screen review samples persist without replacing existing content or duplicating states",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/settings-polish.e2e.ts",
+      "title": "settings polish: topic hierarchy, profile editing and shared sidebar icons",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/settings-polish.e2e.ts",
+      "title": "settings polish: workspace switching and team registration remain reachable in Settings",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/settings-polish.e2e.ts",
+      "title": "settings polish: appearance preferences survive restart without changing records",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/settings-polish.e2e.ts",
+      "title": "settings polish: relocated AI, recording, plan and connection controls remain reachable",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/sidebar-glass.e2e.ts",
+      "title": "sidebar glass: supplied logo sits above Library in both appearances",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/sidebar-glass.e2e.ts",
+      "title": "sidebar glass: create morph keeps capture choices and memo cancellation working",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/sidebar-glass.e2e.ts",
+      "title": "sidebar glass: attachment glass keeps the composer mounted and preserves its draft",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/skill-polish.e2e.ts",
+      "title": "skill polish: explain validation and protect an unsaved edit",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/skill-polish.e2e.ts",
+      "title": "skill polish: search Tools, open an article and clear the search",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/source-ask-ai.e2e.ts",
+      "title": "a saved note is answered from its text with an openable citation and survives restart",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/source-audio-citation.e2e.ts",
+      "title": "timed audio source keeps its citation at the recorded moment",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/source-web-citation.e2e.ts",
+      "title": "web article text keeps its search and citation path",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/source-web-real.e2e.ts",
+      "title": "an approved HTTPS source is extracted, answered on-device and cited",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/summary-adaptive.e2e.ts",
+      "title": "content-led poster and meeting task creation preserve saved records",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/summary-infographic.e2e.ts",
+      "title": "separate infographic restores evidence and stages three record questions without sending",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/summary-modes.e2e.ts",
+      "title": "summary processing mode is separate from detail and never regenerates on selection",
+      "target": "ios",
+      "status": "passed",
+      "history": [
+        {
+          "runID": "01a1de0d-9928-7a3c-9770-a43f4e20c5ad",
+          "report": ".e2e/common-ai-focused/report.json",
+          "status": "failed",
+          "startedAt": "2026-11-15T07:13:35.102Z",
+          "modelTokens": 0
+        },
+        {
+          "runID": "01a1de19-03de-7609-afe9-6818187a871c",
+          "report": ".e2e/common-ai-ui-modes-fixed/report.json",
+          "status": "failed",
+          "startedAt": "2026-11-15T07:25:55.054Z",
+          "modelTokens": 0
+        },
+        {
+          "runID": "01a1de27-dccb-7d66-b220-6a6dbe71aed6",
+          "report": ".e2e/common-ai-ui-configured/report.json",
+          "status": "failed",
+          "startedAt": "2026-11-15T07:42:08.697Z",
+          "modelTokens": 0
+        },
+        {
+          "runID": "01a1de29-4f96-7d4a-8096-b103b3c5db58",
+          "report": ".e2e/common-ai-ui-configured-back/report.json",
+          "status": "failed",
+          "startedAt": "2026-11-15T07:43:36.545Z",
+          "modelTokens": 0
+        },
+        {
+          "runID": "01a1de2f-3337-73a9-8659-f1b7b547b926",
+          "report": ".e2e/common-ai-ui-semantic/report.json",
+          "status": "passed",
+          "startedAt": "2026-11-15T07:50:02.824Z",
+          "modelTokens": 0
+        },
+        {
+          "runID": "01a1de59-239f-71fc-8bda-1beb1b86a3bf",
+          "report": ".e2e/common-ai-ui-note-capacity/report.json",
+          "status": "passed",
+          "startedAt": "2026-11-15T08:35:51.336Z",
+          "modelTokens": 0
+        }
+      ]
+    },
+    {
+      "file": "tests/summary-one-tap.e2e.ts",
+      "title": "summary has one Generate action and discloses only external destinations",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/summary-polish.e2e.ts",
+      "title": "summary decisions remain editable without transcript confirmation links",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/summary-polish.e2e.ts",
+      "title": "long summary images stay bounded while preserving the complete saved summary",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/summary-reading-accessibility.e2e.ts",
+      "title": "narrow summary supports larger text, horizontal tables, checklist and long reading",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/summary-reading.e2e.ts",
+      "title": "summary PNG, full-text reading and reversible transcript survive restart",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/summary-recovery.e2e.ts",
+      "title": "failed transcript saves keep the stored record and durable or in-memory draft",
+      "target": "ios",
+      "status": "passed",
+      "history": [
+        {
+          "runID": "01a1de32-fcfc-745b-bc97-b79a77834240",
+          "report": ".e2e/common-ai-ui-final/report.json",
+          "status": "passed",
+          "startedAt": "2026-11-15T07:54:10.944Z",
+          "modelTokens": 0
+        },
+        {
+          "runID": "01a1de59-239f-71fc-8bda-1beb1b86a3bf",
+          "report": ".e2e/common-ai-ui-note-capacity/report.json",
+          "status": "passed",
+          "startedAt": "2026-11-15T08:35:51.336Z",
+          "modelTokens": 0
+        }
+      ]
+    },
+    {
+      "file": "tests/summary-recovery.e2e.ts",
+      "title": "PNG write failure keeps the preview and a retry uses the real share sheet",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/summary-relations.e2e.ts",
+      "title": "validated on-device summary relations survive reading, editing and restart",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/summary-sample.e2e.ts",
+      "title": "summary sample is additive, recoverable and displays its image without a tap",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/ui-polish.e2e.ts",
+      "title": "polish: candidate names, selected state and keyboard survive appearance changes",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/ui-polish.e2e.ts",
+      "title": "polish: library metadata and status remain readable in both appearances",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/uiux-review.e2e.ts",
+      "title": "main destinations retain their own bottom controls and Settings stays reachable",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/uiux-review.e2e.ts",
+      "title": "catalog detail and add controls remain separate and search returns to the catalog",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/uiux-review.e2e.ts",
+      "title": "document hierarchy, person details and contextual questions retain real content",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/uiux-simplification.e2e.ts",
+      "title": "secondary collections have native back navigation and only the AI composer",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/uiux-simplification.e2e.ts",
+      "title": "catalog articles keep a single content title and toolbar management actions",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/waiting-evidence.e2e.ts",
+      "title": "waiting evidence uses actual status components with local display fixtures",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/waiting-transitions.e2e.ts",
+      "title": "waiting text yields to streaming, stops for approval and terminal states",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/workflow-polish.e2e.ts",
+      "title": "workflow polish: task planning, active filters and completion remain clear",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/workflow-polish.e2e.ts",
+      "title": "workflow polish: project rename keeps edits until confirmed and saves from keyboard",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/workflow-polish.e2e.ts",
+      "title": "workflow polish: empty mail drafts return to Ask AI without clearing its draft",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/workspace-journal.e2e.ts",
+      "title": "the workspace tabs switch between chat, records and references",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/workspace-journal.e2e.ts",
+      "title": "the week strip selects a day and updates the timeline",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/workspace-journal.e2e.ts",
+      "title": "the inline plus buttons add a record",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/workspace-journal.e2e.ts",
+      "title": "journal insertion proposes the selected day and the time between events",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/workspace-journal.e2e.ts",
+      "title": "journal editing and confirmed deletion persist after restart",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/workspace-journal.e2e.ts",
+      "title": "journal search replaces the recap and restores the timeline without losing records",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/workspace-journal.e2e.ts",
+      "title": "the journal and workspace stay legible in dark appearance",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/workspace-journal.e2e.ts",
+      "title": "editing a record saves it to the new date",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/workspace-journal.e2e.ts",
+      "title": "a source added in the workspace stays in the references tab",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/workspace-journal.e2e.ts",
+      "title": "the project list filters all, mine and shared",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    },
+    {
+      "file": "tests/workspace-journal.e2e.ts",
+      "title": "the records tab offers recording and moving existing files",
+      "target": "ios",
+      "status": "notRun",
+      "history": []
+    }
+  ]
+}

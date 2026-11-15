@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "testedCommit": "c6544ac698ff0d6280adbe14202992a7bf8a0709",
+  "sourceGuard": {
+    "unchanged": true,
+    "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803",
+    "fileCount": 1965
+  },
+  "quality": {
+    "passed": 10,
+    "failed": 0,
+    "suites": [
+      {
+        "suite": "summary-planning",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "summary-planning.log",
+        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+      },
+      {
+        "suite": "summary-evaluation",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "summary-evaluation.log",
+        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+      },
+      {
+        "suite": "next-generation",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "next-generation.log",
+        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+      },
+      {
+        "suite": "design-refresh",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "design-refresh.log",
+        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+      },
+      {
+        "suite": "background-summary",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "background-summary.log",
+        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+      },
+      {
+        "suite": "summary-reliability",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "summary-reliability.log",
+        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+      },
+      {
+        "suite": "adaptive-summary",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "adaptive-summary.log",
+        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+      },
+      {
+        "suite": "adaptive-summary-quality",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "adaptive-summary-quality.log",
+        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+      },
+      {
+        "suite": "composer-layout",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "composer-layout.log",
+        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+      },
+      {
+        "suite": "optimization",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "optimization.log",
+        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+      }
+    ],
+    "evidenceDirectory": "/Volumes/WorkspaceSSD/Development/Agents/MemoraSummaryPerformanceValidation/common-ai-quality-note-capacity"
+  },
+  "ui": {
+    "discovered": 138,
+    "passed": 3,
+    "failed": 0,
+    "notRun": 135,
+    "modelTokens": 0,
+    "inventory": "UI_TEST_STATUS.json"
+  },
+  "preview": {
+    "result": "success",
+    "sdk": "iOS 27.2",
+    "deploymentTarget": "iOS 26.0",
+    "warnings": 11,
+    "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-11-15T17-32-12-ed82b16f.log"
+  },
+  "evaluation": {
+    "apiRequests": 0,
+    "jmeetRecords": 197,
+    "categories": 16,
+    "syntheticGoldCases": 25,
+    "runnerUnitTests": 8,
+    "nativeComparisonRunnerComplete": false,
+    "semanticModelScores": null
+  },
+  "performance": {
+    "kind": "production-orchestration-mock",
+    "coldRequests": 5,
+    "warmRequests": 1,
+    "onePartRevisionRequests": 2,
+    "sqliteStorageReadsPerTenUnchangedHitsUpperBound": 1,
+    "sqliteWritesPerTenUnchangedHits": 0,
+    "realModelEndToEndSeconds": null,
+    "apiCostUSD": null,
+    "devicePeakMemory": null,
+    "batteryImpact": null,
+    "thermalImpact": null
+  },
+  "releaseGates": {
+    "parallelComposition": false,
+    "savedAudioLookahead": false,
+    "reviewedAccountConcurrencyAboveTwo": false
+  },
+  "remaining": [
+    "model-specific local tokenizer",
+    "semantic entailment and coverage validation",
+    "native seven-way evaluation runner",
+    "additional People/long-term memory/artifact consumers",
+    "live device resource adaptation",
+    "single-flight subscribers",
+    "remaining 135 UI cases",
+    "11 pre-existing build warnings",
+    "paid model evaluation and real-device measurements"
+  ]
+}
