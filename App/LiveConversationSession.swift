@@ -9,6 +9,7 @@ import Observation
 final class LiveConversationSession {
   private(set) var phase = LiveVoicePhase.idle
   private(set) var transcript = ""
+  private(set) var inputLevel: Double = 0
   private var authority = LiveTurnAuthority()
   private var isAwaitingInteraction = false
   private(set) var speakerEnabled = true
@@ -18,9 +19,11 @@ final class LiveConversationSession {
   @ObservationIgnored var onUnsentTranscript: ((String) -> Void)?
   @ObservationIgnored private let audio = LiveVoiceAudioEngine()
   @ObservationIgnored private let renderer = LiveSpeechRenderer()
-  @ObservationIgnored private let bridge = LiveSpeechRequestBridge()
-  @ObservationIgnored private var recognizer: SFSpeechRecognizer?
-  @ObservationIgnored private var recognitionTask: SFSpeechRecognitionTask?
+  @ObservationIgnored private let bridge = LiveMicrophoneBridge()
+  @ObservationIgnored private let recognizer = LiveVoiceRecognizer()
+  @ObservationIgnored private var inputMonitor: Task<Void, Never>?
+  @ObservationIgnored private var inputHealth = LiveInputHealth()
+  @ObservationIgnored private var recognitionStartedAt = ProcessInfo.processInfo.systemUptime
   @ObservationIgnored private var recognitionID: UUID?
   @ObservationIgnored private var silenceTask: Task<Void, Never>?
   @ObservationIgnored private var speakingTask: Task<Void, Never>?
@@ -61,9 +64,10 @@ final class LiveConversationSession {
     interruptionObserver = nil
   }
 
-  func start() async {
+  func start(unavailableReason: String? = nil) async {
     installLifecycleObservers()
     stop(preserveTranscript: false)
+    if let unavailableReason { fail(unavailableReason); return }
     let run = authority.begin()
     phase = .preparing
     let speechPermission = await speechAuthorized()
@@ -72,20 +76,24 @@ final class LiveConversationSession {
     let microphonePermission = await AVAudioApplication.requestRecordPermission()
     guard authority.sessionID == run, validatesContext?() == true, !Task.isCancelled else { return }
     guard microphonePermission else { fail("マイクへのアクセスを設定で許可してください。"); return }
-    guard let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "ja-JP")),
-          recognizer.isAvailable, recognizer.supportsOnDeviceRecognition else {
-      fail("この端末では日本語のオンデバイス音声認識を利用できません。通常の音声入力をお使いください。")
+    do {
+      try await recognizer.prepare {
+        guard self.authority.sessionID == run, self.validatesContext?() == true else { return }
+        self.phase = .loadingRecognitionModel
+      }
+    } catch {
+      guard authority.sessionID == run, !Task.isCancelled else { return }
+      recognitionFailed(error)
       return
     }
+    guard authority.sessionID == run, validatesContext?() == true, !Task.isCancelled else { return }
     guard let token = AudioSessionCoordinator.shared.claim(.speechInput) else {
       fail(AudioSessionCoordinator.shared.refusal(for: .speechInput) ?? "今はLiveを開始できません。")
       return
     }
     sessionToken = token
-    self.recognizer = recognizer
     do {
       try audio.start(bridge: bridge)
-      phase = .listening
       beginRecognition(run: run)
     } catch { fail("Liveの音声を開始できませんでした。\(error.localizedDescription)") }
   }
@@ -95,9 +103,9 @@ final class LiveConversationSession {
     isAwaitingInteraction = waiting
     if waiting {
       recognitionID = nil
-      bridge.replace(with: nil)
-      recognitionTask?.cancel()
-      recognitionTask = nil
+      recognizer.stop(bridge: bridge)
+      inputMonitor?.cancel()
+      inputLevel = 0
       silenceTask?.cancel()
       stopSpeaking()
       if !transcript.isEmpty, validatesContext?() == true { onUnsentTranscript?(transcript) }
@@ -135,16 +143,16 @@ final class LiveConversationSession {
     authority.stop()
     isAwaitingInteraction = false
     recognitionID = nil
-    bridge.replace(with: nil)
-    recognitionTask?.cancel()
-    recognitionTask = nil
+    recognizer.stop(bridge: bridge)
+    inputMonitor?.cancel()
+    inputMonitor = nil
+    inputLevel = 0
     silenceTask?.cancel()
     silenceTask = nil
     stopSpeaking()
     audio.stop()
     if let sessionToken { AudioSessionCoordinator.shared.release(sessionToken) }
     sessionToken = nil
-    recognizer = nil
     if contextIsCurrent {
       if let interrupted { onInterrupt?(interrupted) }
       if preserveTranscript, !draft.isEmpty { onUnsentTranscript?(draft) }
@@ -173,6 +181,7 @@ final class LiveConversationSession {
       return
     }
     let tail = String(speakableText.dropFirst(deliveredText.count))
+    if deliveredText.isEmpty, !speakableText.isEmpty { print("[Live] AI response received") }
     deliveredText = speakableText
     let ready = sentenceBuffer.append(tail)
     if speakerEnabled { sentences.append(contentsOf: ready) }
@@ -190,35 +199,74 @@ final class LiveConversationSession {
   }
 
   private func beginRecognition(run: UUID) {
-    recognitionID = nil
-    bridge.replace(with: nil)
-    recognitionTask?.cancel()
+    inputMonitor?.cancel()
+    inputLevel = 0
     let recognition = UUID()
     recognitionID = recognition
-    let request = SFSpeechAudioBufferRecognitionRequest()
-    request.shouldReportPartialResults = true
-    request.requiresOnDeviceRecognition = true
-    request.addsPunctuation = true
-    bridge.replace(with: request)
-    recognitionTask = recognizer?.recognitionTask(with: request) { [weak self] result, error in
-      let text = result?.bestTranscription.formattedString
-      let isFinal = result?.isFinal == true
-      let didFail = error != nil
-      Task { @MainActor in
-        guard let self, self.authority.sessionID == run, self.recognitionID == recognition else { return }
+    inputMonitor = Task { [weak self] in
+      try? await Task.sleep(for: .seconds(30))
+      guard !Task.isCancelled, let self, self.authority.sessionID == run,
+            self.recognitionID == recognition else { return }
+      self.fail("日本語の音声認識の準備に時間がかかっています。Liveを再開してください。")
+    }
+    guard let format = audio.inputFormat else { fail("マイクの入力形式を取得できません。Liveを再開してください。"); return }
+    recognizer.start(format: format, bridge: bridge) { [weak self] in
+      guard let self, self.authority.sessionID == run, self.recognitionID == recognition else { return }
+      self.monitorInput(run: run, recognition: recognition)
+    } onText: { [weak self] text in
+      guard let self, self.authority.sessionID == run, self.recognitionID == recognition else { return }
+      guard self.validatesContext?() == true else { self.stop(); return }
+      self.inputHealth.receivedResult(at: ProcessInfo.processInfo.systemUptime - self.recognitionStartedAt)
+      if self.transcript.isEmpty { print("[Live] speech recognised; no transcript logged") }
+      self.acceptPartial(text, run: run, recognition: recognition)
+    } onFailure: { [weak self] error in
+      guard let self, self.authority.sessionID == run, self.recognitionID == recognition else { return }
+      self.recognitionFailed(error)
+    }
+  }
+
+  private func monitorInput(run: UUID, recognition: UUID) {
+    inputMonitor?.cancel()
+    inputHealth = LiveInputHealth()
+    recognitionStartedAt = ProcessInfo.processInfo.systemUptime
+    inputMonitor = Task { [weak self] in
+      var receivedAudio = false
+      while !Task.isCancelled {
+        try? await Task.sleep(for: .milliseconds(250))
+        guard !Task.isCancelled, let self, self.authority.sessionID == run,
+              self.recognitionID == recognition else { return }
         guard self.validatesContext?() == true else { self.stop(); return }
-        if let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-          self.acceptPartial(text, run: run, recognition: recognition, isFinal: isFinal)
-        } else if didFail {
-          self.fail("日本語の音声認識を開始できませんでした。端末の音声入力設定を確認して、もう一度お試しください。")
-        } else if isFinal {
-          self.beginRecognition(run: run)
+        let snapshot = self.bridge.snapshot()
+        let level = snapshot.peak > 0 ? max(0, min(1, (20 * log10(Double(snapshot.peak)) + 55) / 45)) : 0
+        self.inputLevel = level
+        if !receivedAudio, snapshot.frames > 0 {
+          receivedAudio = true
+          print("[Live] microphone buffers received")
+          if self.responseID == nil { self.phase = .listening }
+        }
+        let expectsRecognition = self.responseID == nil && self.phase != .speaking
+        if let failure = self.inputHealth.check(elapsed: ProcessInfo.processInfo.systemUptime - self.recognitionStartedAt,
+          frames: snapshot.frames, voicedSeconds: snapshot.voicedSeconds, expectsRecognition: expectsRecognition) {
+          print("[Live] input stopped: \(failure)")
+          self.fail(failure.message)
+          return
         }
       }
     }
   }
 
-  private func acceptPartial(_ text: String, run: UUID, recognition: UUID, isFinal: Bool) {
+  private func recognitionFailed(_ error: Error) {
+    let nsError = error as NSError
+    print("[Live] recognition failed: domain=\(nsError.domain) code=\(nsError.code)")
+    if let error = error as? LiveVoiceError { fail(error.localizedDescription); return }
+    #if targetEnvironment(simulator)
+    fail("このプレビューでは日本語の音声認識を開始できませんでした。実際のiPhoneでLiveをお試しください。")
+    #else
+    fail("日本語の音声認識を準備できませんでした。インターネット接続と端末の空き容量を確認して、Liveを再開してください。")
+    #endif
+  }
+
+  private func acceptPartial(_ text: String, run: UUID, recognition: UUID) {
     let changed = transcript != text
     transcript = text
     if authority.responseID != nil, text.filter({ !$0.isWhitespace && !$0.isPunctuation }).count >= 3 {
@@ -227,9 +275,8 @@ final class LiveConversationSession {
       phase = .listening
       if let interrupted { onInterrupt?(interrupted) }
     }
-    guard isFinal || changed else { return }
+    guard changed else { return }
     silenceTask?.cancel()
-    if isFinal { commitUtterance(run: run, recognition: recognition); return }
     silenceTask = Task { [weak self] in
       try? await Task.sleep(for: .milliseconds(1_000))
       guard !Task.isCancelled else { return }
@@ -254,6 +301,7 @@ final class LiveConversationSession {
       return
     }
     guard authority.sessionID == run, validatesContext?() == true else { return }
+    print("[Live] utterance submitted to selected AI")
     authority.attachResponse(id)
     deliveredText = ""
     generationFinished = false

@@ -25,6 +25,20 @@ extension MemoraModel {
     registeredLLMs.selectedModel?.name ?? "Auto"
   }
 
+  /// Live must not promise a reply when no model can accept its recognised text.
+  var liveAIUnavailableReason: String? {
+    let configuration = askAIConfiguration
+    guard AIEngineService.effectiveEngine(configuration.engine) == .cloud else {
+      return EngineAvailability.ai(configuration.engine, provider: configuration.llm.provider).message
+    }
+    let llm = configuration.llm
+    if llm.isMemoraIntelligence, !MemoraIntelligence.isConfigured { return AIAnswerFailure.serviceNotConnected.message }
+    guard EngineAvailability.hasKey(llm.keychainAccount) else {
+      return (llm.isMemoraIntelligence ? AIAnswerFailure.serviceNotConnected : .missingKey).message
+    }
+    return llm.modelID.isEmpty ? AIAnswerFailure.modelUnavailable.message : nil
+  }
+
   /// The summary sheet starts on the model Ask AI is using, so a model
   /// registered and chosen there writes summaries too.
   var defaultSummaryEngineChoice: SummaryEngineChoice {

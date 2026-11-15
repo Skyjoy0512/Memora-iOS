@@ -51,7 +51,49 @@ struct LiveConversationChecks {
     let nextSession = authority.begin()
     precondition(nextSession != firstSession && authority.responseID == nil)
     precondition(!authority.allows(session: firstSession, revision: authority.revision), "Workspace/foreground restarts must invalidate old callbacks")
-    print("LiveConversationChecks: Japanese/English token fragmentation, bounded long sentences, grapheme preservation, no duplicate flush, interruption and session replacement passed")
+    checkInputHealth()
+    print("LiveConversationChecks: text fragmentation, bounded sentences, stale callbacks, missing microphone, stalled recognition and quiet/response intervals passed")
+  }
+
+  static func checkInputHealth() {
+    var missing = LiveInputHealth()
+    precondition(missing.check(elapsed: 2, frames: 0, voicedSeconds: 0, expectsRecognition: true) == nil)
+    precondition(missing.check(elapsed: 3, frames: 0, voicedSeconds: 0, expectsRecognition: true) == .noMicrophoneBuffers)
+    var disconnected = LiveInputHealth()
+    precondition(disconnected.check(elapsed: 1, frames: 48000, voicedSeconds: 0, expectsRecognition: true) == nil)
+    precondition(disconnected.check(elapsed: 4, frames: 48000, voicedSeconds: 0, expectsRecognition: true) == .noMicrophoneBuffers)
+    var silent = LiveInputHealth()
+    for second in 1...120 {
+      precondition(silent.check(elapsed: Double(second), frames: second * 48000,
+        voicedSeconds: 0, expectsRecognition: true) == nil, "Silence must not report a failed recognizer")
+    }
+    var stalled = LiveInputHealth()
+    for second in 1...15 {
+      precondition(stalled.check(elapsed: Double(second), frames: second * 48000,
+        voicedSeconds: Double(second), expectsRecognition: true) == nil)
+    }
+    precondition(stalled.check(elapsed: 16, frames: 16 * 48000, voicedSeconds: 16,
+      expectsRecognition: true) == .recognitionStalled)
+    var recognised = LiveInputHealth()
+    _ = recognised.check(elapsed: 1, frames: 48000, voicedSeconds: 1, expectsRecognition: true)
+    recognised.receivedResult(at: 1)
+    for second in 2...60 {
+      precondition(recognised.check(elapsed: Double(second), frames: second * 48000,
+        voicedSeconds: 1, expectsRecognition: true) == nil, "Quiet after recognised speech is normal")
+    }
+    var betweenPolls = LiveInputHealth()
+    betweenPolls.receivedResult(at: 0.1)
+    for second in 1...60 {
+      precondition(betweenPolls.check(elapsed: Double(second), frames: second * 48000,
+        voicedSeconds: 1, expectsRecognition: true) == nil, "A result preceding the meter poll must cover that audio")
+    }
+    var reply = LiveInputHealth()
+    for second in 1...60 {
+      precondition(reply.check(elapsed: Double(second), frames: second * 48000,
+        voicedSeconds: Double(second), expectsRecognition: false) == nil, "AI thinking/playback is not a recognizer stall")
+    }
+    precondition(reply.check(elapsed: 61, frames: 61 * 48000, voicedSeconds: 60,
+      expectsRecognition: true) == nil, "Reply audio must not become evidence of a microphone stall")
   }
 
   static func normalize(_ value: String) -> String { String(value.filter { !$0.isWhitespace }) }

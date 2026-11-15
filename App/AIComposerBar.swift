@@ -116,6 +116,7 @@ struct AIComposerBar: View {
       if isConversation && isVoiceConversation {
         AIChatVoicePanel(isRunning: liveSession.isRunning, status: liveSession.phase.label,
           transcript: liveSession.transcript.isEmpty ? text : liveSession.transcript,
+          session: liveSession,
           modelName: model.askAIModelName, attachmentName: attachment?.displayName,
           onRemoveAttachment: { attachment = nil }, isSpeaking: liveSession.isSpeaking,
           isSpeakerEnabled: $isSpeakerEnabled,
@@ -573,7 +574,8 @@ struct AIComposerBar: View {
       return model.aiMessages.last.flatMap { $0.role == .assistant ? $0.id : nil }
     }
     guard !hasContent, !model.isAIChatResponding else { liveSession.requireReview(); return }
-    speechTask = Task { await liveSession.start() }
+    let unavailableReason = model.liveAIUnavailableReason
+    speechTask = Task { await liveSession.start(unavailableReason: unavailableReason) }
   }
 
   private func voiceMicrophone() {

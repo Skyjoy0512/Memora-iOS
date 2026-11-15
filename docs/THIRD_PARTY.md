@@ -128,7 +128,7 @@ VoicePipeline、SharedAudioEngine、SentenceBufferを日本語Live向けに部�
 非同期の古い結果の拒否、ロック付き入力橋渡し、バッファ上限を追加した。
 
 英語向けParakeet EOU / PocketTTS、llama.cpp / Qwenおよびモデルダウンロード機構は
-同梱しない。音声認識は日本語のオンデバイスSFSpeechRecognizer、音声合成は日本語の
+同梱しない。音声認識は日本語のオンデバイスDictationTranscriber / SpeechAnalyzer、音声合成は日本語の
 AVSpeechSynthesizerのPCM出力を使い、回答はMemoraの選択中AIへ既存経路で依頼する。
 クラウドモデルを選んだ場合、認識済みテキストはそのクラウドへ送られるため、完全ローカル
 動作とは表示しない。音声で承認カードの承認を代行しない。

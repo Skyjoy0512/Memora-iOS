@@ -5,6 +5,7 @@ struct AIChatVoicePanel: View {
   var isRunning: Bool
   var status: String
   var transcript: String
+  var session: LiveConversationSession
   var modelName: String
   var attachmentName: String?
   var onRemoveAttachment: () -> Void
@@ -18,8 +19,11 @@ struct AIChatVoicePanel: View {
 
   var body: some View {
     VStack(spacing: 20) {
-      Text(status).font(.subheadline).multilineTextAlignment(.center).foregroundStyle(.secondary)
-        .accessibilityAddTraits(.updatesFrequently)
+      VStack(spacing: 8) {
+        Text(status).font(.subheadline).multilineTextAlignment(.center).foregroundStyle(.secondary)
+          .accessibilityAddTraits(.updatesFrequently)
+        LiveMicrophoneMeter(session: session)
+      }
       if !transcript.isEmpty {
         Text(transcript).font(.body).lineLimit(3).multilineTextAlignment(.center)
           .frame(maxWidth: 480)

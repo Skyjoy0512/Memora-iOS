@@ -13,8 +13,9 @@ final class LiveVoiceAudioEngine {
   private let format = AVAudioFormat(standardFormatWithSampleRate: 24_000, channels: 1)!
 
   var queuedSeconds: Double { Double(queuedFrames) / format.sampleRate }
+  var inputFormat: AVAudioFormat? { engine?.inputNode.outputFormat(forBus: 0) }
 
-  func start(bridge: LiveSpeechRequestBridge) throws {
+  func start(bridge: LiveMicrophoneBridge) throws {
     stop()
     let session = AVAudioSession.sharedInstance()
     try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetoothHFP])
@@ -23,7 +24,6 @@ final class LiveVoiceAudioEngine {
     let player = AVAudioPlayerNode()
     // Full duplex only starts when echo cancellation is available.
     try engine.inputNode.setVoiceProcessingEnabled(true)
-    try engine.outputNode.setVoiceProcessingEnabled(true)
     let inputFormat = engine.inputNode.outputFormat(forBus: 0)
     guard inputFormat.sampleRate > 0, inputFormat.channelCount > 0 else {
       throw LiveVoiceError.unavailable("利用できるマイクが見つかりません。")
@@ -31,7 +31,7 @@ final class LiveVoiceAudioEngine {
     engine.attach(player)
     engine.connect(player, to: engine.mainMixerNode, format: format)
     engine.inputNode.installTap(onBus: 0, bufferSize: 2_048, format: nil) { buffer, _ in
-      bridge.append(buffer)
+      bridge.consume(buffer)
     }
     self.engine = engine
     self.player = player
