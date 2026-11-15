@@ -18,7 +18,7 @@ export function isolatedDatabase(marker: string, bundleID: string, key: FixtureD
   const matches: string[] = [];
   for (const devices of Object.values(listing.devices) as any[][]) {
     for (const simulator of devices) {
-      if (simulator.name !== 'iPhone 18 Pro Max' || simulator.state !== 'Booted') continue;
+      if (!['iPhone 18 Pro Max', 'iPhone 18 Pro'].includes(simulator.name) || simulator.state !== 'Booted') continue;
       try {
         const container = realpathSync(execFileSync('xcrun', ['simctl', 'get_app_container', simulator.udid, bundleID, 'data'],
           { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim());

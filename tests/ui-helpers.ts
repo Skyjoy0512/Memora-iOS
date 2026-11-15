@@ -134,6 +134,14 @@ export async function launchMemora(app: any, device: any, screen: any) {
   await app.restart();
   const skip = screen.getByRole('button', { name: 'スキップ', exact: true });
   const menu = screen.getByLabel('メニュー').first();
+  const open = screen.getByRole('button', { name: '開く', exact: true });
+  await expect.poll(async () => await skip.isVisible() || await menu.isVisible() || await open.isVisible()).toBe(true);
+  if (!await skip.isVisible() && !await menu.isVisible() && await open.isVisible()) {
+    // A previous interrupted deep-link test can leave the system consent
+    // alert above a freshly installed app. Dismiss it before onboarding.
+    await tapControl(screen.getByRole('button', { name: 'キャンセル', exact: true }));
+    await app.restart();
+  }
   await expect.poll(async () => (await skip.isVisible()) || (await menu.isVisible())).toBe(true);
   if (await skip.isVisible()) {
     // Skip stays still while the onboarding waveform animates.

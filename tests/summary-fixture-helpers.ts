@@ -10,13 +10,19 @@ export async function seedSummaryFixture(app: any, device: any, screen: any,
   await launchMemora(app, device, screen);
   const marker = 'summary-reading-' + randomUUID();
   await device.openLink('memora://new-memo');
+  const titleField = screen.getByRole('textbox', { name: 'タイトル', exact: true });
+  const confirmOpen = screen.getByRole('button', { name: '開く', exact: true });
+  await expect.poll(async () => await titleField.isVisible() || await confirmOpen.isVisible()).toBe(true);
+  if (await confirmOpen.isVisible()) await tapControl(confirmOpen);
   await screen.getByRole('textbox', { name: 'タイトル', exact: true }).fill(marker);
   const body = screen.getByRole('textbox', { name: 'ノート本文', exact: true });
   await tapControl(body);
   // UITextView can have a visible insertion caret without exposing AX focus.
   // Verify actual entry rather than that unreliable accessibility flag.
+  // Start at the top of the empty field; its centre can be below the keyboard.
   const markerBody = 'Isolated summary fixture ' + marker;
-  await body.fill(markerBody);
+  await body.tap({ position: { x: 12, y: 12 } });
+  await body.pressSequentially(markerBody, { timeout: 30_000 });
   await expect(body).toHaveValue(markerBody);
   const closeKeyboard = screen.getByRole('button', { name: 'キーボードを閉じる', exact: true });
   if (await closeKeyboard.isVisible()) await tapControl(closeKeyboard);
