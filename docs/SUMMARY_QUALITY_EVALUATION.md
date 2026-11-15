@@ -25,3 +25,5 @@
 `python3 tools/evaluation/summary_report.py --baseline /external/before.json --candidate /external/after.json --output /external/new-report.json`。入力は [開発用README](../tools/evaluation/README.md) を参照。原文hash、facts/decisions/actionsのPrecision/Recall/F1、担当/期限/話者/引用、撤回、不正出典、重複を検査し、性能分布と同じcaseに表示する。語義・可読性・正当な追加事実の評価を文字列比較で置換しない。
 
 未レビュー、mock/host時間、条件不一致、欠測、3回未満のcohortでは自動採用を止める。3回は最低収集条件であり統計的有意差の証明ではない。人手のリリース判断と公式評価は別途必要。実モデルの比較結果はまだない。
+
+最終コードの実装範囲・無料10群の結果・未採用/未検証事項は[2026-11-15統合検証](summary-performance/VALIDATION_2026_11_15.md)を参照。

@@ -1852,6 +1852,9 @@ Simulatorで履歴の再開、Library往復、終了後の再起動、明示new 
 - 固定版J-MeetEval（197件・16カテゴリ、開発専用）、25の合成goldシナリオ、無料CI評価器を導入。
 - lossless短縮IDと根拠の元UUID復元、数値診断、共通能力カタログ、容量計画、推論から独立した制限付き並列を実装・無料回帰検証。
 - 選択したAnthropicモデル/endpointの維持を修正。自動の別モデルfallbackを除去。
-- 未完: 永続分析cache・再生成再利用、SoT候補、確定STT区間とのパイプライン化、通信セッション再利用、統合E2E。
+- 追加済み: scoped SQLite part cache・再生成再利用、gateを閉じたSoT候補、job内HTTP session再利用、off-main解析、数値診断、最終無料回帰10群。
+- 未完: 確定STT区間との新たなパイプライン化、課金上限付きLevel 2/3 runner、実モデル/実機の性能・品質評価。SoTは通常未採用。
 - 実モデル評価は利用者指定により実施しない。60/30秒達成、実API費用・品質・J-MeetEval総合スコアは未計測。
 - 継続時は [要約アーキテクチャ](SUMMARY_ARCHITECTURE.md) と [検証記録](summary-performance/VALIDATION.md) を参照。
+
+- 2026-11-15の追加実装と検証範囲は[統合検証](summary-performance/VALIDATION_2026_11_15.md)に記録。未計測の速度目標を達成扱いにしない。

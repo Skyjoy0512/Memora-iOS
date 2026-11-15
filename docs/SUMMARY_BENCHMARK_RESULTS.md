@@ -8,7 +8,7 @@
 | 実API費用・token・TTFT・推論時間 | 不明 | 不明 | API実行なし |
 | J-MeetEval公式総合スコア | 不明 | 不明 | Judge未実行 |
 | 固定データ監査 | 未導入 | 197件・16カテゴリ | byte照合・SHA256確認済み |
-| 評価器の単体テスト | 未導入 | 7件成功 | オフライン、モデル品質ではない |
+| 評価器の単体テスト | 未導入 | 開発環境11件成功（通常依存なし8件） | オフライン、モデル品質ではない |
 
 実機の電池・発熱・メインスレッド負荷は未計測。以前の整形fixture結果は [別報告](adaptive-summary/REPORT.md) に保持する。本書の性能目標の達成証拠として転記しない。
 
@@ -28,3 +28,5 @@ SSEバイト/SSE/JSON解析がmain thread外、表示callbackがMainActorで動�
 階層groupの1/2/3/4並列をproduction reducerで検証。4 groupに対してmerge呼出しは各4回のまま、到着順を逆にしてもab/cd/ef/ghの順序を保持。429で初期2 worker以降の送信を止めた。原文prefixの同一性と既存pipeline/cache回帰を確認。iOS preview 2026-11-15T04-37-47-73cf439d.log成功（既存11警告）。実APIでのヒット率・速度は不明。
 
 計測/比較基盤の追加検証: 開発Python環境の全11単体テスト成功（0.408秒は評価器のテスト時間）。197件/16カテゴリの固定データ監査、300 requestを表示切捨て後も集計、4,097件で欠測明示、実transportの429 outcome・bounded continuationを確認。JSON fallbackのbyte receive/parseもhostでoff-mainを確認。実モデルのスコアは未取得。ログは外部作業ディレクトリのphase0-metrics-* / phase1-all-offline-final.log / phase2-single-serialization.log / phase0-request-failure-metrics.log。
+
+最終コードの実装範囲・無料10群の結果・未採用/未検証事項は[2026-11-15統合検証](summary-performance/VALIDATION_2026_11_15.md)を参照。

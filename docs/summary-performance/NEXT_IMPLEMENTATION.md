@@ -1,5 +1,7 @@
 # 継続作業の設計メモ
 
+現況の正本: [2026-11-15統合検証](VALIDATION_2026_11_15.md)。以下は各単位の途中の調査記録。アプリ最終レビューdc82f7f4、UIテストd84dcf42。無料10群と最終buildのUI3件は成功。実モデル評価は実施しない。
+
 基盤commit: 6ef48197（SQLite part cache）、da1167e1（階層並列とprefix）。数値集計/JSON off-main/オフライン比較レポートも追加。実モデル評価は利用者指定で実行しない。未実装を完成扱いにしない。
 
 ## 次の単位: 階層並列 / SoT候補 / 統合
@@ -47,4 +49,8 @@
 
 キャッシュのhitごとの全量SQLite書き戻しを廃止し、LRU touchをRAMに保持して次回write時に反映する。再起動を挟むLRUは最後の永続化時点となる。10 hit/変更なしowner cleanupでSQLite data_versionが不変であることを実ストアのhost testで確認。起動cleanupもleaseを検証し、古いcleanupが新世代を消去しない。空のcacheではrecord配列の追加比較を避け、分析開始時点で保守的な存在flagを立てて未完了workerの失効を維持する。
 
-fence付き不完全notes JSONを完了した部分結果として扱わない。生成factのspeakerIDsは引用した原文segmentのspeakerIDだけを受理し、不一致はuncertainへ下げる。過去本文・編集は変更しない。SummaryPlanning/SummaryReadingの追加回帰とiOS preview成功（既存11警告）。最終10群の再実行中。
+fence付き不完全notes JSONを完了した部分結果として扱わない。生成factのspeakerIDsは引用した原文segmentのspeakerIDだけを受理し、不一致はuncertainへ下げる。過去本文・編集は変更しない。SummaryPlanning/SummaryReadingの追加回帰とiOS preview成功（既存11警告）。続く最終10群も成功（統合検証参照）。
+
+## 統合確認後に残る作業
+
+通常利用の並列文章生成gateは閉鎖を維持。Phase 5の音声先行処理、実費上限を保証する生成/Judge runner、全job横断rate制御は未実装。実APIの品質/速度/費用と実機の電池/発熱等は未検証。PNG復旧UIの入口は既存フラグで無効のため未検証。最終10群はquality-2026-11-15-final、UIはsummary-performance-narrow-focused / summary-performance-supported-confirmedに記録。次回は完了済みの無料確認を繰り返す前に統合検証の残存課題を確認する。

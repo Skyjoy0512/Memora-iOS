@@ -30,3 +30,5 @@ JSON Schemaを利用できる公式モデルでも、利用者の未知endpoint�
 `SummaryProviderAdapter` だけがレビュー済みのDeepSeek固有fieldを送る。標準モードのrequestは変更しない。高速/高精度の既存明示設定を保持する。新しい最適化が自動で推論をオフにすることはない。
 
 [Anthropicの公式fallback仕様](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback)を確認し、従来の `fallbacks=default` / beta headerが別モデルへの切替を許していた点を修正。要約とAsk AIの両方から除去し、拒否は既存の失敗として返す。Anthropicでも指定されたllm.baseURLを使用し、custom endpointを公式URLへ黙って差し替えない。
+
+最終コードの実装範囲・無料10群の結果・未採用/未検証事項は[2026-11-15統合検証](summary-performance/VALIDATION_2026_11_15.md)を参照。

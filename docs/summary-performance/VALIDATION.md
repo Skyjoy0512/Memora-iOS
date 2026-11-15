@@ -37,3 +37,5 @@
 - `run-cloud-session-checks.sh`: 両API、selected model、EOF/HTTP/continuation/cancel/許可・予算・SQLiteの既存回帰成功。
 - `run-summary-reading-checks.sh`: 実MeetingSummarizerの4part+finalが同じtransportを使うこと、既存source/ordered merge/キャンセル・編集等の回帰成功。
 - iOS preview `2026-11-14T22-45-48-045e9839.log` 成功（既存11警告）。実ネットワーク・TLS・実機時間の改善は未計測。
+
+最新の実装範囲・最終無料10群・シミュレーターUI3件と未検証事項は[2026-11-15統合検証](VALIDATION_2026_11_15.md)を参照。

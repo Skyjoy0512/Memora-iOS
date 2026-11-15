@@ -42,3 +42,5 @@ SSEのバイトループとJSON蓄積は `@concurrent` でMainActor外へ移動�
 OpenAI公式Chat Completionsのusage opt-inは既存AgentGenerationPolicyのusage処理だけを要約でも共有し、推論/出力設定には触れない。未知model/endpointへ新しいflagを送らない。[公式仕様](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)に従い、終端usageを受け取れなかった値は不明のまま。
 
 JSONで返す互換serverの受信/JSON解析もoff-mainへ移動。Summary requestはstream flagを初回JSON生成時に含め、MainActorでの全文decode/re-encodeをなくした。他の既存callerのstream付加はoff-main。出力上限・EOF・終端理由・モデル/認証/endpoint保護を維持する。
+
+最終コードの実装範囲・無料10群の結果・未採用/未検証事項は[2026-11-15統合検証](summary-performance/VALIDATION_2026_11_15.md)を参照。

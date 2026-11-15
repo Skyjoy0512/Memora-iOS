@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-15",
+  "baselineCommit": "183b1226",
+  "testedAppRevision": "dc82f7f4",
+  "testRevision": "d84dcf42",
+  "measurementKind": "host-and-simulator-no-model",
+  "realModelEvaluation": "notPerformedByUserInstruction",
+  "qualitySuites": [
+    {
+      "suite": "summary-planning",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "summary-planning.log"
+    },
+    {
+      "suite": "summary-evaluation",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "summary-evaluation.log"
+    },
+    {
+      "suite": "next-generation",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "next-generation.log"
+    },
+    {
+      "suite": "design-refresh",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "design-refresh.log"
+    },
+    {
+      "suite": "background-summary",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "background-summary.log"
+    },
+    {
+      "suite": "summary-reliability",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "summary-reliability.log"
+    },
+    {
+      "suite": "adaptive-summary",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "adaptive-summary.log"
+    },
+    {
+      "suite": "adaptive-summary-quality",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "adaptive-summary-quality.log"
+    },
+    {
+      "suite": "composer-layout",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "composer-layout.log"
+    },
+    {
+      "suite": "optimization",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "optimization.log"
+    }
+  ],
+  "preview": {
+    "result": "success",
+    "existingWarnings": 11,
+    "log": "2026-11-15T06-13-40-f32d286a.log"
+  },
+  "e2eBuild": {
+    "result": "success",
+    "existingWarnings": 11,
+    "log": "2026-11-15T06-17-37-af24be3c.log"
+  },
+  "uiRuns": [
+    {
+      "path": ".e2e/summary-performance-narrow-focused/report.json",
+      "id": "01a1dc8e-dc59-71d2-bb4f-eda25dd5c7fb",
+      "summary": {
+        "discovered": 138,
+        "selected": 1,
+        "executed": 1,
+        "passed": 1,
+        "failed": 0,
+        "interrupted": 0,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "modelTokens": 0,
+      "maxModelCallsInStep": 0
+    },
+    {
+      "path": ".e2e/summary-performance-supported-confirmed/report.json",
+      "id": "01a1dc90-165a-7665-ae3f-5eea923f54b3",
+      "summary": {
+        "discovered": 138,
+        "selected": 2,
+        "executed": 2,
+        "passed": 2,
+        "failed": 0,
+        "interrupted": 0,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "modelTokens": 0,
+      "maxModelCallsInStep": 0
+    },
+    {
+      "path": ".e2e/summary-performance-final/report.json",
+      "id": "01a1dbc0-d49e-7ef3-9319-ccc9cc28bc90",
+      "summary": {
+        "discovered": 137,
+        "selected": 3,
+        "executed": 3,
+        "passed": 2,
+        "failed": 1,
+        "interrupted": 0,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "modelTokens": 0,
+      "maxModelCallsInStep": 0
+    }
+  ],
+  "unverified": {
+    "summarySeconds": null,
+    "apiCost": null,
+    "inputTokens": null,
+    "outputTokens": null,
+    "reasoningTokens": null,
+    "jmeetEvalOfficialScore": null,
+    "realModelFactPrecisionRecallF1": null,
+    "deviceBattery": null,
+    "deviceThermal": null
+  },
+  "adoption": {
+    "parallelCompositionEnabled": false,
+    "recordingAheadAnalysisImplemented": false,
+    "paidEvaluationRunnerImplemented": false,
+    "pngFailureRecoveryUI": "blockedByExistingDisabledInlinePoster"
+  },
+  "deliveryPreview": {
+    "result": "success",
+    "log": "2026-11-15T09-22-12-19c18d0d.log",
+    "warnings": 11
+  }
+}
