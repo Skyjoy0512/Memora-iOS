@@ -1866,3 +1866,7 @@ Simulatorで履歴の再開、Library往復、終了後の再起動、明示new 
 ## 2026-11-15: 保存済み音声の区間準備候補
 
 既存RecordedAudioTranscriptionに1区間先読み変換の候補を追加し、区間ごとの一時ファイルlease、容量・低電力・thermal条件、構造化キャンセルを実装。[詳細](summary-performance/AUDIO_PREPARATION_PIPELINE.md)。実WAV/AAC＋認識fixtureで逐次同等・重なり・確定prefix再開・原本変更拒否を無料検証。通常利用のgateは閉鎖。録音中の先行推論と実機評価は引き続き残課題。
+
+## 2026-11-15: 確定音声区間の版情報
+
+既存SourceMediaCheckpointに任意の区間版・配列範囲を追加。本文/話者/時刻/認識情報と原本/設定を照合し、旧形式や破損した付加情報で正常な文字起こしを失わない。認識prefix再開でも未変更区間の版を維持する。先行AI分析は未接続、既存の記録全体のcache失効は維持。[設計](summary-performance/SETTLED_CHUNK_REVISIONS.md)と[現況・残タスク](summary-performance/STATUS.md)を参照。

@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-15",
+  "baseCommit": "e33e0af1037d88e16cb10eb20bcc329356abe862",
+  "codeSnapshot": {
+    "schemaVersion": 1,
+    "sha256": "7cb7a8643a05431a70f17e6b2faeadeaeb979a63526ca3ac8992269a170dd542",
+    "fileCount": 1963,
+    "fileRevisionsSHA256": "8acc9ad34e271663195624bf9a5ca6b1c7fb4612a1c85a30781927a1a234a198",
+    "scope": [
+      "App",
+      "Shared",
+      "tools/checks",
+      "tools/evaluation",
+      "tests"
+    ],
+    "extensions": [
+      ".entitlements",
+      ".json",
+      ".jsonl",
+      ".lock",
+      ".plist",
+      ".py",
+      ".sh",
+      ".swift",
+      ".toml",
+      ".ts",
+      ".txt",
+      ".yaml",
+      ".yml"
+    ]
+  },
+  "feature": "Optional settled-media interval revisions in the existing STT checkpoint",
+  "earlyAnalysisConnected": false,
+  "productionAudioLookaheadEnabled": false,
+  "productionParallelCompositionEnabled": false,
+  "hostChecks": {
+    "status": "passed",
+    "log": "settled-revisions-final-host.log",
+    "productionCode": [
+      "SourceMediaChunkRevision",
+      "SourceMediaCheckpoint",
+      "SourceMediaCheckpointStore",
+      "RecordedAudioTranscription"
+    ],
+    "storage": "actual SQLite",
+    "audioExport": "actual AVFoundation WAV/AAC",
+    "recognition": "fixed host fixture, not SpeechAnalyzer",
+    "checks": [
+      "equal-timestamp boundaries with explicit array ranges",
+      "prefix append and SQLite restart",
+      "12 text/speaker/timing/recognition mutations",
+      "stable interval ID and changed content fingerprint",
+      "legacy/malformed provenance retains text",
+      "overflow/overlap/order/time/source/configuration rejection",
+      "blocks and silent prefixes",
+      "failed save and TTL",
+      "revoked old writers",
+      "optional metadata capacity fallback preserves full text",
+      "actual recorded-audio producer failure/resume retains revisions"
+    ],
+    "videoAudioRecognition": "not exercised; block revision codec tested and production producer compiled"
+  },
+  "offlineRegression": {
+    "passed": 10,
+    "total": 10,
+    "sourceGuardUnchanged": true,
+    "results": [
+      {
+        "suite": "summary-planning",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "summary-planning.log",
+        "sourceSHA256": "7cb7a8643a05431a70f17e6b2faeadeaeb979a63526ca3ac8992269a170dd542"
+      },
+      {
+        "suite": "summary-evaluation",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "summary-evaluation.log",
+        "sourceSHA256": "7cb7a8643a05431a70f17e6b2faeadeaeb979a63526ca3ac8992269a170dd542"
+      },
+      {
+        "suite": "next-generation",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "next-generation.log",
+        "sourceSHA256": "7cb7a8643a05431a70f17e6b2faeadeaeb979a63526ca3ac8992269a170dd542"
+      },
+      {
+        "suite": "design-refresh",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "design-refresh.log",
+        "sourceSHA256": "7cb7a8643a05431a70f17e6b2faeadeaeb979a63526ca3ac8992269a170dd542"
+      },
+      {
+        "suite": "background-summary",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "background-summary.log",
+        "sourceSHA256": "7cb7a8643a05431a70f17e6b2faeadeaeb979a63526ca3ac8992269a170dd542"
+      },
+      {
+        "suite": "summary-reliability",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "summary-reliability.log",
+        "sourceSHA256": "7cb7a8643a05431a70f17e6b2faeadeaeb979a63526ca3ac8992269a170dd542"
+      },
+      {
+        "suite": "adaptive-summary",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "adaptive-summary.log",
+        "sourceSHA256": "7cb7a8643a05431a70f17e6b2faeadeaeb979a63526ca3ac8992269a170dd542"
+      },
+      {
+        "suite": "adaptive-summary-quality",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "adaptive-summary-quality.log",
+        "sourceSHA256": "7cb7a8643a05431a70f17e6b2faeadeaeb979a63526ca3ac8992269a170dd542"
+      },
+      {
+        "suite": "composer-layout",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "composer-layout.log",
+        "sourceSHA256": "7cb7a8643a05431a70f17e6b2faeadeaeb979a63526ca3ac8992269a170dd542"
+      },
+      {
+        "suite": "optimization",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "optimization.log",
+        "sourceSHA256": "7cb7a8643a05431a70f17e6b2faeadeaeb979a63526ca3ac8992269a170dd542"
+      }
+    ]
+  },
+  "iOSPreview": {
+    "result": "success",
+    "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-11-15T13-51-04-a5814d03.log",
+    "warnings": 11
+  },
+  "e2e": {
+    "runID": "01a1dd8f-6520-7e61-835e-0cbd00c2a313",
+    "summary": {
+      "discovered": 138,
+      "selected": 2,
+      "executed": 2,
+      "passed": 2,
+      "failed": 0,
+      "interrupted": 0,
+      "flaky": 0,
+      "skipped": 0
+    },
+    "usage": {
+      "discoveredResults": 138,
+      "maxAgentContextBytes": 0,
+      "maxLedgerBytes": 0,
+      "maxObservationBytes": 0,
+      "artifactBytes": 1207049,
+      "downloads": 0,
+      "events": 172,
+      "modelTokens": 0,
+      "maxModelCallsInStep": 0,
+      "maxActionStepsInStep": 0
+    },
+    "results": [
+      {
+        "title": [
+          "adaptive reading retains task operations, facts and transcript evidence"
+        ],
+        "status": "passed",
+        "durationMs": [
+          162632
+        ]
+      },
+      {
+        "title": [
+          "failed transcript saves keep the stored record and durable or in-memory draft"
+        ],
+        "status": "passed",
+        "durationMs": [
+          89288
+        ]
+      }
+    ],
+    "screenshot": "screenshots/settled-revisions-table-editor.png"
+  },
+  "modelPerformance": {
+    "summarySecondsBefore": null,
+    "summarySecondsAfter": null,
+    "costBefore": null,
+    "costAfter": null,
+    "generatedSummaryQuality": null,
+    "jmeetevalOverall": null
+  },
+  "unverified": [
+    "actual transcription and summary models",
+    "iPhone latency/memory/battery/thermal/recording stability",
+    "live sealed-part identities and update events",
+    "early AI analysis integration"
+  ],
+  "authorityBoundary": "Stored revision comparison does not grant source access or replace current record/workspace/privacy/cache-lease checks.",
+  "artifactDirectory": "/Volumes/WorkspaceSSD/Development/Agents/MemoraSummaryPerformanceValidation"
+}

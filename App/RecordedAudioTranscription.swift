@@ -61,12 +61,14 @@ enum RecordedAudioTranscription {
     let checkpoint = store.load(key, duration: duration, session: session)
     var segments = checkpoint?.segments ?? []
     var completed = checkpoint?.completedChunks ?? 0
+    var revisions = checkpoint?.chunkRevisions
     diagnostic?.chunks(reused: completed, completed: completed)
     return try await withThrowingTaskGroup(of: SourceMediaAudioLease.self) { pending in
       defer { pending.cancelAll() }
       var preparedIndex: Int?
       for index in completed..<chunks.count {
         let chunk = chunks[index]
+        let segmentOffset = segments.count
         try Task.checkCancellation()
         let audio: SourceMediaAudioLease
         if preparedIndex == index {
@@ -121,9 +123,12 @@ enum RecordedAudioTranscription {
         }
         completed += 1
         diagnostic?.chunks(completed: completed)
-        let prefix = SourceMediaCheckpoint(duration: duration, completedChunks: completed, blocks: [], segments: segments)
+        var prefix = SourceMediaCheckpoint(duration: duration, completedChunks: completed, blocks: [],
+          segments: segments, chunkRevisions: revisions)
+        prefix.recordSettledChunk(index: index, segmentRange: segmentOffset..<segments.count, key: key)
+        revisions = prefix.chunkRevisions
         guard prefix.isValid(for: duration) else { throw SourceMediaFailure.invalidTranscript }
-        guard try JSONEncoder().encode(prefix).count <= SourceExtractionPersistence.maximumEntryBytes else {
+        guard try prefix.persistenceData(maximumBytes: SourceExtractionPersistence.maximumEntryBytes) != nil else {
           throw SourceMediaFailure.transcriptTooLarge
         }
         store.save(prefix, key: key, session: session)

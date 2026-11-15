@@ -45,6 +45,6 @@ OpenAI公式Chat Completionsのusage opt-inは既存AgentGenerationPolicyのusag
 
 JSONで返す互換serverの受信/JSON解析もoff-mainへ移動。Summary requestはstream flagを初回JSON生成時に含め、MainActorでの全文decode/re-encodeをなくした。他の既存callerのstream付加はoff-main。出力上限・EOF・終端理由・モデル/認証/endpoint保護を維持する。
 
-最終コードの実装範囲・無料10群の結果・未採用/未検証事項は[2026-11-15統合検証](summary-performance/VALIDATION_2026_11_15.md)を参照。
+初回の統合結果は[2026-11-15統合検証](summary-performance/VALIDATION_2026_11_15.md)、以後の実装・残タスク・未検証事項は[現況一覧](summary-performance/STATUS.md)を参照。
 
 2026-11-15追加: [要約ジョブ間の送信上限・Retry-After・待機後の再認可](summary-performance/SUMMARY_REQUEST_SCHEDULING.md)を実装。RPM/TPMの推測や自動課金retryは追加しない。

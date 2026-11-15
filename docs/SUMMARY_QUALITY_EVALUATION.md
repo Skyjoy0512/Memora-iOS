@@ -26,7 +26,7 @@
 
 未レビュー、mock/host時間、条件不一致、欠測、3回未満のcohortでは自動採用を止める。3回は最低収集条件であり統計的有意差の証明ではない。人手のリリース判断と公式評価は別途必要。実モデルの比較結果はまだない。
 
-最終コードの実装範囲・無料10群の結果・未採用/未検証事項は[2026-11-15統合検証](summary-performance/VALIDATION_2026_11_15.md)を参照。
+初回の統合結果は[2026-11-15統合検証](summary-performance/VALIDATION_2026_11_15.md)、以後の実装・残タスク・未検証事項は[現況一覧](summary-performance/STATUS.md)を参照。
 
 ## 実行中の入力変更を検出する
 
@@ -48,3 +48,5 @@ python3 tools/checks/run-quality-checks.py --output-dir /external/new-frozen-inp
 ## 保存済み音声の準備候補
 
 [追加検証](summary-performance/AUDIO_PREPARATION_PIPELINE.md)は実WAV/AAC変換＋固定認識応答で逐次同等・先読みの重なり・失敗/熱/原本変更/キャンセルを確認する。ガード付き全10群のソース指紋も一致。これは実認識・実要約モデルの品質評価ではない。
+
+確定区間の版管理も[追加検証](summary-performance/SETTLED_CHUNK_REVISIONS.md)。実SQLiteで旧形式/破損/変更/再開/失効を確認し、ガード付き全10群とE2E選択2件が成功。実認識・生成モデルの評価ではない。

@@ -37,8 +37,10 @@ enum SourceMediaExtraction {
     var transcript = SourceMediaTranscript()
     try transcript.restore(checkpoint?.blocks ?? [])
     var completed = checkpoint?.completedChunks ?? 0
+    var revisions = checkpoint?.chunkRevisions
     diagnostic?.chunks(reused: completed, completed: completed)
     for chunk in chunks.dropFirst(completed) {
+      let blockOffset = transcript.blocks.count
       try Task.checkCancellation()
       let outcome = try await transcribe(chunk, asset: asset, stage: stage, vocabulary: vocabulary, locale: locale)
       try Task.checkCancellation()
@@ -56,8 +58,11 @@ enum SourceMediaExtraction {
       }
       completed += 1
       diagnostic?.chunks(completed: completed)
-      checkpointStore.save(.init(duration: duration, completedChunks: completed, blocks: transcript.blocks),
-        key: key, session: session)
+      var prefix = SourceMediaCheckpoint(duration: duration, completedChunks: completed,
+        blocks: transcript.blocks, chunkRevisions: revisions)
+      prefix.recordSettledChunk(index: completed - 1, blockRange: blockOffset..<transcript.blocks.count, key: key)
+      revisions = prefix.chunkRevisions
+      checkpointStore.save(prefix, key: key, session: session)
     }
     try Task.checkCancellation()
     let verification = diagnostic?.begin(.verification)

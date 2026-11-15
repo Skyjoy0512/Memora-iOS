@@ -67,7 +67,9 @@ mockの候補実行では全原文と同じ撤回/条件が各部分に入り、
 
 `RecordedAudioTranscription` は既存のSourceMediaCheckpointStoreに確定prefixを保存し、再開時に完了区間を再認識しない。`TranscriptionService` は保存音声でvolatileResultsを要求せず、SpeechTranscriptionSegmentsはisFinal以外を保存しない。
 
-一方 `RealtimeTranscriptionService` / LiveTranscriptHistoryは表示用。録音保護のためlive bufferはdropし得て、確定した語でも音声全区間の網羅・保存版とのUUID/話者一致は保証されない。これを完成原文として先行クラウド送信しない。export先は単一staging audioURLであり、次区間の並列exportは認識中ファイルを上書きし得る。現実装では直列を維持する。
+一方 `RealtimeTranscriptionService` / LiveTranscriptHistoryは表示用。録音保護のためlive bufferはdropし得て、確定した語でも音声全区間の網羅・保存版とのUUID/話者一致は保証されない。完成原文として先行クラウド送信しない。保存済み録音には区間ごとの一時file leaseを導入し、次区間の変換を重ねる候補をhost検証したが、通常利用は直列を維持する。SourceMediaExtractionの動画/外部音声変換も直列のまま。
+
+既存checkpointには[確定区間の版/配列範囲](summary-performance/SETTLED_CHUNK_REVISIONS.md)を追加した。新しい分析consumerや録音中の先行推論は接続していない。記録編集時の既存全体失効、送信前/保存前の原本・権限検証は維持する。
 
 先行処理を採用するには、確定原文のcoverage/版管理と話者修正による失効、二重bufferと容量予約、CPU/thermal/録音drop・取消の実機評価、追加課金の採用ゲートが必要。今回、実機・実モデルの検証を行えないため、録音終了後10〜20秒を達成済みとしない。
 
@@ -87,6 +89,6 @@ partNotesは従来の事実メモに加えて、任意の単一JSON notes/source
 
 Single Passのuser promptは記録metadata→原文→個別の構成/抽出契約。同一原文でlength/order/templateだけを変えた場合、原文までのprefixが同一であることをhostで検証。prompt cache対応は共有能力で表し、未確認のAPIパラメーターを送らない。自動prefix cacheを持つproviderへ適した配置だが、実ヒット率・cache write/read費用・速度は未測定。Anthropic等の明示TTL/外部保持期間は追加しない。
 
-最終コードの実装範囲・無料10群の結果・未採用/未検証事項は[2026-11-15統合検証](summary-performance/VALIDATION_2026_11_15.md)を参照。
+初回の統合結果は[2026-11-15統合検証](summary-performance/VALIDATION_2026_11_15.md)、以後の実装・残タスク・未検証事項は[現況一覧](summary-performance/STATUS.md)を参照。
 
 2026-11-15追加: [要約ジョブ間の送信上限・Retry-After・待機後の再認可](summary-performance/SUMMARY_REQUEST_SCHEDULING.md)を実装。RPM/TPMの推測や自動課金retryは追加しない。

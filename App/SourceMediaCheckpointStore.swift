@@ -33,8 +33,20 @@ final class SourceMediaCheckpointStore: @unchecked Sendable {
   func load(_ key: String, duration: TimeInterval, session: UUID) -> SourceMediaCheckpoint? {
     lock.lock()
     defer { lock.unlock() }
+    return loadLocked(key, duration: duration, session: session)
+  }
+
+  /// A revision is an invalidation check, never a data-access permission. The
+  /// caller still validates its current source, workspace and privacy policy.
+  func isCurrent(_ revision: SourceMediaChunkRevision, key: String, duration: TimeInterval, session: UUID) -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    return loadLocked(key, duration: duration, session: session)?.chunkRevisions?.contains(revision) == true
+  }
+
+  private func loadLocked(_ key: String, duration: TimeInterval, session: UUID) -> SourceMediaCheckpoint? {
     guard session == generation, let data = persistence.readPayload(key) else { return nil }
-    guard let checkpoint = try? JSONDecoder().decode(SourceMediaCheckpoint.self, from: data),
+    guard var checkpoint = try? JSONDecoder().decode(SourceMediaCheckpoint.self, from: data),
           checkpoint.isValid(for: duration) else {
       persistence.removePayload(key)
       return nil
@@ -44,14 +56,17 @@ final class SourceMediaCheckpointStore: @unchecked Sendable {
       persistence.removePayload(key)
       return nil
     }
+    checkpoint.chunkRevisions = checkpoint.validatedChunkRevisions(key: key)
     return checkpoint
   }
 
   func save(_ checkpoint: SourceMediaCheckpoint, key: String, session: UUID) {
     lock.lock()
     defer { lock.unlock() }
-    guard session == generation, checkpoint.isValid(for: checkpoint.duration),
-          let data = try? JSONEncoder().encode(checkpoint) else { return }
+    guard session == generation, checkpoint.isValid(for: checkpoint.duration) else { return }
+    var checkpoint = checkpoint
+    checkpoint.chunkRevisions = checkpoint.validatedChunkRevisions(key: key)
+    guard let data = try? checkpoint.persistenceData(maximumBytes: SourceExtractionPersistence.maximumEntryBytes) else { return }
     // Silence is a reusable prefix, not a permanently cached failed import.
     if !checkpoint.hasText,
        checkpoint.completedChunks == (try? SourceMediaChunk.plan(duration: checkpoint.duration).count) {

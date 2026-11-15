@@ -1,4 +1,5 @@
 import AVFoundation
+import CryptoKit
 import Foundation
 import Synchronization
 
@@ -27,6 +28,11 @@ enum RecordedAudioTranscriptionChecks {
     guard case .failed = failed else { preconditionFailure("Partial result was published") }
     let firstCount = await calls.count
     precondition(firstCount == 2)
+    let checkpointKey = try recordingKey(url)
+    let inspector = SourceMediaCheckpointStore(directory: directory)
+    let firstCheckpoint = inspector.load(checkpointKey, duration: 901, session: inspector.begin())!
+    let firstRevision = firstCheckpoint.chunkRevisions!.first!
+    precondition(firstCheckpoint.chunkRevisions?.count == 1 && firstRevision.chunkIndex == 0)
     let complete = await RecordedAudioTranscription.transcribe(url, locale: Locale(identifier: "ja-JP"), vocabulary: [],
       checkpointStore: SourceMediaCheckpointStore(directory: directory), staging: staging, checkReadiness: { try AudioProcessingReadiness.check(thermalState: .nominal) }) { await calls.recognize($0) }
     guard case .segments(let parts) = complete else {
@@ -37,6 +43,10 @@ enum RecordedAudioTranscriptionChecks {
     precondition(resumedCount == 3 && parts.count == 2)
     precondition(parts[0].timestamp == 0.25 && parts[1].timestamp == 900.25)
     precondition(parts[1].endTime == 900.5 && parts[1].recognitionModel == "SpeechAnalyzer")
+    let finalCheckpoint = inspector.load(checkpointKey, duration: 901, session: inspector.begin())!
+    precondition(finalCheckpoint.chunkRevisions?.map(\.chunkIndex) == [0, 1])
+    precondition(finalCheckpoint.chunkRevisions?.first == firstRevision && finalCheckpoint.segments == parts)
+    precondition(inspector.isCurrent(firstRevision, key: checkpointKey, duration: 901, session: inspector.begin()))
     let cached = await RecordedAudioTranscription.transcribe(url, locale: Locale(identifier: "ja-JP"), vocabulary: [],
       checkpointStore: SourceMediaCheckpointStore(directory: directory), staging: staging, checkReadiness: { try AudioProcessingReadiness.check(thermalState: .critical) }) { _ in
         preconditionFailure("Completed recording was recognized again")
@@ -89,6 +99,16 @@ enum RecordedAudioTranscriptionChecks {
     precondition(readinessCalls.withLock { $0 } == 2 && FileManager.default.fileExists(atPath: url.path))
     try await RecordedAudioPreparationChecks.run(root: root, source: url)
     print("RecordedAudioTranscriptionChecks: PASS. Actual >50MB WAV snapshot and two AAC exports; failed suffix never published; SQLite resume across new store; timestamps/end times; completed reuse even at critical thermal state; low disk refusal; thermal prefix deferral and cooled suffix-only resume; post-export thermal gate. Recognizer fixture, no SpeechAnalyzer or iPhone RTF claim.")
+  }
+
+  private static func recordingKey(_ url: URL) throws -> String {
+    let handle = try FileHandle(forReadingFrom: url)
+    defer { try? handle.close() }
+    var digest = SHA256()
+    while let bytes = try handle.read(upToCount: 64 * 1_024), !bytes.isEmpty { digest.update(data: bytes) }
+    let fingerprint = digest.finalize().map { String(format: "%02x", $0) }.joined()
+    return try SourceMediaCheckpointStore.key(fingerprint: fingerprint, suffix: "wav",
+      locale: Locale(identifier: "ja-JP"), vocabulary: [], pipeline: "recording-speech-analyzer-v1")
   }
 }
 
