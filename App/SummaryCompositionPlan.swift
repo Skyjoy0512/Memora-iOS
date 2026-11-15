@@ -32,6 +32,11 @@ struct SummaryCompositionPlan: Codable {
             fact.content.count <= 4_000, fact.relatedTopicID.map({ topicIDs.contains($0) }) ?? true,
             Set(fact.relatedFactIDs ?? []).isSubset(of: factIDs),
             (fact.sourceReferences ?? []).allSatisfy({ source.validates(id: $0.sourceSegmentID, quote: $0.quote, allowShortIDs: compact) }) else { return false }
+      let citedSpeakers = Set((fact.sourceReferences ?? []).compactMap { reference -> String? in
+        guard let id = source.originalID(for: reference.sourceSegmentID, allowShortIDs: compact) else { return nil }
+        return source.entries.first { $0.segment.id == id }?.segment.speakerID
+      })
+      guard Set(fact.speakerIDs ?? []).isSubset(of: citedSpeakers) else { return false }
       if fact.status.isVisible {
         guard let references = fact.sourceReferences, !references.isEmpty, references.count <= 64,
               references.allSatisfy({ source.validates(id: $0.sourceSegmentID, quote: $0.quote, allowShortIDs: compact) }) else { return false }
@@ -44,10 +49,7 @@ struct SummaryCompositionPlan: Codable {
       let references = fact.sourceReferences ?? []
       for value in [action.owner, action.due].compactMap({ $0 }) {
         guard references.contains(where: { reference in
-          reference.quote.contains(value) || (action.owner == value && source.entries.contains {
-            source.originalID(for: reference.sourceSegmentID, allowShortIDs: compact) == $0.segment.id &&
-              $0.segment.speakerIsCertain && $0.segment.speaker == value
-          })
+          reference.quote.contains(value)
         }) else { return false }
       }
     }

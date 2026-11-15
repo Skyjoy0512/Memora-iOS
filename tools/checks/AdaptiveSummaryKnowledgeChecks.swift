@@ -38,6 +38,17 @@ enum AdaptiveSummaryKnowledgeChecks {
       preferences: SummaryPreferences(), modelInfo: "fixture", knowledge: validated)
     record.summaryVersions = [version]; record.activeSummaryVersionID = version.id
     precondition(record.currentSummaryKnowledge == validated)
+    precondition(record.reusableSummaryFacts.count == 4)
+    precondition(record.summaryKnowledgeText.contains(segment.id.uuidString))
+    var forgedRecord = record
+    forgedRecord.summaryVersions[0].knowledge!.facts[0].sourceReferences![0].quote = "原文にない引用を検出します。"
+    precondition(forgedRecord.reusableSummaryFacts.count == 3)
+    forgedRecord = record
+    forgedRecord.summaryVersions[0].knowledge!.facts[0].speakerIDs = ["wrong-person-id"]
+    precondition(forgedRecord.reusableSummaryFacts.count == 3)
+    forgedRecord = record
+    forgedRecord.summaryVersions[0].knowledge!.facts[0].sourceReferences = []
+    precondition(forgedRecord.reusableSummaryFacts.count == 3)
     let encoded = try JSONEncoder().encode(record)
     let roundtrip = try JSONDecoder().decode(Meeting.self, from: encoded)
     precondition(roundtrip.currentSummaryKnowledge == validated && roundtrip.title == "本人のタイトル")

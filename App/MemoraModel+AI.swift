@@ -684,11 +684,16 @@ extension MemoraModel {
   }
 
   private static func summaryFactLines(_ meeting: Meeting, words: [String], document: String, budget: Int) -> [String] {
-    let facts = meeting.currentSummaryKnowledge?.relevantFacts(to: words, excluding: "") ?? []
+    let facts = meeting.reusableSummaryFacts.filter { fact in
+      words.contains { !$0.isEmpty && fact.content.localizedCaseInsensitiveContains($0) }
+    }.prefix(8)
     let supplemental = Set(SummaryContentProjection.supplements(facts.map(\.content), markdown: document))
     var used = 0
     return facts.compactMap { fact in
-      let line = "抽出（" + fact.status.label + "）: " + fact.content
+      let references = (fact.sourceReferences ?? []).map {
+        "sourceSegmentID=" + $0.sourceSegmentID + " 引用: " + $0.quote
+      }.joined(separator: " / ")
+      let line = "抽出（" + fact.status.label + "、網羅性は未保証）: " + fact.content + " [" + references + "]"
       guard supplemental.contains(fact.content), used + line.count <= budget else { return nil }
       used += line.count
       return line

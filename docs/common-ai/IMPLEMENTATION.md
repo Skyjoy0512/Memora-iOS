@@ -83,3 +83,50 @@ cloud-session（本番HTTP/SSE/JSON/parser/agent/SQLite、要約slot待機中age
 別のassertConsumed失敗は再現しなかったためログを保持し、期待値は緩めず診断を詳細化。
 新testのclosure型推論compile失敗は明示Task型/分岐へ修正。
 ログ: common-ai-admission-planning.log / common-ai-cloud-session*.log（WorkspaceSSDの検証directory）。
+
+## 単位4: 現行Knowledgeの再利用境界・SoT容量
+
+既存Ask AIとProjectEvidenceのSummaryKnowledge利用を確認。Meeting.reusableSummaryFactsを
+共通の読み取り境界にし、現在のsummary版本/原文fingerprint/本文/抽出listの一致に加え、
+各根拠の一意なUUID・引用・話者ID・件数・schema・重複を再確認する。原文にない/無根拠の
+過去enrichmentを検索contextへ再昇格しない。状態labelと原文IDを保持し、Ask AIへ渡すときは
+引用も含める。元の原文検索・ProjectSearchIndex・時間/権限再検証を維持する。
+本人編集済みの抽出は既存reconciledUserEditsのレビュー扱いを維持し、自動memory登録しない。
+人物の実名推測・同姓同名の自動統合や永続memoryへの自動書込は追加していない。
+
+SoTのplan応答は最初のrequestではoutput予約でありinputではない。固定256KiBをinputにも
+重ねて予約する判定を除去し、section生成時に実際の共有plan/promptサイズを別budgetで計測。
+有料plan後の容量不足はexecutionLimitで終了し、自動でsingle-passを買い直さない。
+共通planのspeakerIDsも引用元話者へ拘束し、発言者であるだけでownerと認める判定を除去。
+通常採用gateは空のまま。mock成功で本番を有効化しない。
+
+検証: adaptive-summary checks（実Meeting/history codec、原文/編集失効、不正引用/話者の
+再利用除外）、summary-reading checks（SoT候補、並列順序、429、cache、parser）成功。
+iOS Preview成功。意味的な引用と主張の含意や見落としは、この局所検証だけでは保証しない。
+
+## 単位5: 限定評価ランナー
+
+model_runner.pyに明示manifest、専用key、送信許可grant、request/token/USD/deadline、
+独立した外部spend guard必須のopt-in実API実行経路とoffline preflightを実装。
+推論込みoutput上限/価格不明、入力hash不一致、未レビューoption、再送、redirectを拒否。
+通信は子processの絶対deadlineで停止し、途中課金は不明のまま保存する。
+J-MeetEval197件/16分類・gold25件と既存公式/決定論的評価は変更しない。
+
+このrunnerはraw API requestの測定用。ネイティブ要約pipelineの7方式を実行/計測するexporterは
+未実装であり、Level 3完了とは報告しない。measurementKindはraw-provider-requestで、既存の
+本番採用比較へ混入できない。source内の数値やgoldを生成結果の正解欄へ補完しない。
+7単体testと既存evaluation suite成功、外部requestは0件。実API評価は実行していない。
+外部prepaid/proxyが費用上限を実際に強制する設定は実施していない。詳細はtools/evaluation/README.md。
+
+## Tokenizer調査
+
+2026-11-15に公式資料を確認:
+- https://api-docs.deepseek.com/quick_start/token_usage/
+- https://developers.openai.com/api/docs/guides/token-counting
+- https://platform.claude.com/docs/en/build-with-claude/token-counting
+
+DeepSeekの文字比率は概算で、モデルにより異なる。公開offline tokenizerがこのカタログの
+各exact model IDと同一であることは未検証。OpenAIもplain text tokenizerだけではmessage/tool
+framing等を完全計測できないとする。Anthropicの計測APIは原文送信が必要。
+今回その外部計測は行わず、未検証比率でcontextを拡張しない。アプリへのtokenizer資産の追加、
+モデル別計測の本番接続、UTF8容量計画の置換は残存課題。安全なfallbackは維持する。
