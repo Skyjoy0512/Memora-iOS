@@ -22,9 +22,6 @@ struct AskAIHeader: View {
             Text(name)
               .font(MemoraTypography.body.weight(.semibold))
               .lineLimit(1)
-          } else {
-            MemoraWordmark(width: 108)
-              .accessibilityHidden(true)
           }
           Image(icon: .chevronDown, size: MemoraIconMetrics.accessory)
             .foregroundStyle(MemoraPalette.textSecondary)
