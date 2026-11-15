@@ -26,6 +26,6 @@ with tempfile.TemporaryDirectory(prefix='memora-residents-', dir=os.environ.get(
     subprocess.run(['swiftc', 'Shared/MemoraIcon.swift', 'App/ResidentAgent.swift', 'App/ResidentTrigger.swift',
                     'App/ResidentExecutionLimits.swift', 'App/ResidentRunRequest.swift', 'App/AgentTurn.swift',
                     'App/AgentToolCall.swift', 'App/AgentToolOutcome.swift', 'App/AIAnswerResult.swift',
-                    'App/AIAnswerFailure.swift', str(production), 'tools/checks/ResidentLifecycleChecks.swift',
+                    'App/AIAnswerFailure.swift', 'App/SummaryRetryDelay.swift', 'App/SummaryRequestAdmission.swift', str(production), 'tools/checks/ResidentLifecycleChecks.swift',
                     '-o', str(binary)], check=True)
     subprocess.run([str(binary)], check=True, env=dict(os.environ, SWIFT_BACKTRACE='enable=no'))

@@ -195,8 +195,17 @@ struct AIChatMessage {
 @MainActor final class CloudAgentSession {
   static var nextTurn: () async throws -> AgentTurn = { .init(text: "", toolCalls: []) }
   static var lastInstructions = ""
-  init?(llm: LLMSelection, system: String, tools: [AgentTool]) { Self.lastInstructions = system }
-  func next() async throws -> AgentTurn { try await Self.nextTurn() }
+  private var authorize: (@MainActor () -> Bool)?
+  init?(llm: LLMSelection, system: String, tools: [AgentTool], priority: SummaryRequestAdmission.Priority = .interactive,
+        authorize: (@MainActor () -> Bool)? = nil) {
+    precondition(priority == .background, "Resident work lost its background admission priority")
+    self.authorize = authorize
+    Self.lastInstructions = system
+  }
+  func next() async throws -> AgentTurn {
+    guard authorize?() ?? true else { throw AIAnswerFailure.contextChanged }
+    return try await Self.nextTurn()
+  }
   func addUserMessage(_ text: String) {}
   func addToolResults(_ results: [(call: AgentToolCall, outcome: AgentToolOutcome)]) {}
 }
