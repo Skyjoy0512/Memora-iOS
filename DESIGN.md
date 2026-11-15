@@ -721,3 +721,26 @@ attachment or mention pauses automatic sending for the existing composer flow;
 Live never silently overwrites or auto-sends it. Speaker preference persists.
 
 See `docs/LIVE_CONVERSATION.md` for validation boundaries.
+
+
+### Attachment and keyboard refinement — 2026-11-15
+
+The chat attachment sheet removes the sources/skills, connector and other-attachment
+row. Camera/photos/files, recent photos and Web search remain. Existing @ input
+and Marketplace/Settings setup routes remain available.
+
+Ask AI's focused layout and parent stop applying independent layout springs;
+controls no longer travel between rows through matched geometry or fade during
+keyboard focus changes. The native editor remains mounted. Attachment and model
+sheets retain the expanded editing layout. Closing/swiping away the attachment
+sheet restores focus if it was focused on entry and the conversation/workspace
+is still current. An initially idle composer stays idle. Selecting a media action
+dispatches its picker without restoring the keyboard underneath it. Focus origin
+checks deliberately exclude draft contents so Japanese IME commitment on blur
+cannot suppress keyboard restoration.
+
+Validation: iOS 27.2 preview build succeeded; composer layout/suggestion and eight
+chat-surface checks passed. On Bitrig's iPhone 18 Pro Max, verified the removed
+row is absent, idle-open/cancel keeps the keyboard closed, focused empty-open/close
+restores the keyboard, and focused draft-open/swipe-dismiss preserves the draft
+and restores the keyboard. The same native editor stays mounted across these states.

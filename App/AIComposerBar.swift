@@ -38,6 +38,8 @@ struct AIComposerBar: View {
 
   @State private var speechInput = SpeechInputService()
   @State private var isAttachmentSheetPresented = false
+  @State private var restoresAttachmentFocus = false
+  @State private var attachmentFocusOrigin: (workspace: UUID, conversation: UUID)?
   @State private var pendingAttachmentAction: AIComposerAttachmentAction?
   @State private var isCameraPresented = false
   @State private var capturedPhoto: Data?
@@ -69,11 +71,14 @@ struct AIComposerBar: View {
 
   /// Open while typing, or while there is text or an attachment to send.
   private var isExpanded: Bool {
-    isFieldFocused || hasContent || speechInput.isListening
+    isFieldFocused || hasContent || speechInput.isListening || restoresAttachmentFocus || restoresModelFocus
   }
 
   // A waiting draft is not active editing: keep navigation available after blur.
-  private var isInteracting: Bool { isFieldFocused || speechInput.isListening || isDictating || isVoiceConversation }
+  private var isInteracting: Bool {
+    isFieldFocused || speechInput.isListening || isDictating || isVoiceConversation ||
+      restoresAttachmentFocus || restoresModelFocus
+  }
   private var usesStackedLayout: Bool { isExpanded }
 
   private var cornerRadius: CGFloat {
@@ -154,7 +159,7 @@ struct AIComposerBar: View {
             }
             if offersIdleVoiceInput || onStop != nil || isBusy || speechInput.isListening {
               actionButton
-                .matchedGeometryEffect(id: "action", in: controlsNamespace)
+                .matchedGeometryEffect(id: "action", in: controlsNamespace, properties: isConversation ? [] : .frame)
             }
           }
         }
@@ -183,11 +188,11 @@ struct AIComposerBar: View {
             }
             if isConversation { dictationButton }
             actionButton
-              .matchedGeometryEffect(id: "action", in: controlsNamespace)
+              .matchedGeometryEffect(id: "action", in: controlsNamespace, properties: isConversation ? [] : .frame)
           }
           .padding(.horizontal, MemoraSpacing.sm)
           .padding(.bottom, MemoraSpacing.sm)
-          .transition(.opacity)
+          .transition(isConversation ? .identity : .opacity)
         }
       }
       .memoraGlass(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous),
@@ -210,7 +215,8 @@ struct AIComposerBar: View {
     .animation(reduceMotion ? nil : MemoraMotion.control, value: attachment)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: hasContent)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: speechInput.isListening)
-    .animation(reduceMotion ? nil : MemoraMotion.control, value: isExpanded)
+    // Keyboard movement owns the Ask AI transition; a second spring makes the glass lag behind.
+    .animation(isConversation || reduceMotion ? nil : MemoraMotion.control, value: isExpanded)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isEditorTall)
     .interactionFeedback(.tap, trigger: speechInput.isListening)
     .onChange(of: hasContent) { _, hasContent in
@@ -223,6 +229,9 @@ struct AIComposerBar: View {
       interactionChanged?(interacting)
     }
     .onChange(of: model.composerDismissRequests) { _, _ in
+      restoresAttachmentFocus = false
+      attachmentFocusOrigin = nil
+      restoresModelFocus = false
       isFieldFocused = false
     }
     .onChange(of: model.composerFocusRequest, initial: true) { _, request in
@@ -260,11 +269,20 @@ struct AIComposerBar: View {
       liveSession.setSpeakerEnabled(enabled)
     }
     .sheet(isPresented: $isAttachmentSheetPresented, onDismiss: {
-      guard let action = pendingAttachmentAction else { return }
-      pendingAttachmentAction = nil
-      performAttachmentAction(action)
+      let shouldRestore = restoresAttachmentFocus && model.selectedTab == .askAI &&
+        attachmentFocusOrigin?.workspace == model.aiWorkspaceGeneration &&
+        attachmentFocusOrigin?.conversation == model.aiConversationID &&
+        !model.isToolsPresented && !model.isRestoring && !model.isStoreProtected
+      restoresAttachmentFocus = false
+      attachmentFocusOrigin = nil
+      if let action = pendingAttachmentAction {
+        pendingAttachmentAction = nil
+        performAttachmentAction(action)
+      } else if shouldRestore {
+        isFieldFocused = true
+      }
     }) {
-      AIChatAttachmentSheet(offersMentions: onMentionMenu != nil, researchSelected: researchSelected,
+      AIChatAttachmentSheet(researchSelected: researchSelected,
         onResearch: onResearch, onSelect: { pendingAttachmentAction = $0 })
     }
     .sheet(isPresented: $isModelSheetPresented, onDismiss: {
@@ -366,6 +384,9 @@ struct AIComposerBar: View {
   private var attachmentMenu: some View {
     AIComposerAttachmentButton(offersMentions: onMentionMenu != nil,
       usesChatSheet: isConversation, onPresentChatSheet: {
+        restoresAttachmentFocus = isFieldFocused
+        // Resigning the field can commit Japanese marked text; focus restoration must not compare draft contents.
+        attachmentFocusOrigin = isFieldFocused ? (model.aiWorkspaceGeneration, model.aiConversationID) : nil
         isFieldFocused = false
         isAttachmentSheetPresented = true
       }) {

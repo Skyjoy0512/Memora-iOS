@@ -107,8 +107,14 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   configured and deployed, show it as unavailable; never fabricate posts or counts.
   Definitions are reviewed before publication. Only the server changes counts;
   additions require a receipt and confirmed local save. Shared definitions never
-  grant tool permissions or include meeting/chat data. Ask AI's plus and the
-  marketplace use the same connector hub/detail sheet and existing setup routes.
+  grant tool permissions or include meeting/chat data. Connector setup remains
+  reachable through Marketplace and Settings. Ask AI's attachment sheet shows
+  camera / photos / files / recent photos and Web search; do not restore the
+  sources/skills, connectors or other-attachments row. Typed @ keeps source/skill selection.
+  Cancelling the attachment sheet restores the keyboard only if it opened from
+  the focused composer in the same workspace/conversation. Keep the expanded
+  editor stable while its attachment or model sheet is presented; keyboard
+  transitions must not compete with composer or parent layout springs.
 - **Tasks**: `TasksView` lives inside Home's NavigationStack (`.tasks` route),
   including notification navigation. Keep creation, editing and source links reachable.
 - **Shared presentation**: record rows reuse LibraryRecordRow and document rows

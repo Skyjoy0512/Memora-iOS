@@ -3,7 +3,6 @@ import SwiftUI
 struct AIChatAttachmentSheet: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(\.dynamicTypeSize) private var typeSize
-  var offersMentions: Bool
   var researchSelected = false
   var onResearch: (() -> Void)?
   var onSelect: (AIComposerAttachmentAction) -> Void
@@ -33,18 +32,6 @@ struct AIChatAttachmentSheet: View {
               .background(MemoraPalette.elevated, in: Capsule())
           }
           .buttonStyle(.plain).foregroundStyle(MemoraPalette.focus)
-          HStack(spacing: 16) {
-            if offersMentions {
-              Button("ソース・スキル", icon: .puzzle) { select(.mention) }
-            }
-            Button("コネクタ", icon: .plugsConnected) { select(.integrations) }
-            Menu {
-              Button("音声を選択…", icon: .waveform) { select(.audio) }
-            } label: {
-              Image(icon: .ellipsis).frame(width: 44, height: 44).contentShape(Circle())
-            }.accessibilityLabel("その他の添付")
-          }
-          .font(.footnote).frame(minHeight: 44)
           if let onResearch {
             Toggle("Webで検索", isOn: Binding(get: { researchSelected }, set: { _ in onResearch() }))
               .padding(.horizontal, 8)
@@ -61,7 +48,7 @@ struct AIChatAttachmentSheet: View {
         }
       }
     }
-    .presentationDetents([.height(390), .large])
+    .presentationDetents([.height(340), .large])
     .presentationDragIndicator(.visible)
   }
 

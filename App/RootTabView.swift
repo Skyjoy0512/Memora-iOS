@@ -392,7 +392,7 @@ struct RootTabView: View {
         model.bottomControlsHeight = height
       }
     }
-    .animation(reduceMotion ? nil : MemoraMotion.control, value: isComposing)
+    .animation(reduceMotion || model.selectedTab == .askAI ? nil : MemoraMotion.control, value: isComposing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.activePlayback != nil)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isInlineEditing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)
