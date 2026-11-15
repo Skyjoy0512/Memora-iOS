@@ -1,5 +1,9 @@
 # 継続作業の設計メモ
 
+## 送信制御・検証guard後の音声単位
+
+保存済み/manifest seal済み音声の1区間先読み変換を候補実装。[設計・失敗を含む検証記録](AUDIO_PREPARATION_PIPELINE.md)。不変snapshot、確定prefix checkpoint、認識の逐次順序、原本変更時の拒否を維持する。hostで実WAV/AAC変換と認識fixtureの重なり・逐次同等・キャンセル・熱再検証・suffix-only再開を確認。通常の`.validated`は逐次のまま。録音中の先行推論、実機の速度/電池/発熱、実モデル評価は未実装/未検証。Phase 5全体は未完了。
+
 現況の正本: [2026-11-15統合検証](VALIDATION_2026_11_15.md)。以下は各単位の途中の調査記録。アプリ最終レビューdc82f7f4、UIテストd84dcf42。無料10群と最終buildのUI3件は成功。実モデル評価は実施しない。
 
 基盤commit: 6ef48197（SQLite part cache）、da1167e1（階層並列とprefix）。数値集計/JSON off-main/オフライン比較レポートも追加。実モデル評価は利用者指定で実行しない。未実装を完成扱いにしない。
@@ -62,3 +66,5 @@ fence付き不完全notes JSONを完了した部分結果として扱わない�
 ## 送信制御単位の検証後
 
 送信制御は7f224b18。無料10群は9群成功＋next-generation再実行成功、途中の音声fixture失敗は未確定のままログを保持。UI2件/preview成功、詳細はSUMMARY_REQUEST_SCHEDULING.md。続けて、共有treeの変更で成功結果が混在しないようrun-quality-checksに内容/ファイルrevision指紋のguardを追加。9単体テストと実2群のsmoke成功。全10群を新guardで再実行した結果ではない。実モデル/実機、RPM/TPM、音声先行処理、費用上限付きrunnerは引き続き未実施/未実装。
+
+音声候補単位の最終確認: ガード付き全10群が同一source fingerprintで成功、agent-free E2E 2/2、iOS preview成功（既存11警告）。詳細と原本変更テスト作成中の失敗はAUDIO_PREPARATION_PIPELINE.mdとaudio-preparation-results-2026-11-15.json。通常先読みgateは閉鎖。

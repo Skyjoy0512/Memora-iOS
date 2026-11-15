@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-15",
+  "baseCommit": "950ebf02c108089363d5f24bd13746fa04d7369a",
+  "codeSnapshot": {
+    "schemaVersion": 1,
+    "sha256": "b57ec0e3e15cb5ffc9e5c7ee917066c4b212e2eaa3b775dc5a12c3fe688b39d7",
+    "fileCount": 1961,
+    "fileRevisionsSHA256": "110dac8915cd0357616dfa0a2ec21a70479e027fcdaa73257cc5a3d3b1e65559",
+    "scope": [
+      "App",
+      "Shared",
+      "tools/checks",
+      "tools/evaluation",
+      "tests"
+    ],
+    "extensions": [
+      ".entitlements",
+      ".json",
+      ".jsonl",
+      ".lock",
+      ".plist",
+      ".py",
+      ".sh",
+      ".swift",
+      ".toml",
+      ".ts",
+      ".txt",
+      ".yaml",
+      ".yml"
+    ]
+  },
+  "productionLookaheadEnabled": false,
+  "audioHostChecks": {
+    "status": "passed",
+    "inputSeconds": 901,
+    "sampleRate": 16000,
+    "channels": 1,
+    "audioExport": "actual AVFoundation WAV/AAC",
+    "recognition": "fixed host fixture; not SpeechAnalyzer",
+    "checks": [
+      "sequential/candidate/fallback equal settled transcript",
+      "next AAC completes during preceding recognition callback",
+      "resource boundaries",
+      "unconsumed lookahead cancellation cleanup",
+      "thermal revalidation and prefix resume",
+      "failed suffix resume",
+      "changed original refuses completion"
+    ],
+    "log": "audio-preparation-original-recheck.log",
+    "earlierFailure": {
+      "log": "audio-preparation-reviewed-host.log",
+      "reason": "Test reused cached URL fileSize; fresh filesystem attributes confirmed appended byte retained. Test corrected; application refused changed original."
+    }
+  },
+  "offlineRegression": {
+    "passed": 10,
+    "total": 10,
+    "sourceGuardUnchanged": true,
+    "results": [
+      {
+        "suite": "summary-planning",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "summary-planning.log",
+        "sourceSHA256": "b57ec0e3e15cb5ffc9e5c7ee917066c4b212e2eaa3b775dc5a12c3fe688b39d7"
+      },
+      {
+        "suite": "summary-evaluation",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "summary-evaluation.log",
+        "sourceSHA256": "b57ec0e3e15cb5ffc9e5c7ee917066c4b212e2eaa3b775dc5a12c3fe688b39d7"
+      },
+      {
+        "suite": "next-generation",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "next-generation.log",
+        "sourceSHA256": "b57ec0e3e15cb5ffc9e5c7ee917066c4b212e2eaa3b775dc5a12c3fe688b39d7"
+      },
+      {
+        "suite": "design-refresh",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "design-refresh.log",
+        "sourceSHA256": "b57ec0e3e15cb5ffc9e5c7ee917066c4b212e2eaa3b775dc5a12c3fe688b39d7"
+      },
+      {
+        "suite": "background-summary",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "background-summary.log",
+        "sourceSHA256": "b57ec0e3e15cb5ffc9e5c7ee917066c4b212e2eaa3b775dc5a12c3fe688b39d7"
+      },
+      {
+        "suite": "summary-reliability",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "summary-reliability.log",
+        "sourceSHA256": "b57ec0e3e15cb5ffc9e5c7ee917066c4b212e2eaa3b775dc5a12c3fe688b39d7"
+      },
+      {
+        "suite": "adaptive-summary",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "adaptive-summary.log",
+        "sourceSHA256": "b57ec0e3e15cb5ffc9e5c7ee917066c4b212e2eaa3b775dc5a12c3fe688b39d7"
+      },
+      {
+        "suite": "adaptive-summary-quality",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "adaptive-summary-quality.log",
+        "sourceSHA256": "b57ec0e3e15cb5ffc9e5c7ee917066c4b212e2eaa3b775dc5a12c3fe688b39d7"
+      },
+      {
+        "suite": "composer-layout",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "composer-layout.log",
+        "sourceSHA256": "b57ec0e3e15cb5ffc9e5c7ee917066c4b212e2eaa3b775dc5a12c3fe688b39d7"
+      },
+      {
+        "suite": "optimization",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "optimization.log",
+        "sourceSHA256": "b57ec0e3e15cb5ffc9e5c7ee917066c4b212e2eaa3b775dc5a12c3fe688b39d7"
+      }
+    ]
+  },
+  "iOSPreview": {
+    "result": "success",
+    "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-11-15T12-47-02-205a8575.log",
+    "warnings": 11
+  },
+  "e2e": {
+    "runID": "01a1dd55-70fa-7590-b81a-8c50f6286123",
+    "status": "passed",
+    "summary": {
+      "discovered": 138,
+      "selected": 2,
+      "executed": 2,
+      "passed": 2,
+      "failed": 0,
+      "interrupted": 0,
+      "flaky": 0,
+      "skipped": 0
+    },
+    "usage": {
+      "discoveredResults": 138,
+      "maxAgentContextBytes": 0,
+      "maxLedgerBytes": 0,
+      "maxObservationBytes": 0,
+      "artifactBytes": 535891,
+      "downloads": 0,
+      "events": 33,
+      "modelTokens": 0,
+      "maxModelCallsInStep": 0,
+      "maxActionStepsInStep": 0
+    },
+    "results": [
+      {
+        "title": [
+          "onboarding completion survives a normal restart"
+        ],
+        "status": "passed",
+        "durationMs": [
+          19335
+        ]
+      },
+      {
+        "title": [
+          "narrow summary supports larger text, horizontal tables, checklist and long reading"
+        ],
+        "status": "passed",
+        "durationMs": [
+          54432
+        ]
+      }
+    ],
+    "screenshots": [
+      "screenshots/audio-preparation-regular.png",
+      "screenshots/audio-preparation-large-dark.png"
+    ]
+  },
+  "measuredModelPerformance": {
+    "beforeSummarySeconds": null,
+    "afterSummarySeconds": null,
+    "beforeAPICost": null,
+    "afterAPICost": null,
+    "summaryQuality": null,
+    "jmeetevalOverall": null
+  },
+  "unverified": [
+    "actual recognizer",
+    "actual summary models per user instruction",
+    "iPhone STT/summary/total latency",
+    "iPhone memory/battery/thermal/recording stability",
+    "in-flight export cancellation latency"
+  ],
+  "notImplemented": [
+    "live settled-segment analysis",
+    "early cloud summary integration",
+    "speaker revision invalidation for early analysis"
+  ],
+  "artifactDirectory": "/Volumes/WorkspaceSSD/Development/Agents/MemoraSummaryPerformanceValidation"
+}

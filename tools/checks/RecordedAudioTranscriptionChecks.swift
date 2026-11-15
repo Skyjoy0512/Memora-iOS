@@ -87,6 +87,7 @@ enum RecordedAudioTranscriptionChecks {
       }) { _ in preconditionFailure("Heated export reached recognition") }
     guard case .failed = afterExport else { preconditionFailure("Post-export thermal pressure accepted") }
     precondition(readinessCalls.withLock { $0 } == 2 && FileManager.default.fileExists(atPath: url.path))
+    try await RecordedAudioPreparationChecks.run(root: root, source: url)
     print("RecordedAudioTranscriptionChecks: PASS. Actual >50MB WAV snapshot and two AAC exports; failed suffix never published; SQLite resume across new store; timestamps/end times; completed reuse even at critical thermal state; low disk refusal; thermal prefix deferral and cooled suffix-only resume; post-export thermal gate. Recognizer fixture, no SpeechAnalyzer or iPhone RTF claim.")
   }
 }

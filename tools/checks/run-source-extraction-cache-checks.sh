@@ -14,8 +14,8 @@ swiftc App/SummaryKnowledge.swift "${audio_diagnostic_sources[@]}" App/SourceSum
   App/SourceMediaFailure.swift App/AudioProcessingReadiness.swift App/SourceMediaChunk.swift App/SourceMediaCheckpoint.swift \
   App/SourceMediaCheckpointStore.swift App/SourceMediaSnapshot.swift App/SourceMediaTranscript.swift \
   App/SourceProcessingQueue.swift App/SourceMediaStageLease.swift App/SourceMediaStaging.swift \
-  App/SourceMediaAudioExport.swift App/TranscriptionOutcome.swift App/RecordingAudioPart.swift App/RecordingAudioManifest.swift App/RecordedAudioInput.swift App/RecordedAudioTranscription.swift App/AudioSignalInspector.swift \
-  tools/checks/RecordedAudioTranscriptionChecks.swift tools/checks/SegmentedAudioTranscriptionChecks.swift \
+  App/SourceMediaAudioExport.swift App/SourceMediaAudioLease.swift App/RecordedAudioPreparationPolicy.swift App/TranscriptionOutcome.swift App/RecordingAudioPart.swift App/RecordingAudioManifest.swift App/RecordedAudioInput.swift App/RecordedAudioTranscription.swift App/AudioSignalInspector.swift \
+  tools/checks/RecordedAudioTranscriptionChecks.swift tools/checks/RecordedAudioPreparationChecks.swift tools/checks/SegmentedAudioTranscriptionChecks.swift \
   App/SourceTextChunks.swift App/TranscriptSegment.swift App/SpeakerIdentificationStatus.swift \
   tools/checks/SourceMediaCheckpointChecks.swift \
   App/RecognitionLanguage.swift App/SourceExtractionCache.swift tools/checks/SourceExtractionCacheChecks.swift -lsqlite3 -o "$check_dir/checks"

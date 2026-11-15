@@ -1,5 +1,7 @@
 # 要約性能の測定
 
+保存済み音声の区間先読み変換を候補実装した。[設計と検証境界](summary-performance/AUDIO_PREPARATION_PIPELINE.md)。通常利用では無効。STTと変換の重なりをhostで観察した段階で、実機/実認識の速度・発熱や要約LLM時間の改善は未計測。
+
 利用者報告: 文字起こし済み1時間相当の要約が120秒超。これは現環境で再現計測した値ではない。目標60秒、次段階30秒、録音終了後の追加待ち10〜20秒は未達成・未検証。
 
 要約以外のSTT、話者分析、取り込みから保存までを混同しない。既存 `AudioProcessingDiagnostics` のsummary / recognition / persistence等のspanと、`SummaryDiagnostics`のrequest別タイムラインを関連付ける。本文・キー・エンドポイント・ユーザー原文は診断に記録しない。

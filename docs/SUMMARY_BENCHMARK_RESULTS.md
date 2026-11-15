@@ -30,3 +30,5 @@ SSEバイト/SSE/JSON解析がmain thread外、表示callbackがMainActorで動�
 計測/比較基盤の追加検証: 開発Python環境の全11単体テスト成功（0.408秒は評価器のテスト時間）。197件/16カテゴリの固定データ監査、300 requestを表示切捨て後も集計、4,097件で欠測明示、実transportの429 outcome・bounded continuationを確認。JSON fallbackのbyte receive/parseもhostでoff-mainを確認。実モデルのスコアは未取得。ログは外部作業ディレクトリのphase0-metrics-* / phase1-all-offline-final.log / phase2-single-serialization.log / phase0-request-failure-metrics.log。
 
 最終コードの実装範囲・無料10群の結果・未採用/未検証事項は[2026-11-15統合検証](summary-performance/VALIDATION_2026_11_15.md)を参照。
+
+保存済み音声の区間準備候補を追加した単位では、ガード付き全10群・E2E選択2件・iOS previewが成功。[記録](summary-performance/AUDIO_PREPARATION_PIPELINE.md)。認識はfixture、AAC変換は実処理。通常先読みgateは閉鎖し、実機速度・API費用・要約品質の比較値は未取得。

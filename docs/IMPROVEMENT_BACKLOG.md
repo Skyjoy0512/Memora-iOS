@@ -1862,3 +1862,7 @@ Simulatorで履歴の再開、Library往復、終了後の再起動、明示new 
 ## 2026-11-15: 要約ジョブ間の送信制御
 
 同じendpoint/認証scopeでの有界FIFO・共有並列上限、429/Retry-After、待機後の再認可、16待機/120秒上限を追加。HTTP本文完了まで枠を保持し、キャンセル・許可取り消し・cooldown中は追加送信しない。自動課金retry/モデル変更は行わない。詳細・途中失敗を含む検証結果は[追加記録](summary-performance/SUMMARY_REQUEST_SCHEDULING.md)。実機/実API、RPM/TPM推定、音声先行処理、課金runnerは残課題。
+
+## 2026-11-15: 保存済み音声の区間準備候補
+
+既存RecordedAudioTranscriptionに1区間先読み変換の候補を追加し、区間ごとの一時ファイルlease、容量・低電力・thermal条件、構造化キャンセルを実装。[詳細](summary-performance/AUDIO_PREPARATION_PIPELINE.md)。実WAV/AAC＋認識fixtureで逐次同等・重なり・確定prefix再開・原本変更拒否を無料検証。通常利用のgateは閉鎖。録音中の先行推論と実機評価は引き続き残課題。

@@ -44,3 +44,7 @@ python3 tools/checks/run-quality-checks.py --output-dir /external/new-frozen-inp
 ```
 
 開発用SSDの `quality-source-guard-final.log` と `quality-source-guard-smoke/source-snapshot.json` / `summary.json` に今回の結果を保持した。通常の全10群実行にも同じguardが適用される。
+
+## 保存済み音声の準備候補
+
+[追加検証](summary-performance/AUDIO_PREPARATION_PIPELINE.md)は実WAV/AAC変換＋固定認識応答で逐次同等・先読みの重なり・失敗/熱/原本変更/キャンセルを確認する。ガード付き全10群のソース指紋も一致。これは実認識・実要約モデルの品質評価ではない。
