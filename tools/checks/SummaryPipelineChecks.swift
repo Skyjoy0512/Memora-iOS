@@ -7,6 +7,7 @@ enum SummaryPipelineChecks {
     try await ParallelCompositionChecks.run()
     try await cacheChecks()
     try await rejectedPartChecks()
+    try await largeNoteChecks()
     for empty in ["", " \n\t　"] {
       CloudAIService.gate = SummaryFixtureGate()
       var input = makeInput(mode: .fast)
@@ -269,6 +270,59 @@ enum SummaryPipelineChecks {
     }
     guard case .legacy = SummaryPartArtifact.acceptance("## 従来のメモ\n条件と訂正を保持する。", in: index, part: part, compact: true) else { preconditionFailure() }
     print("Part acceptance: malformed/missing JSON, empty evidence, foreign ID/part and fabricated quotes rejected before merge, no repair calls; legacy prose preserved. Semantic entailment requires independent evaluation.")
+  }
+
+  static func largeNoteChecks() async throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let store = LocalStore(fileURL: directory.appendingPathComponent("cache.sqlite"))
+    try store.prepare()
+    let cache = SummaryArtifactCache(store: store)
+    var input = makeInput(mode: .accurate)
+    input.artifactScope = .init(ownerID: UUID(), workspace: "personal", account: "fixture",
+      privacy: "fixture", credentialHash: "fixture")
+    let snapshot = input
+    let gate = SummaryFixtureGate()
+    CloudAIService.gate = gate
+    let longNotes = String(repeating: "原文の条件と否定・150万円を保持。", count: 6_000)
+    precondition(longNotes.utf8.count > SummaryArtifactCache.maximumEntryBytes)
+    let task = Task { await MeetingSummarizer.summarize(snapshot, engine: .cloud,
+      llm: .init(provider: .deepSeek, modelID: "deepseek-v4-pro"), artifactCache: cache,
+      authorize: { true }, progress: { _ in }) }
+    var finished = 0
+    while finished < 4 {
+      await wait { !gate.pending.isEmpty }
+      for call in gate.pending.keys.sorted() {
+        let index = (0..<4).first { gate.calls[call].user.contains("S\($0 + 1) A") ||
+          gate.calls[call].user.contains(snapshot.transcript[$0].id.uuidString) }!
+        let compact = gate.calls[call].user.contains("S\(index + 1) A")
+        let artifact = SummaryPartArtifact(notes: index == 0 ? longNotes : "原文の条件と否定・150万円を保持。",
+          sourceReferences: [.init(sourceSegmentID: compact ? "S\(index + 1)" : snapshot.transcript[index].id.uuidString, quote: "原文の条件と否定・150万円を保持。")])
+        gate.finish(call, .answer(String(decoding: try JSONEncoder().encode(artifact), as: UTF8.self)))
+        finished += 1
+      }
+    }
+    await wait { gate.pending.count == 1 }
+    let merge = gate.pending.keys.first!
+    precondition(gate.calls.count == 5 && gate.calls[merge].user.contains(longNotes))
+    gate.finish(merge, .answer("原文の条件と否定・150万円を保持。"))
+    guard case .success = await task.value else { preconditionFailure("Cache ceiling rejected valid integration notes") }
+    guard case .data(let bytes) = store.readOutcome(SummaryArtifactCache.storageKey),
+          let entries = try JSONSerialization.jsonObject(with: bytes) as? [[String: Any]] else { preconditionFailure() }
+    precondition(entries.count == 3 && entries.allSatisfy { ($0["text"] as? String)?.contains(longNotes) == false })
+    let oversizedGate = SummaryFixtureGate()
+    CloudAIService.gate = oversizedGate
+    let oversized = Task { await MeetingSummarizer.summarize(snapshot, engine: .cloud,
+      llm: .init(provider: .deepSeek, modelID: "deepseek-v4-pro"), progress: { _ in }) }
+    await wait { !oversizedGate.pending.isEmpty }
+    let excess = SummaryPartArtifact(notes: String(repeating: "原文の条件と否定・150万円を保持。", count: 25_000),
+      sourceReferences: [.init(sourceSegmentID: snapshot.transcript[0].id.uuidString, quote: "原文の条件と否定・150万円を保持。")])
+    let excessText = String(decoding: try JSONEncoder().encode(excess), as: UTF8.self)
+    precondition(excessText.utf8.count < SummaryPartArtifact.maximumIntegrationBytes)
+    oversizedGate.finish(0, .answer(excessText))
+    guard case .failure(.executionLimit) = await oversized.value else { preconditionFailure("Oversized notes survived model capacity preflight") }
+    precondition(oversizedGate.calls.count <= 2 && oversizedGate.pending.isEmpty, "Oversized notes submitted more work or a merge")
+    print("Large part: >256KiB validated note integrated intact, not cached; three small parts cached; five mock requests, no repair or extra reduction. No real-model latency claim.")
   }
 
   static func wait(_ condition: () -> Bool) async {

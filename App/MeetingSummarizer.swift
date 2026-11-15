@@ -132,6 +132,7 @@ enum MeetingSummarizer {
         progress("長い会議を分けて整理中（\(index + 1)/\(parts.count)）")
         guard !Task.isCancelled else { return .failure(.cancelled) }
         let range = timeRange(of: part)
+        let noteHeader = "# 部分\(index + 1)（\(range)）\n"
         let prompt = SummaryPrompt.partNotes(for: input, part: index + 1, of: parts.count,
           range: range, transcript: legend + part.joined(separator: "\n"))
         let partSegments = sourceIndex.entries.filter { entry in
@@ -151,8 +152,9 @@ enum MeetingSummarizer {
              let artifact = SummaryPartArtifact.decode(cached),
              artifact.validated(in: sourceIndex, part: part, compact: compact) {
             guard authorize(), !Task.isCancelled else { return .failure(.contextChanged) }
+            guard noteHeader.utf8.count + cached.utf8.count <= budget.sourceCapacity else { return .failure(.executionLimit) }
             SummaryDiagnostics.current?.record(.artifactCacheHit)
-            return .success("# 部分\(index + 1)（\(range)）\n\(cached)")
+            return .success(noteHeader + cached)
           }
           SummaryDiagnostics.current?.record(.artifactCacheMiss)
         }
@@ -169,16 +171,20 @@ enum MeetingSummarizer {
         }
         switch result {
         case .answer(let text):
+          // A too-large note cannot enter any merge. Stop its sibling work now
+          // instead of retaining every oversized result before hierarchy checks.
+          guard noteHeader.utf8.count + text.utf8.count <= budget.sourceCapacity else { return .failure(.executionLimit) }
           switch SummaryPartArtifact.acceptance(text, in: sourceIndex, part: part, compact: compact) {
           case .rejected: return .failure(.generationFailed)
           case .legacy: break // Existing prose remains usable, but never cacheable.
           case .structured:
-            if let key, let authorize, let scope = input.artifactScope {
+            if let key, let authorize, let scope = input.artifactScope,
+               text.utf8.count <= SummaryArtifactCache.maximumEntryBytes {
               guard authorize(), !Task.isCancelled else { return .failure(.contextChanged) }
               await artifactCache.write(text, key: key, ownerID: scope.ownerID, lease: cacheLease)
             }
           }
-          return .success("# 部分\(index + 1)（\(range)）\n\(text)")
+          return .success(noteHeader + text)
         case .failure(let failure): return .failure(failure)
         }
       }

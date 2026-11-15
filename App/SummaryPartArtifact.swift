@@ -3,12 +3,15 @@ import Foundation
 /// Transport completion, evidence eligibility and persistence are separate gates.
 /// Matching a quote proves provenance, not semantic entailment of free prose.
 struct SummaryPartArtifact: Codable {
+  /// Integration has its own bound; the planner additionally enforces the
+  /// selected model's context. A cache limit must not truncate valid analysis.
+  static let maximumIntegrationBytes = 4 * 1_024 * 1_024
   var notes: String
   var sourceReferences: [Reference]
 
   func validated(in index: SummarySourceIndex, part: [String], compact: Bool) -> Bool {
     guard !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-          notes.utf8.count <= SummaryArtifactCache.maximumEntryBytes,
+          notes.utf8.count <= Self.maximumIntegrationBytes,
           !sourceReferences.isEmpty, sourceReferences.count <= 256 else { return false }
     return sourceReferences.allSatisfy { reference in
       guard let id = index.originalID(for: reference.sourceSegmentID, allowShortIDs: compact),
@@ -36,7 +39,7 @@ struct SummaryPartArtifact: Codable {
   static func acceptance(_ text: String, in index: SummarySourceIndex,
                          part: [String], compact: Bool) -> Acceptance {
     let payload = jsonPayload(text)
-    guard !payload.isEmpty, text.utf8.count <= SummaryArtifactCache.maximumEntryBytes else { return .rejected }
+    guard !payload.isEmpty, text.utf8.count <= Self.maximumIntegrationBytes else { return .rejected }
     if let artifact = decode(text) {
       return artifact.validated(in: index, part: part, compact: compact) ? .structured(artifact) : .rejected
     }
@@ -49,7 +52,7 @@ struct SummaryPartArtifact: Codable {
   }
 
   static func decode(_ text: String) -> Self? {
-    guard text.utf8.count <= SummaryArtifactCache.maximumEntryBytes else { return nil }
+    guard text.utf8.count <= Self.maximumIntegrationBytes else { return nil }
     return try? JSONDecoder().decode(Self.self, from: Data(jsonPayload(text).utf8))
   }
 
