@@ -2,15 +2,33 @@
   "schemaVersion": 1,
   "discovered": 138,
   "latestStatuses": {
-    "passed": 3,
+    "passed": 8,
     "failed": 0,
-    "notRun": 135
+    "notRun": 130
   },
   "apiEvaluationRequests": 0,
   "finalUISourceGuard": {
     "unchanged": true,
-    "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803",
-    "fileCount": 1965
+    "sourceSHA256": "bba4938c99c2205590f98be316eb416bd6f0680c44334350bd6cca9ec4edf2cb",
+    "fileCount": 1974,
+    "scope": "Each UI run stayed unchanged; production App/Shared/tools stayed at fcd0e1ce across the fixture-only updates",
+    "runs": [
+      {
+        "report": ".e2e/common-ai-ui-native/report.json",
+        "sourceSHA256": "0cb4238583646cf625bd8fd543b3d8d8ed182cf763cc06dd7fd0cb6a1c5f1189",
+        "unchanged": true
+      },
+      {
+        "report": ".e2e/common-ai-ui-recovery-current/report.json",
+        "sourceSHA256": "f9b7f259161e3c921c4ee61e70d273027039b19b1becd93ce1abd5bbb8ce2d66",
+        "unchanged": true
+      },
+      {
+        "report": ".e2e/common-ai-ui-background-final/report.json",
+        "sourceSHA256": "bba4938c99c2205590f98be316eb416bd6f0680c44334350bd6cca9ec4edf2cb",
+        "unchanged": true
+      }
+    ]
   },
   "reasonForNotRun": "Only the bounded offline regression subset was executed; no certification of all UI scenarios or paid model evaluation.",
   "tests": [
@@ -40,6 +58,13 @@
           "status": "passed",
           "startedAt": "2026-11-15T08:35:51.336Z",
           "modelTokens": 0
+        },
+        {
+          "runID": "01a1df26-fe8d-7e86-8dc2-36b8a1834e3b",
+          "report": ".e2e/common-ai-ui-native/report.json",
+          "status": "passed",
+          "startedAt": "2026-11-15T12:20:55.170Z",
+          "modelTokens": 0
         }
       ]
     },
@@ -47,15 +72,31 @@
       "file": "tests/agent-approval.e2e.ts",
       "title": "local agent approval edits and selects a candidate before a real SQLite save",
       "target": "ios",
-      "status": "notRun",
-      "history": []
+      "status": "passed",
+      "history": [
+        {
+          "runID": "01a1df26-fe8d-7e86-8dc2-36b8a1834e3b",
+          "report": ".e2e/common-ai-ui-native/report.json",
+          "status": "passed",
+          "startedAt": "2026-11-15T12:20:55.170Z",
+          "modelTokens": 0
+        }
+      ]
     },
     {
       "file": "tests/agent-approval.e2e.ts",
       "title": "local agent decline and stop resolve the approval without saving",
       "target": "ios",
-      "status": "notRun",
-      "history": []
+      "status": "passed",
+      "history": [
+        {
+          "runID": "01a1df26-fe8d-7e86-8dc2-36b8a1834e3b",
+          "report": ".e2e/common-ai-ui-native/report.json",
+          "status": "passed",
+          "startedAt": "2026-11-15T12:20:55.170Z",
+          "modelTokens": 0
+        }
+      ]
     },
     {
       "file": "tests/agent-entry.e2e.ts",
@@ -103,8 +144,32 @@
       "file": "tests/background-summary.e2e.ts",
       "title": "paused background summary preserves text and offers explicit retry after restart",
       "target": "ios",
-      "status": "notRun",
-      "history": []
+      "status": "passed",
+      "history": [
+        {
+          "runID": "01a1df26-fe8d-7e86-8dc2-36b8a1834e3b",
+          "report": ".e2e/common-ai-ui-native/report.json",
+          "status": "failed",
+          "startedAt": "2026-11-15T12:20:55.170Z",
+          "modelTokens": 0
+        },
+        {
+          "runID": "01a1df31-bead-7d53-a5bb-4517ceae8e75",
+          "report": ".e2e/common-ai-ui-recovery-current/report.json",
+          "status": "failed",
+          "startedAt": "2026-11-15T12:32:26.465Z",
+          "modelTokens": 0,
+          "sourceSHA256": "f9b7f259161e3c921c4ee61e70d273027039b19b1becd93ce1abd5bbb8ce2d66"
+        },
+        {
+          "runID": "01a1df3d-9237-765c-b5cb-1be6033cbe20",
+          "report": ".e2e/common-ai-ui-background-final/report.json",
+          "status": "passed",
+          "startedAt": "2026-11-15T12:45:27.308Z",
+          "modelTokens": 0,
+          "sourceSHA256": "bba4938c99c2205590f98be316eb416bd6f0680c44334350bd6cca9ec4edf2cb"
+        }
+      ]
     },
     {
       "file": "tests/calendar-context.e2e.ts",
@@ -250,15 +315,47 @@
       "file": "tests/draft-protection.e2e.ts",
       "title": "an unreadable summary draft blocks editing and retains its original bytes",
       "target": "ios",
-      "status": "notRun",
-      "history": []
+      "status": "passed",
+      "history": [
+        {
+          "runID": "01a1df26-fe8d-7e86-8dc2-36b8a1834e3b",
+          "report": ".e2e/common-ai-ui-native/report.json",
+          "status": "passed",
+          "startedAt": "2026-11-15T12:20:55.170Z",
+          "modelTokens": 0
+        },
+        {
+          "runID": "01a1df31-bead-7d53-a5bb-4517ceae8e75",
+          "report": ".e2e/common-ai-ui-recovery-current/report.json",
+          "status": "passed",
+          "startedAt": "2026-11-15T12:32:26.465Z",
+          "modelTokens": 0,
+          "sourceSHA256": "f9b7f259161e3c921c4ee61e70d273027039b19b1becd93ce1abd5bbb8ce2d66"
+        }
+      ]
     },
     {
       "file": "tests/draft-protection.e2e.ts",
       "title": "an unreadable composer draft protects the store during launch",
       "target": "ios",
-      "status": "notRun",
-      "history": []
+      "status": "passed",
+      "history": [
+        {
+          "runID": "01a1df26-fe8d-7e86-8dc2-36b8a1834e3b",
+          "report": ".e2e/common-ai-ui-native/report.json",
+          "status": "failed",
+          "startedAt": "2026-11-15T12:20:55.170Z",
+          "modelTokens": 0
+        },
+        {
+          "runID": "01a1df31-bead-7d53-a5bb-4517ceae8e75",
+          "report": ".e2e/common-ai-ui-recovery-current/report.json",
+          "status": "passed",
+          "startedAt": "2026-11-15T12:32:26.465Z",
+          "modelTokens": 0,
+          "sourceSHA256": "f9b7f259161e3c921c4ee61e70d273027039b19b1becd93ce1abd5bbb8ce2d66"
+        }
+      ]
     },
     {
       "file": "tests/experience-polish.e2e.ts",
@@ -818,6 +915,13 @@
           "status": "passed",
           "startedAt": "2026-11-15T08:35:51.336Z",
           "modelTokens": 0
+        },
+        {
+          "runID": "01a1df26-fe8d-7e86-8dc2-36b8a1834e3b",
+          "report": ".e2e/common-ai-ui-native/report.json",
+          "status": "passed",
+          "startedAt": "2026-11-15T12:20:55.170Z",
+          "modelTokens": 0
         }
       ]
     },
@@ -874,6 +978,13 @@
           "report": ".e2e/common-ai-ui-note-capacity/report.json",
           "status": "passed",
           "startedAt": "2026-11-15T08:35:51.336Z",
+          "modelTokens": 0
+        },
+        {
+          "runID": "01a1df26-fe8d-7e86-8dc2-36b8a1834e3b",
+          "report": ".e2e/common-ai-ui-native/report.json",
+          "status": "passed",
+          "startedAt": "2026-11-15T12:20:55.170Z",
           "modelTokens": 0
         }
       ]

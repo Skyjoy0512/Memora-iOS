@@ -1,10 +1,11 @@
 {
   "schemaVersion": 1,
-  "testedCommit": "c6544ac698ff0d6280adbe14202992a7bf8a0709",
+  "testedCommit": "d37fd8f498112379434613cebbde21f1b8b4924c",
   "sourceGuard": {
     "unchanged": true,
-    "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803",
-    "fileCount": 1965
+    "sourceSHA256": "f9b7f259161e3c921c4ee61e70d273027039b19b1becd93ce1abd5bbb8ce2d66",
+    "fileCount": 1974,
+    "scope": "Complete quality run; final later change only updated background UI assertions; no App/Shared/tools differences"
   },
   "quality": {
     "passed": 10,
@@ -15,88 +16,93 @@
         "status": "passed",
         "exitCode": 0,
         "log": "summary-planning.log",
-        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+        "sourceSHA256": "f9b7f259161e3c921c4ee61e70d273027039b19b1becd93ce1abd5bbb8ce2d66"
       },
       {
         "suite": "summary-evaluation",
         "status": "passed",
         "exitCode": 0,
         "log": "summary-evaluation.log",
-        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+        "sourceSHA256": "f9b7f259161e3c921c4ee61e70d273027039b19b1becd93ce1abd5bbb8ce2d66"
       },
       {
         "suite": "next-generation",
         "status": "passed",
         "exitCode": 0,
         "log": "next-generation.log",
-        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+        "sourceSHA256": "f9b7f259161e3c921c4ee61e70d273027039b19b1becd93ce1abd5bbb8ce2d66"
       },
       {
         "suite": "design-refresh",
         "status": "passed",
         "exitCode": 0,
         "log": "design-refresh.log",
-        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+        "sourceSHA256": "f9b7f259161e3c921c4ee61e70d273027039b19b1becd93ce1abd5bbb8ce2d66"
       },
       {
         "suite": "background-summary",
         "status": "passed",
         "exitCode": 0,
         "log": "background-summary.log",
-        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+        "sourceSHA256": "f9b7f259161e3c921c4ee61e70d273027039b19b1becd93ce1abd5bbb8ce2d66"
       },
       {
         "suite": "summary-reliability",
         "status": "passed",
         "exitCode": 0,
         "log": "summary-reliability.log",
-        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+        "sourceSHA256": "f9b7f259161e3c921c4ee61e70d273027039b19b1becd93ce1abd5bbb8ce2d66"
       },
       {
         "suite": "adaptive-summary",
         "status": "passed",
         "exitCode": 0,
         "log": "adaptive-summary.log",
-        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+        "sourceSHA256": "f9b7f259161e3c921c4ee61e70d273027039b19b1becd93ce1abd5bbb8ce2d66"
       },
       {
         "suite": "adaptive-summary-quality",
         "status": "passed",
         "exitCode": 0,
         "log": "adaptive-summary-quality.log",
-        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+        "sourceSHA256": "f9b7f259161e3c921c4ee61e70d273027039b19b1becd93ce1abd5bbb8ce2d66"
       },
       {
         "suite": "composer-layout",
         "status": "passed",
         "exitCode": 0,
         "log": "composer-layout.log",
-        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+        "sourceSHA256": "f9b7f259161e3c921c4ee61e70d273027039b19b1becd93ce1abd5bbb8ce2d66"
       },
       {
         "suite": "optimization",
         "status": "passed",
         "exitCode": 0,
         "log": "optimization.log",
-        "sourceSHA256": "22154d323174e7b4327363858479ad6033e687c69a0e67fa3665833e322e8803"
+        "sourceSHA256": "f9b7f259161e3c921c4ee61e70d273027039b19b1becd93ce1abd5bbb8ce2d66"
       }
     ],
-    "evidenceDirectory": "/Volumes/WorkspaceSSD/Development/Agents/MemoraSummaryPerformanceValidation/common-ai-quality-note-capacity"
+    "evidenceDirectory": "/Volumes/WorkspaceSSD/Development/Agents/MemoraSummaryPerformanceValidation/common-ai-quality-recovery-current",
+    "postRunCodeChanges": [
+      "tests/background-summary.e2e.ts"
+    ],
+    "productionCodeUnchanged": true
   },
   "ui": {
     "discovered": 138,
-    "passed": 3,
+    "passed": 8,
     "failed": 0,
-    "notRun": 135,
+    "notRun": 130,
     "modelTokens": 0,
-    "inventory": "UI_TEST_STATUS.json"
+    "inventory": "UI_TEST_STATUS.json",
+    "latestSourceSHA256": "bba4938c99c2205590f98be316eb416bd6f0680c44334350bd6cca9ec4edf2cb"
   },
   "preview": {
     "result": "success",
     "sdk": "iOS 27.2",
     "deploymentTarget": "iOS 26.0",
     "warnings": 11,
-    "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-11-15T17-32-12-ed82b16f.log"
+    "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-11-15T21-45-26-30e7d96a.log"
   },
   "evaluation": {
     "apiRequests": 0,
@@ -104,8 +110,13 @@
     "categories": 16,
     "syntheticGoldCases": 25,
     "runnerUnitTests": 8,
-    "nativeComparisonRunnerComplete": false,
-    "semanticModelScores": null
+    "semanticModelScores": null,
+    "nativeHostComparisonRunnerComplete": true,
+    "nativeIOSComparisonRunnerComplete": false,
+    "nativeRunnerUnitTests": 7,
+    "nativeMockVariants": 7,
+    "nativeMockPhases": 8,
+    "nativeMockFailurePaths": 4
   },
   "performance": {
     "kind": "production-orchestration-mock",
@@ -128,12 +139,13 @@
   "remaining": [
     "model-specific local tokenizer",
     "semantic entailment and coverage validation",
-    "native seven-way evaluation runner",
+    "native iOS record/task/history save-boundary comparison",
     "additional People/long-term memory/artifact consumers",
     "live device resource adaptation",
     "single-flight subscribers",
-    "remaining 135 UI cases",
+    "remaining 130 UI cases",
     "11 pre-existing build warnings",
     "paid model evaluation and real-device measurements"
-  ]
+  ],
+  "productionCodeCommit": "fcd0e1cea911b6b84178244c569820cfa89a7f11"
 }

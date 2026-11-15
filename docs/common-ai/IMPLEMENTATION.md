@@ -191,3 +191,53 @@ model容量を再確認する。大きいnotesを最終mergeへ渡すmock回帰�
 最初のfixtureは短いIDだけを仮定し失敗したため実UUID/短IDの両方に対応した。
 先行note-boundsの品質/UI実行は容量guardを追加する前に中断し、その結果を最終成功と扱わない。
 最終note-capacityの10群/UI3件はいずれも同一source指紋のまま終了した。
+
+## 単位6: native host評価ランナー
+
+fcd0e1ceでraw request単体に加え、本番MeetingSummarizer/planner/scheduler/cache/
+CloudAIService/URLSession/SSE/parser/LocalStoreを直接使う開発用host runnerを追加した。
+比較hookはMEMORA_SUMMARY_EVALUATION付きの専用compileだけに存在し、Project.jsonへは設定しない。
+通常アプリのSoT採用ゲート、並列上限、選択モデル、詳細度、推論設定は変更しない。
+
+7方式を同じimmutable source/model/preferencesで実行する。分割容量は既存容量を下げることだけが
+可能。一括が収まらない/階層が一部分しかない場合は別方式へ読み替えず拒否。cache-warmの準備も
+独立したphaseとして記録し、同じrequest/token/USD上限から消費する。modeの差で速度を稼がない。
+capacity-single-passは現在の短縮IDと保守的なUTF8容量計画であり、tokenizer導入済みとは呼ばない。
+
+資格情報を持たないSwift driverは全URLSessionをfail-closed URLProtocolで捕捉する。
+専用評価keyと明示許可はPython brokerだけが持ち、生成された各requestについて再認可と共有予算予約を
+実施してから独立子processへ送る。SSEは本文完了までbufferせず転送し、本番decoder/診断を使う。
+429/期限/許可失効/上限は追加送信を停止し、リトライしない。通信中の取消は対応する子processを終了。
+実行sourceとcompiled binaryをmanifestへbindし、compile前後/実行前後/各runのsource guardを維持。
+
+P50/P95/最大と失敗率をcohort別に集計する。失敗の短い時間を成功latencyへ混ぜず、warmupも分離する。
+未知の費用/意味品質/端末資源はnull。host-summary-documentは生成結果の実SQLite write/readbackであり、
+iOSのrecord/task/history全transactionではない。broker IPCを含むhost時間をiOS実機値とは呼ばない。
+automaticAdoptionは常にfalse。外部課金hard capの運用確認や実API評価は実施していない。
+
+無料検証: 7単体test、7方式/8phase、分割SSE、cache hit、実SQLite、429/timeout/総予算超過/許可失効の
+4経路が成功。全失敗経路でmock送信1回だけ、merge/repair/retry/完成summary保存なしを確認。
+先行試行はhost用LLMSelection JSONに必須supportsToolCallingが無く起動失敗し中断した。
+契約を補完し、対話backtraceを無効化、driverを専用環境へ隔離した後のv2〜v5が成功。
+初回compileのAgentSessionBudget依存漏れとMeetingSummary非Codableへの誤った仮定も修正した。
+後者は本番型を変更せず、開発用snapshot codecで解決した。原ログはnative-runner-v1〜v5.log。
+今回の無料成功は実モデル品質・速度・費用の証明ではない。
+
+## UI確認の拡張と旧fixtureの修正
+
+native追加後の8件は初回6成功/2失敗。background-summaryは旧タイトル/ボタン/説明文を参照し、
+draft-protectionはcomposer下書き破損時の旧global停止alertを期待していた。a16d3edd時点から
+既に現行の「要約が途中で止まりました」/「もう一度要約する」とcomposer個別保護/復旧画面だった。
+アプリのUIや保存基盤を変えずにtestだけを現行契約へ合わせ、単なる文言検査を
+requiresUserRetry/attemptStartedAtの未実行検査、入力の無効化、復旧画面、再起動後の破損byte/本文保持へ置換する。
+最初の修正後は下書き2件成功、backgroundの削除済み説明文がもう一つ残り再度失敗した。
+失敗したrun/report/screenshotは削除せず、UI_TEST_STATUS.jsonに履歴を保持する。
+各実行中はsourceを固定し、host品質群の実行中にlocatorを変更しない。
+
+最終結果はUI最新8成功/0失敗/130未実行。native初回8件の6成功/2失敗、recovery-currentの
+2成功/1失敗、background-finalの1成功を履歴に保存し、過去失敗を消していない。
+生成ボタンを開いても実行開始時刻が付かず、cancel/restart後も原文・要約・待機jobを保持した。
+本番ソースはfcd0e1ceから不変で、fixture変更はd37fd8f4。
+10群はnative/recovery-currentの両runで10成功。最後の変更はbackgroundテストの説明文assertだけで、
+host10群には影響しない。10群のf9b7f259と最後のUIのbba4938cは同一と偽らず、各runのguardを記録する。
+以後はdocsだけを更新し、追加の実API/実機評価は実行していない。

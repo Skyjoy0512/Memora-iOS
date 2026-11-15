@@ -15,14 +15,14 @@
 | 送信制御 | 同一endpoint/認証の要約・Ask AI・agent共通上限、優先度/aging、待機上限、429/Retry-After、送信前再認可。明示RPM/TPMの保守的予約。未知値は設定しない |
 | 音声準備 | 保存済み音声の1区間先読み変換を候補実装/host検証。通常gateは閉鎖 |
 | 確定区間 | 既存STT checkpointへ区間の版/範囲/現行照合を追加。旧cache/本文を維持。先行AI分析は未接続 |
-| 評価基盤 | 固定J-MeetEval 197件/16カテゴリ、公式ルール、gold25件、数値集計、比較レポート。独立spend guard必須のraw request runnerを追加。native全方式runner/Judge/実生成スコアは未完 |
+| 評価基盤 | 固定J-MeetEval 197件/16カテゴリ、公式ルール、gold25件、数値集計、比較レポート。raw requestとnative hostの7方式runner、独立spend guard、SSE/SQLite、予算・認可の無料検証。iOS全保存境界/Judge/実生成スコアは未完 |
 
 Geminiは既存OpenAI互換経路。Gemini native API、将来のlocal LLM実行、Memora専用サーバーを実装済みとは扱わない。詳細は[モデル能力表](../MODEL_CAPABILITY_MATRIX.md)。
 
 ## 無料で進められる残作業
 
 1. ModelCapabilityRegistryへexact modelに対応したローカルtokenizer/検証済み推定器を接続。未確認比率でcontextを拡張しない。
-2. 全方式を同条件で実行するnative評価exporter、raw request runnerとの接続と絶対費用上限の運用検証。Level 2/3を自動起動しない。
+2. native host runnerのiOS全保存トランザクションへの接続と絶対費用上限の運用検証。7方式のhost実行は無料mockで検証済み。Level 2/3を自動起動しない。
 3. Knowledgeの人物・長期記憶・資料等への追加consumer。本人編集/原文参照/権限/訂正/撤回を維持し、未確認解釈を確定memoryへ昇格しない。
 4. account別の検証済み並列3/4契約、実メモリ余裕・latencyの観測接続、subscriber別キャンセルを備えたSingle-flight。
 5. 引用一致を越えた意味的整合性/網羅性の評価。全UIケースの最終状態での実行と既存警告の解消。
