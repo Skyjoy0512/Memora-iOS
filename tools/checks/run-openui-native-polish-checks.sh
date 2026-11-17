@@ -7,7 +7,7 @@ trap 'rm -rf "$check_dir"' EXIT
 
 # 1. Host logic checks: pure presentation math, the display schema and the
 #    streaming validator, compiled and run as a normal macOS executable.
-swiftc App/ToolInputValidator.swift App/NativeAIInterface.swift App/NativeAIComponentStream.swift \
+swiftc App/ToolInputValidator.swift App/NativeAIInterface.swift App/NativeAIInterface+JSONRender.swift App/NativeAIComponentStream.swift \
   App/AIInterfaceTableLayout.swift App/AIInterfaceTaskProgressSummary.swift App/AIInterfaceSourceRow.swift \
   App/AIInterfaceSourceListModel.swift App/AIInterfaceEvidence.swift App/AIInterfaceReferenceTarget.swift \
   App/AIChatSource.swift App/MemoraTask.swift App/TaskProgress.swift \
@@ -51,7 +51,7 @@ STUBS
 
 sdk=$(xcrun --sdk iphonesimulator --show-sdk-path)
 swiftc -typecheck -swift-version 6 -sdk "$sdk" -target arm64-apple-ios26.0-simulator \
-  App/ToolInputValidator.swift App/NativeAIInterface.swift App/NativeAIComponentStream.swift \
+  App/ToolInputValidator.swift App/NativeAIInterface.swift App/NativeAIInterface+JSONRender.swift App/NativeAIComponentStream.swift \
   App/AIChatSource.swift App/MemoraTask.swift App/TaskProgress.swift App/TaskRelationships.swift \
   App/RecordPrivacy.swift App/SummarySensitivity.swift App/AIInterfaceTableLayout.swift \
   App/AIInterfaceTaskProgressSummary.swift App/AIInterfaceSourceRow.swift App/AIInterfaceSourceListModel.swift \

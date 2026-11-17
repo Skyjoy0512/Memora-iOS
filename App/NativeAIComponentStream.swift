@@ -3,6 +3,10 @@ import Foundation
 /// Scan only new bytes. Each closed component must validate as part of the
 /// original envelope; no repaired JSON, expressions or partial items execute.
 struct NativeAIComponentStream {
+  enum Format { case native, jsonRender }
+  private var format = Format.native
+  private var completedElements = 0
+  var isComplete: Bool { finished && !failed }
   private var previous = ""
   private var offset = 0
   private var stack: [UInt8] = []
@@ -14,9 +18,10 @@ struct NativeAIComponentStream {
   private(set) var processedBytes = 0
   private(set) var validations = 0
 
-  mutating func update(_ prefix: String) -> NativeAIInterface? {
+  mutating func update(_ prefix: String, format: Format = .native) -> NativeAIInterface? {
     guard prefix.utf8.count <= 32 * 1024 else { failed = true; return nil }
-    if !prefix.hasPrefix(previous) { self = Self() }
+    if !prefix.hasPrefix(previous) || self.format != format { self = Self() }
+    self.format = format
     previous = prefix
     guard !failed else { return nil }
     let bytes = Array(prefix.utf8)
@@ -39,22 +44,37 @@ struct NativeAIComponentStream {
         stack.append(byte)
       } else if byte == 125 || byte == 93 {
         guard stack.last == (byte == 125 ? 123 : 91) else { failed = true; return nil }
-        if byte == 125, stack == [123, 91, 123] {
+        let elementStack: [UInt8] = format == .native ? [123, 91, 123] : [123, 123, 123]
+        if byte == 125, stack == elementStack {
           validations += 1
-          let candidate = String(decoding: bytes[...offset], as: UTF8.self) + "]}"
-          guard let value = NativeAIInterface.decode(candidate),
-                value.components.count == (interface?.components.count ?? 0) + 1 else {
-            failed = true; return nil
+          let candidate = String(decoding: bytes[...offset], as: UTF8.self) + (format == .native ? "]}" : "}}")
+          if format == .native {
+            guard let value = NativeAIInterface.decode(candidate),
+                  value.components.count == (interface?.components.count ?? 0) + 1 else {
+              failed = true; return nil
+            }
+            interface = value
+          } else {
+            guard let projection = NativeAIInterface.jsonRenderProjection(candidate, isPartial: true),
+                  projection.elementCount == completedElements + 1 else {
+              failed = true; return nil
+            }
+            completedElements = projection.elementCount
+            interface = projection.interface
           }
-          interface = value
         }
         stack.removeLast()
         if stack.isEmpty {
           validations += 1
-          guard let value = NativeAIInterface.decode(String(decoding: bytes[...offset], as: UTF8.self)) else {
-            failed = true; return nil
+          let json = String(decoding: bytes[...offset], as: UTF8.self)
+          if format == .native {
+            guard let value = NativeAIInterface.decode(json) else { failed = true; return nil }
+            interface = value
+          } else {
+            guard let projection = NativeAIInterface.jsonRenderProjection(json, isPartial: false),
+                  projection.elementCount == completedElements else { failed = true; return nil }
+            interface = projection.interface
           }
-          interface = value
           finished = true
         }
       }

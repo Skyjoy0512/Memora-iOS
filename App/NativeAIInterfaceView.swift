@@ -3,6 +3,8 @@ import SwiftUI
 
 struct NativeAIInterfaceView: View {
   @Environment(MemoraModel.self) private var model
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+  @Environment(\.horizontalSizeClass) private var horizontalSizeClass
   var interface: NativeAIInterface
   var messageID: UUID?
   var allowsInteractions = true
@@ -43,7 +45,9 @@ struct NativeAIInterfaceView: View {
       // A read-only layout of the parts beside or above one another. Only real,
       // permitted records reach the children, exactly as at the top level.
       let children = component.components ?? []
-      let layout = component.kind == .row
+      let usesRow = component.kind == .row && !dynamicTypeSize.isAccessibilitySize
+        && (horizontalSizeClass == .regular || children.count <= 2)
+      let layout = usesRow
         ? AnyLayout(HStackLayout(alignment: .top, spacing: 16))
         : AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
       layout {
@@ -103,13 +107,21 @@ struct NativeAIInterfaceView: View {
           if let detail = item.detail { Text(detail).font(.body).foregroundStyle(.secondary) }
         }.accessibilityElement(children: .combine).textSelection(.enabled)
       }
+    case .metric:
+      ForEach(component.items) { item in
+        AIInterfaceMetricView(item: item)
+      }
     case .chart:
       Chart(component.items) { item in
         BarMark(x: .value("値", item.value ?? 0), y: .value("項目", item.title ?? ""))
           .foregroundStyle(MemoraPalette.textPrimary)
           .accessibilityLabel(item.title ?? "").accessibilityValue((item.value ?? 0).formatted())
       }
-      .chartXAxis { AxisMarks { AxisValueLabel().foregroundStyle(MemoraPalette.textSecondary) } }
+      .chartXAxis {
+        AxisMarks(values: .automatic(desiredCount: dynamicTypeSize.isAccessibilitySize ? 3 : 5)) {
+          AxisValueLabel().foregroundStyle(MemoraPalette.textSecondary)
+        }
+      }
       .chartYAxis { AxisMarks { AxisValueLabel().foregroundStyle(MemoraPalette.textSecondary) } }
       .frame(height: CGFloat(max(160, component.items.count * 36)))
       ForEach(component.items) { item in

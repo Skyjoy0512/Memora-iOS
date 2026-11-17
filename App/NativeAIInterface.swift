@@ -7,7 +7,7 @@ struct NativeAIInterface: Codable, Equatable {
   enum Kind: String, Codable, CaseIterable {
     case taskList = "TaskList", documentCard = "DocumentCard", projectCard = "ProjectCard"
     case sourceList = "SourceList", comparisonTable = "ComparisonTable"
-    case timeline = "Timeline", chart = "Chart", actionBar = "ActionBar"
+    case timeline = "Timeline", chart = "Chart", metric = "Metric", actionBar = "ActionBar"
     case taskProgress = "TaskProgress", mailDraftCard = "MailDraftCard", disclosure = "Disclosure"
     case calendarPreview = "CalendarPreview"
     /// Read-only layout of other components, so two answers can sit side by side
@@ -106,10 +106,10 @@ struct NativeAIInterface: Codable, Equatable {
       for item in component.items {
         guard item.cells?.count == columns.count, item.action == nil, item.value == nil else { return false }
       }
-    case .chart:
-      guard component.components == nil, (1...30).contains(component.items.count) else { return false }
+    case .chart, .metric:
+      guard component.components == nil, (component.kind == .metric ? 1...1 : 1...30).contains(component.items.count) else { return false }
       for item in component.items {
-        guard let value = item.value, value.isFinite, item.title?.isEmpty == false,
+        guard let value = item.value, value.isFinite, (component.kind == .metric || value >= 0), item.title?.isEmpty == false,
               item.action == nil, item.referenceID == nil, item.cells == nil else { return false }
       }
     case .timeline, .disclosure:
@@ -134,29 +134,38 @@ struct NativeAIInterface: Codable, Equatable {
   }
 
   static func response(_ text: String, isStreaming: Bool, stream: inout NativeAIComponentStream) -> (markdown: String, interface: Self?) {
-    let marker = "```memora-ui"
-    guard let start = text.range(of: marker) else {
+    guard let fence = interfaceFence(in: text) else {
       if isStreaming {
         let start = text.lastIndex(of: "\n").map { text.index(after: $0) } ?? text.startIndex
         let line = text[start...].trimmingCharacters(in: .whitespaces)
-        if line.hasPrefix("```"), marker.hasPrefix(line) {
+        if line.hasPrefix("```"), ["```memora-ui", "```json-render"].contains(where: { $0.hasPrefix(line) }) {
           return (String(text[..<start]).trimmingCharacters(in: .whitespacesAndNewlines), nil)
         }
       }
       return (text, nil)
     }
+    let start = fence.range
     let markdown = String(text[..<start.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
     let suffix = text[start.upperBound...]
     let fallback = markdown.isEmpty && !isStreaming ? "構造化表示を読み込めませんでした。もう一度回答を依頼してください。" : markdown
     if isStreaming {
       if let end = suffix.range(of: "```") {
         guard suffix[end.upperBound...].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return (fallback, nil) }
-        return (markdown, stream.update(String(suffix[..<end.lowerBound])))
+        let interface = stream.update(String(suffix[..<end.lowerBound]), format: fence.format)
+        return (markdown, stream.isComplete ? interface : nil)
       }
-      return (markdown, stream.update(String(suffix)))
+      return (markdown, stream.update(String(suffix), format: fence.format))
     }
     guard let end = suffix.range(of: "```"), suffix[end.upperBound...].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return (fallback, nil) }
-    guard let interface = decode(String(suffix[..<end.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)) else { return (fallback, nil) }
+    let rawJSON = String(suffix[..<end.lowerBound])
+    guard fence.format == .native || rawJSON.utf8.count <= 32 * 1024 else { return (fallback, nil) }
+    let json = rawJSON.trimmingCharacters(in: .whitespacesAndNewlines)
+    if fence.format == .native {
+      guard let interface = decode(json) else { return (fallback, nil) }
+      return (markdown, interface)
+    }
+    let interface = stream.update(json, format: .jsonRender)
+    guard stream.isComplete, let interface else { return (fallback, nil) }
     return (markdown, interface)
   }
 
@@ -186,8 +195,11 @@ struct NativeAIInterface: Codable, Equatable {
         lines.append("| " + columns.map(cell).joined(separator: " | ") + " |")
         lines.append("| " + columns.map { _ in "---" }.joined(separator: " | ") + " |")
         lines += component.items.map { "| " + ($0.cells ?? []).map(cell).joined(separator: " | ") + " |" }
-      case .chart:
-        lines += component.items.map { "- \($0.title ?? ""): \(($0.value ?? 0).formatted())" }
+      case .chart, .metric:
+        lines += component.items.map { item in
+          "- \(item.title ?? ""): \((item.value ?? 0).formatted())"
+            + (component.kind == .metric ? item.detail.map { " · " + $0 } ?? "" : "")
+        }
       case .timeline, .disclosure:
         lines += component.items.map { item in
           "- " + (item.title ?? "") + (item.detail.map { "\n  " + $0.replacingOccurrences(of: "\n", with: "\n  ") } ?? "")
@@ -208,13 +220,14 @@ struct NativeAIInterface: Codable, Equatable {
 
   static var instructions: String {
     """
-    通常はMarkdownだけで答える。操作・比較・日程の表示が明確に役立つ場合だけ、完全なMarkdown回答の末尾に1つの```memora-ui JSONブロックを付けてよい。
-    形式: {"version":1,"components":[{"id":"unique","kind":"TaskList","title":"今週のタスク","items":[{"id":"unique-item","referenceID":"list_tasksで実際に得たUUID","action":"completeTask"}]}]}。
-    kindはTaskList/DocumentCard/ProjectCard/SourceList/ComparisonTable/Timeline/Chart/ActionBar/TaskProgress/MailDraftCard/Disclosure/CalendarPreviewだけ。最大8部品・各30項目。URL・コード・任意のツール名は渡さない。
-    Row/Columnは2つ以上の既存部品を横または縦に並べるためだけに使い、itemsではなくcomponentsに子部品を入れる。入れ子は1段まで（Row/Columnの中にRow/Columnは置かない）。装飾や余白の調整には使わない。
+    通常はMarkdownだけで答える。操作・比較・日程の表示が明確に役立つ場合だけ、完全なMarkdown回答の末尾に1つの```json-render JSONブロックを付けてよい。
+    json-render形式の例: {"root":"answer","elements":{"answer":{"type":"Stack","props":{},"children":["tasks"]},"tasks":{"type":"TaskList","props":{"title":"今週のタスク","items":[{"id":"unique-item","referenceID":"list_tasksで実際に得たUUID","action":"completeTask"}]},"children":[]}}}。
+    rootを先に、elementsを次に出力する。rootのStackは1〜8部品を束ねるだけ。各elementは一意のキーとtype/props/childrenのみを持つ。葉のchildrenは[]、propsはtitle/columns/itemsのみ。参照する子はelementsに必ず定義し、重複参照・循環・未参照elementを作らない。全体32KiB以内。
+    typeはTaskList/DocumentCard/ProjectCard/SourceList/ComparisonTable/Timeline/Chart/Metric/ActionBar/TaskProgress/MailDraftCard/Disclosure/CalendarPreviewだけ。最大8部品・各30項目。URL・コード・任意のツール名は渡さない。
+    Row/Columnは既存部品を横または縦に並べるためだけに使い、propsは{}、childrenに1〜4個の子elementのキーを入れる。入れ子は1段まで（Row/Columnの中にRow/Columnは置かない）。装飾や余白の調整には使わない。
     CalendarPreviewはread_calendarが返したreferenceIDだけをitemsに並べる。各itemのtitle/detail/value/actionは指定しない。実際の予定名と日時をアプリが表示する。未取得の予定、空の検索結果、失効した予定を作って補わない。
     TaskProgressはlist_tasksで実際に得たタスクのreferenceIDを重複なく並べる。進捗の数値はアプリが現在のタスクから計算するのでvalueは指定しない。MailDraftCardはこの回答のdraft_emailで保存された下書きIDだけをreferenceIDにする。Disclosureは短いtitleを必須とし、各itemsのtitle/detailを折りたためる補足に使う。操作や進捗の捏造には使わない。
-    参照型は実際に読んだUUIDだけ。ComparisonTableはcolumnsと各項目cells（同じ列数）、Timelineはtitle/detail、Chartはtitle/valueを使う。ComparisonTableの各項目は、その行の根拠になった記録が実際にある場合だけreferenceIDを付け、無ければ付けない。数字は実際のツール結果に基づき単位をtitleに示す。取得していない統計を作らない。承認・質問・進行状態はアプリの実際のカードに任せる。UIがなくても意味の通る回答を先に書く。
+    参照型は実際に読んだUUIDだけ。ComparisonTableはcolumnsと各項目cells（同じ列数）、Timelineはtitle/detail、Chartはtitle/valueを使う。ComparisonTableの各項目は、その行の根拠になった記録が実際にある場合だけreferenceIDを付け、無ければ付けない。数字は実際のツール結果に基づき単位をtitleに示す。取得していない統計を作らない。承認・質問・進行状態はアプリの実際のカードに任せる。Metricは1つのitemsにtitle（指標名と単位）/value（実際の数値、負数も可）/任意のdetail（補足）を使う。state/式/イベント(on)/任意のButton/URL/HTMLは使わない。UIがなくても意味の通る回答を先に書く。
     """
   }
 
@@ -224,7 +237,7 @@ struct NativeAIInterface: Codable, Equatable {
     let item: [String: Any] = ["type": "object", "additionalProperties": false, "required": ["id"], "properties": [
       "id": identifier, "title": short, "detail": ["type": "string", "maxLength": 2_000], "referenceID": identifier,
       "cells": ["type": "array", "maxItems": 6, "items": ["type": "string", "maxLength": 500]],
-      "value": ["type": "number", "minimum": 0, "maximum": 1_000_000_000_000],
+      "value": ["type": "number", "minimum": -1_000_000_000_000, "maximum": 1_000_000_000_000],
       "action": ["type": "string", "enum": ["completeTask"]]
     ]]
     // A leaf has no children, so a Row/Column cannot nest another one. `items`

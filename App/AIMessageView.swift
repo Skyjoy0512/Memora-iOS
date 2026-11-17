@@ -151,9 +151,11 @@ struct AIMessageView: View {
     let report = message.webResearchReportIDs.last.flatMap { model.webResearch(id: $0) }
     let sent = report?.isChatSearch == true
       ? report?.sources.filter { report?.sentSourceIDs?.contains($0.id) == true } ?? [] : []
-    let researched = !sent.isEmpty ? WebResearchContext.markdownLinked(message.text, sent: sent) : message.text
-    let text = AnswerCitations.linked(researched, sources: message.sources,
-      allowedTargets: model.answerCitationTargets(for: message))
+    let text = NativeAIInterface.mapAnswerMarkdown(message.text) { markdown in
+      let researched = !sent.isEmpty ? WebResearchContext.markdownLinked(markdown, sent: sent) : markdown
+      return AnswerCitations.linked(researched, sources: message.sources,
+        allowedTargets: model.answerCitationTargets(for: message))
+    }
 
     return AIResponseText(text: text, isStreaming: message.isThinking, messageID: message.id, animates: animates)
       .environment(\.openURL, OpenURLAction { url in
