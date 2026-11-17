@@ -134,6 +134,10 @@ struct NativeAIInterface: Codable, Equatable {
   }
 
   static func response(_ text: String, isStreaming: Bool, stream: inout NativeAIComponentStream) -> (markdown: String, interface: Self?) {
+    if let generated = JSONRenderEnvelope.parse(text, isStreaming: isStreaming),
+       generated.segments.contains(where: { $0.format != "json" }) {
+      return (generated.markdown, nil)
+    }
     guard let fence = interfaceFence(in: text) else {
       if isStreaming {
         let start = text.lastIndex(of: "\n").map { text.index(after: $0) } ?? text.startIndex

@@ -16,6 +16,8 @@ enum CloudAIService {
     記録をもとにした文の末尾には、その記録の番号を【資料1】の形で付けます。与えられた番号だけを使い、記録にない内容には付けません。
 
     \(ReadabilityGuide.rules)
+    \(JSONRenderPrompt.instructions)
+    この会話は読み取り専用。生成UIから記録やタスクを変更しない。入力欄やタブなど回答内の操作だけに使う。
     """
     let user = AIAnswerPrompt.text(
       question: question,

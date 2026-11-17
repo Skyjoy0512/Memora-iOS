@@ -751,3 +751,14 @@ chat-surface checks passed. On Bitrig's iPhone 18 Pro Max, verified the removed
 row is absent, idle-open/cancel keeps the keyboard closed, focused empty-open/close
 restores the keyboard, and focused draft-open/swipe-dismiss preserves the draft
 and restores the keyboard. The same native editor stays mounted across these states.
+
+## Ask AI generated interfaces — 2026-11-18
+
+Ask AI can show the official json-render 0.23.1 React/shadcn catalog in a local,
+bundled WKWebView within the existing native answer. Forms, tabs, conditionals,
+repeats, slots and local state work inside the answer; navigation, source checks
+and approvals stay in the existing native surfaces. Generated UI follows Dynamic
+Type, appearance and Reduce Motion. A long interface scrolls within a bounded
+answer area. There are no CDN or direct external requests from the renderer.
+See [runtime integration](docs/ASK_AI_JSON_RENDER.md) for the versioned coverage,
+wire formats, action contracts and verification boundaries.

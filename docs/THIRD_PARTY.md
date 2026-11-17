@@ -145,3 +145,15 @@ MIT全文は `App/Resources/Volocal-LICENSE.txt`、設定のライセンス一�
   固定値・保存場所・実機検証の境界は `docs/LIVE_CONVERSATION.md` を参照。
 
 ライセンス全文はApp/ResourcesのLlamaSwift-LICENSE.txt、LlamaCPP-LICENSE.txt、Qwen35-LICENSE.txt。
+
+## json-render runtime
+
+Ask AI bundles the unmodified published `@json-render/core`, `react`, `shadcn`,
+`directives` and `yaml` packages at 0.23.1, with React/React DOM 19.2.4.
+The runtime is built locally by `tools/json-render/build.mjs`; the exact dependency
+versions and integrity hashes are in its package-lock.json. The bundle and the
+notices for all packages present in it ship in `App/Resources/JSONRenderRuntime.html`
+and `JSONRenderLicenses.txt`. The latter is readable from Settings' open-source
+licenses. Upstream: https://github.com/vercel-labs/json-render (Apache-2.0).
+This integration does not import the monorepo's separate framework/platform,
+3D, video, email, PDF or server adapters.

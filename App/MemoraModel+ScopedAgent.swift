@@ -45,6 +45,8 @@ extension MemoraModel {
     今回渡された実在の【資料n】だけを引用します。過去の会話の資料番号は今回と同じとは限りません。
     \(ReadabilityGuide.rules)
     \(selection.guidance)
+    \(JSONRenderPrompt.instructions)
+    この会話では、生成UIは回答内の表示・入力だけに使う。記録やタスクを変更しない。
     """
     guard let session = CloudAgentSession(llm: llm, system: system, tools: tools, toolDescriptions: descriptions, authorize: authorized) else {
       return ScopedAgentAnswer(result: .failure(.missingKey), references: [])

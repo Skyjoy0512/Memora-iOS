@@ -57,3 +57,8 @@ build-*/
 
 # Local UI verification artifacts
 .e2e/
+
+# Generated web build scratch
+tools/json-render/.runtime.css
+tools/json-render/.test-components.mjs
+tools/json-render/.*.log

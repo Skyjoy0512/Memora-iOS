@@ -42,6 +42,7 @@ struct AIConversationSnapshot: Codable, Sendable {
           && (turn.cloudProvenance?.references.count ?? 0) <= 256
           && (turn.artifactProvenance?.isValid ?? true)
           && (turn.artifactProvenance.map { $0.workspaceID == workspaceID } ?? true)
+          && (turn.generatedUI?.isValid ?? true)
           && turn.createdAt.timeIntervalSince1970.isFinite
           && (turn.finishedAt?.timeIntervalSince1970.isFinite ?? true)
           && (turn.attachment?.isValid ?? true) && (turn.mentions?.count ?? 0) <= 32
@@ -56,6 +57,7 @@ struct AIConversationSnapshot: Codable, Sendable {
     var id: UUID
     var role: String
     var text: String
+    var generatedUI: JSONRenderSnapshot?
     var attachment: AIAttachmentFileReference?
     var mentions: [ComposerMention]?
     var createdAt: Date
@@ -92,7 +94,7 @@ struct AIConversationSnapshot: Codable, Sendable {
       let mentionStrings = mentions?.flatMap { [$0.label, $0.pluginID] } ?? []
       let bytes = ([text] + pluginIDs + suggestions + metadata + attachmentStrings + sourceStrings + attachmentEvidence + fingerprints + mentionStrings)
         .reduce(0) { $0 + $1.utf8.count }
-      return 2_048 + bytes * 6 + (sources.count + sources.reduce(0) { $0 + $1.excerpts.count }
+      return 2_048 + (generatedUI?.maximumEncodedBytes ?? 0) + bytes * 6 + (sources.count + sources.reduce(0) { $0 + $1.excerpts.count }
         + documentIDs.count + (createdTaskIDs?.count ?? 0) + webResearchReportIDs.count + fingerprints.count + (mentions?.count ?? 0)
         + (sourceCitations?.count ?? 0) + (attachmentCitations?.count ?? 0) + (attachment?.additionalFiles?.count ?? 0)) * 256
     }
@@ -101,6 +103,7 @@ struct AIConversationSnapshot: Codable, Sendable {
       id = message.id
       role = message.role == .user ? "user" : "assistant"
       text = message.text
+      generatedUI = message.generatedUI
       attachment = message.attachment.flatMap(AIAttachmentFileReference.init)
       mentions = message.mentions
       createdAt = message.createdAt
@@ -126,6 +129,7 @@ struct AIConversationSnapshot: Codable, Sendable {
 
     func restoredMessage() -> AIChatMessage {
       var message = AIChatMessage(role: role == "user" ? .user : .assistant, text: text)
+      message.generatedUI = generatedUI.flatMap { $0.isValid && $0.fingerprint == JSONRenderSnapshot.fingerprint(text) && !wasInterrupted ? $0 : nil }
       message.attachment = attachment?.resolve()
       message.mentions = (mentions ?? []).filter { $0.isValid(in: text) && pluginIDs.contains($0.pluginID) }
       message.id = id

@@ -12,7 +12,7 @@ swiftc App/AIToolRegistry.swift App/AIToolDefinition.swift App/ToolInputValidato
 "$check_dir/dispatch"
 bash tools/checks/run-tool-integration-checks.sh
 
-swiftc App/AIAttachmentCitation.swift App/AIHistorySearch.swift App/AIEpisode.swift App/ProjectCitation.swift App/AIAttachment.swift App/AIAttachmentFileReference.swift App/AIConversationEntry.swift App/AIConversationProvenance.swift \
+swiftc App/AIAttachmentCitation.swift App/AIHistorySearch.swift App/AIEpisode.swift App/ProjectCitation.swift App/AIAttachment.swift App/AIAttachmentFileReference.swift App/AIConversationEntry.swift App/JSONRenderSnapshot.swift App/AIConversationProvenance.swift \
   App/AIRecordReference.swift App/AIRecordFingerprint.swift App/RecordPrivacyTarget.swift \
   tools/checks/AIHistorySearchChecks.swift -o "$check_dir/history"
 "$check_dir/history"

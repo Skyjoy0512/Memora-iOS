@@ -58,16 +58,21 @@ extension MemoraModel {
 
   /// The model can propose a control, but its payload cannot execute a tool.
   /// Tapping uses the original message's policy, registry and approval card.
-  func completeInterfaceTask(_ id: UUID, messageID: UUID) {
+  func completeInterfaceTask(_ id: UUID, messageID: UUID, completion: (@MainActor (Bool, String) -> Void)? = nil) {
     guard !isAIChatResponding, canUseInterfaceTask(id, messageID: messageID), task(id: id)?.isCompleted == false,
-          let message = agentMessage(messageID) else { return }
+          let message = agentMessage(messageID) else {
+      completion?(false, "現在このタスクを変更できません。")
+      return
+    }
     let requestID = UUID()
     aiChatRequestID = requestID
     isAIChatResponding = true
     updateAgentMessage(messageID) { $0.isThinking = true; $0.createdAt = .now; $0.finishedAt = nil }
     aiChatTask = Task { [weak self] in
-      guard let self else { return }
-      guard aiChatRequestID == requestID else { return }
+      guard let self, aiChatRequestID == requestID else {
+        completion?(false, "操作は中断されました。")
+        return
+      }
       let call = AgentToolCall(id: UUID().uuidString, name: AgentTool.updateTasks.rawValue,
         arguments: ["updates": [["id": id.uuidString, "is_completed": true]]])
       let outcome: AgentToolOutcome
@@ -76,12 +81,16 @@ extension MemoraModel {
       } else {
         outcome = AgentToolOutcome(text: "タスクの参照範囲が変わったため変更していません。", isError: true)
       }
-      guard aiChatRequestID == requestID else { return }
+      guard aiChatRequestID == requestID else {
+        completion?(false, "操作は中断されました。")
+        return
+      }
       updateAgentMessage(messageID) { $0.isThinking = false; $0.finishedAt = .now }
       isAIChatResponding = false
       aiChatTask = nil
       aiChatRequestID = nil
       if outcome.isError { aiMessages.append(AIChatMessage(role: .assistant, text: outcome.text)) }
+      completion?(!outcome.isError, outcome.text)
     }
   }
 }

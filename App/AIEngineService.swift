@@ -100,7 +100,7 @@ private enum FoundationModelAnswer {
     guard SystemLanguageModel.default.isAvailable else { return .failure(.noEngine) }
 
     let session = LanguageModelSession(
-      instructions: AIAnswerPrompt.grounding + "\n" + ReadabilityGuide.compactRules
+      instructions: AIAnswerPrompt.grounding + "\n" + ReadabilityGuide.compactRules + "\n" + JSONRenderPrompt.compactInstructions
     )
     let prompt = AIAnswerPrompt.text(
       question: question,

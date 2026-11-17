@@ -8,27 +8,38 @@ struct AIResponseText: View {
   var isStreaming = false
   var messageID: UUID?
   var animates = true
+  var markdownTransform: (String) -> String
+  var restoredSnapshot: JSONRenderSnapshot?
+  var onSnapshot: ((JSONRenderSnapshot) -> Void)?
+  @State private var generatedCache = JSONRenderEnvelopeCache()
   @State private var cache = NativeAIResponseCache()
   @State private var introductionProgress: Double
   @State private var hasIntroduced = false
 
-  init(text: String, isStreaming: Bool = false, messageID: UUID? = nil, animates: Bool = true) {
+  init(text: String, isStreaming: Bool = false, messageID: UUID? = nil, animates: Bool = true, markdownTransform: @escaping (String) -> String = { $0 }, restoredSnapshot: JSONRenderSnapshot? = nil, onSnapshot: ((JSONRenderSnapshot) -> Void)? = nil) {
     self.text = text
     self.isStreaming = isStreaming
     self.messageID = messageID
     self.animates = animates
+    self.markdownTransform = markdownTransform
+    self.restoredSnapshot = restoredSnapshot
+    self.onSnapshot = onSnapshot
     let introducesReply = animates && isStreaming && messageID.map { !AIResponseIntroductionRegistry.contains($0) } == true
     _introductionProgress = State(initialValue: introducesReply ? 0 : 1)
   }
 
   var body: some View {
     let response = cache.response(for: text, isStreaming: isStreaming)
-    let hasContent = !response.markdown.isEmpty || response.interface != nil
+    let generated = generatedCache.response(for: text, isStreaming: isStreaming)
+    let markdown = generated?.markdown ?? response.markdown
+    let hasContent = !markdown.isEmpty || response.interface != nil || generated?.segments.isEmpty == false
     VStack(alignment: .leading, spacing: MemoraSpacing.xxl) {
-      StreamingMarkdownView(text: response.markdown, isStreaming: isStreaming)
+      StreamingMarkdownView(text: markdownTransform(markdown), isStreaming: isStreaming)
         .environment(\.streamsMarkdownText, isStreaming && animates)
       if let interface = response.interface {
         NativeAIInterfaceView(interface: interface, messageID: messageID, allowsInteractions: !isStreaming)
+      } else if let generated, !generated.segments.isEmpty {
+        JSONRenderAnswerView(envelope: generated, text: text, isStreaming: isStreaming, messageID: messageID, restoredSnapshot: restoredSnapshot, onSnapshot: onSnapshot)
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)

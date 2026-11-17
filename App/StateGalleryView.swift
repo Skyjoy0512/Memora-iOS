@@ -60,6 +60,7 @@ struct StateGalleryView: View {
 
       Section {
         #if DEBUG
+        NavigationLink("生成UI（フォームと操作）") { JSONRenderExampleView() }
         NavigationLink("構造化回答（表示の確認）") { NativeAIInterfaceExampleView() }
         NavigationLink("資料・進捗の表示確認") { AIInterfaceStructuredExampleView() }
         NavigationLink("タスク候補（編集の確認）") { AgentTaskDraftExampleView() }

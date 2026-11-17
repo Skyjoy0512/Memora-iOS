@@ -93,5 +93,5 @@ with tempfile.TemporaryDirectory(prefix="memora-ui-interaction-", dir=os.environ
     swift = folder / "UIInteractionChecks.swift"
     swift.write_text(fixture)
     binary = folder / "checks"
-    subprocess.run(["swiftc", "-swift-version", "6", "App/AgentQuestion.swift", "App/AgentQuestionRequest.swift", "App/ToolInputValidator.swift", "App/NativeAIInterface.swift", "App/NativeAIInterface+JSONRender.swift", "App/NativeAIComponentStream.swift", "App/NoteAttachmentSelection.swift", str(swift), "-o", str(binary)], check=True)
+    subprocess.run(["swiftc", "-swift-version", "6", "App/AgentQuestion.swift", "App/AgentQuestionRequest.swift", "App/ToolInputValidator.swift", "App/NativeAIInterface.swift", "App/JSONRenderPrompt.swift", "App/JSONRenderEnvelope.swift", "App/NativeAIInterface+JSONRender.swift", "App/NativeAIComponentStream.swift", "App/NoteAttachmentSelection.swift", str(swift), "-o", str(binary)], check=True)
     subprocess.run([str(binary)], check=True, timeout=15)

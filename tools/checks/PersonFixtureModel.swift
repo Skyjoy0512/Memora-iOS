@@ -182,6 +182,7 @@ struct FixtureMessage {
   var text = ""
   var isThinking = false
   #if INTELLIGENT_UI_CHECKS
+  var generatedUI: JSONRenderSnapshot?
   var finishedAt: Date?
   var documentIDs: [UUID] = []
   #if INTERFACE_TASK_EXECUTION_CHECKS

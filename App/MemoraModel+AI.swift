@@ -1082,7 +1082,8 @@ extension MemoraModel {
         cloudProvenance: provenance,
         webResearchReportID: webResearchReportID,
         episode: episode, sourceCitations: citations.isEmpty ? nil : citations,
-        attachmentCitations: clips.isEmpty ? nil : clips, attachment: userFile.flatMap(AIAttachmentFileReference.init)
+        attachmentCitations: clips.isEmpty ? nil : clips, attachment: userFile.flatMap(AIAttachmentFileReference.init),
+        sourceMessageID: last?.id, generatedUI: last?.generatedUI
       ),
       at: 0
     )

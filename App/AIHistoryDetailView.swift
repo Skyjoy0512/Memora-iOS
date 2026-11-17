@@ -13,6 +13,7 @@ struct AIHistoryDetailView: View {
   var openProjectAction: ((UUID) -> Void)?
 
   var body: some View {
+    let entry = model.aiHistory.first { $0.id == self.entry.id } ?? self.entry
     ScrollView {
       VStack(alignment: .leading, spacing: 18) {
         VStack(alignment: .leading, spacing: 6) {
@@ -28,9 +29,11 @@ struct AIHistoryDetailView: View {
           Text("回答")
             .font(.caption.weight(.semibold))
             .foregroundStyle(.secondary)
-          AIResponseText(text: entry.answer, animates: false)
+          AIResponseText(text: entry.answer, animates: false, restoredSnapshot: entry.generatedUI) {
+            model.saveJSONRenderHistorySnapshot($0, entryID: entry.id)
+          }
             .frame(maxWidth: .infinity, alignment: .leading)
-          AIResponseActionBar(text: entry.answer, retry: {})
+          AIResponseActionBar(text: entry.generatedUI.map { NativeAIInterface.response(entry.answer).markdown + "\n\n" + $0.text } ?? entry.answer, retry: {})
         }
 
         VStack(alignment: .leading, spacing: 6) {

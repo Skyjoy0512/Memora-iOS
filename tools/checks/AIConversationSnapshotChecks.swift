@@ -132,7 +132,29 @@ enum AIConversationSnapshotChecks {
     invalid.turns[0].text = String(repeating: "\\", count: AIConversationSnapshot.maximumBytes / 6)
     try reject(JSONEncoder().encode(invalid))
     try reject(Data(repeating: 32, count: AIConversationSnapshot.maximumBytes + 1))
-    print("AI conversation snapshot checks passed")
+    var interactive = AIChatMessage(role: .assistant, text: "回答本文")
+    interactive.generatedUI = JSONRenderSnapshot(fingerprint: JSONRenderSnapshot.fingerprint(interactive.text),
+      specJSON: #"{"root":"main","elements":{"main":{"type":"Text","props":{"text":"表示"},"children":[]}}}"#,
+      stateJSON: #"{"name":"入力内容"}"#, text: "表示本文")
+    let uiSnapshot = AIConversationSnapshot(messages: [interactive], workspaceID: nil)
+    let uiRestored = try AIConversationSnapshot.decode(JSONEncoder().encode(uiSnapshot), workspaceID: nil).restoredMessages()
+    precondition(uiRestored.first?.generatedUI == interactive.generatedUI)
+    precondition(uiRestored.first?.interfaceTaskIDs.isEmpty == true)
+    var editedSnapshot = uiSnapshot
+    editedSnapshot.turns[0].text = "本文が変わった"
+    precondition(editedSnapshot.restoredMessages().first?.generatedUI == nil)
+    var interruptedUI = interactive
+    interruptedUI.isThinking = true
+    precondition(AIConversationSnapshot(messages: [interruptedUI], workspaceID: nil).restoredMessages().first?.generatedUI == nil)
+    let generatedExchange = AIConversationEntry(id: UUID(), question: "質問", answer: interactive.text, scopeLabel: "すべて", createdAt: .now,
+      sourceMessageID: interactive.id, generatedUI: interactive.generatedUI)
+    let reopenedExchange = try JSONDecoder().decode(AIConversationEntry.self, from: JSONEncoder().encode(generatedExchange))
+    precondition(reopenedExchange.generatedUI == interactive.generatedUI && reopenedExchange.sourceMessageID == interactive.id)
+    var damagedExchange = generatedExchange
+    damagedExchange.generatedUI?.stateJSON = "not JSON"
+    let readableExchange = try JSONDecoder().decode(AIConversationEntry.self, from: JSONEncoder().encode(damagedExchange))
+    precondition(readableExchange.answer == generatedExchange.answer && readableExchange.generatedUI == nil)
+    print("AI conversation snapshot checks passed (including generated UI state, stale fingerprint refusal and no restored write grants)")
   }
 
   static func reject(_ data: Data, workspaceID: String? = nil) throws {

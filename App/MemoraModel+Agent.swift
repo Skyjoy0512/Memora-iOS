@@ -62,7 +62,7 @@ extension MemoraModel {
     let runner: AgentRunner
     switch AIEngineService.effectiveEngine(configuration.engine) {
     case .cloud:
-      guard let session = CloudAgentSession(llm: llm, system: Self.agentInstructions(scope: scope) + "\n" + NativeAIInterface.instructions + skillContext, tools: offeredTools, contextTask: contextTask) else {
+      guard let session = CloudAgentSession(llm: llm, system: Self.agentInstructions(scope: scope) + "\n" + JSONRenderPrompt.instructions + skillContext, tools: offeredTools, contextTask: contextTask) else {
         let failure: AIAnswerFailure = llm.isMemoraIntelligence ? .serviceNotConnected : .missingKey
         if attachment != nil {
           aiMessages.removeAll { $0.id == userMessage.id }
@@ -403,7 +403,7 @@ extension MemoraModel {
       guard self.gmailResultsAreCurrent(messageID) else { return AIAnswerFailure.contextChanged.message }
       return outcome.text
     }
-    let session = LanguageModelSession(tools: tools, instructions: Self.onDeviceAgentInstructions(scope: scope) + skillContext)
+    let session = LanguageModelSession(tools: tools, instructions: Self.onDeviceAgentInstructions(scope: scope) + "\n" + JSONRenderPrompt.compactInstructions + skillContext)
     do {
       let response = try await session.respond(to: prompt)
       guard gmailResultsAreCurrent(messageID) else { return .failure(.contextChanged) }

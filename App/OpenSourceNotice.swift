@@ -21,6 +21,9 @@ struct OpenSourceNotice: Identifiable, Sendable {
   }
 
   static let all: [Self] = [
+    .init(id: "json-render", name: "json-render / React / shadcn", version: "0.23.1 / 19.2.4", license: "Apache-2.0・MIT・第三者告知",
+      copyright: "Vercel, Meta, Radix and contributors", files: ["JSONRenderLicenses.txt"],
+      url: "https://github.com/vercel-labs/json-render"),
     .init(id: "presentation", name: "consulting-pptx-skill", version: "e5f35e57 (2026-10-26)", license: "MIT",
       copyright: "Copyright (c) 2026 Carnot AI Inc.", files: ["ConsultingPPTX-LICENSE.txt"],
       url: "https://github.com/carnot-tech/jinba-consulting-pptx-skill"),

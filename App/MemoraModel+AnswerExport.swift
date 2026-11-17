@@ -2,7 +2,12 @@ import Foundation
 
 extension MemoraModel {
   func answerExportMarkdown(_ message: AIChatMessage) -> String {
-    NativeAIInterface.exportMarkdown(message.text) { kind, ids in
+    if let snapshot = message.generatedUI, snapshot.isValid,
+       snapshot.fingerprint == JSONRenderSnapshot.fingerprint(message.text), !snapshot.text.isEmpty {
+      let markdown = NativeAIInterface.response(message.text).markdown
+      return [markdown, snapshot.text].filter { !$0.isEmpty }.joined(separator: "\n\n")
+    }
+    return NativeAIInterface.exportMarkdown(message.text) { kind, ids in
       guard canUseInterfaceContext(messageID: message.id) else { return nil }
       switch kind {
       case .taskList, .actionBar, .taskProgress:

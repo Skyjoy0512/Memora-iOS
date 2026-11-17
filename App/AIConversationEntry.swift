@@ -6,6 +6,8 @@ struct AIConversationEntry: Identifiable, Hashable, Codable {
   var id: UUID
   var question: String
   var answer: String
+  var sourceMessageID: UUID?
+  var generatedUI: JSONRenderSnapshot?
   var scopeLabel: String
   var engineLabel: String?
   var modelLabel: String?
@@ -30,11 +32,15 @@ struct AIConversationEntry: Identifiable, Hashable, Codable {
     episode: AIEpisode? = nil,
     sourceCitations: [ProjectCitation]? = nil,
     attachmentCitations: [AIAttachmentCitation]? = nil,
-    attachment: AIAttachmentFileReference? = nil
+    attachment: AIAttachmentFileReference? = nil,
+    sourceMessageID: UUID? = nil,
+    generatedUI: JSONRenderSnapshot? = nil
   ) {
     self.id = id
     self.question = question
     self.answer = answer
+    self.sourceMessageID = sourceMessageID
+    self.generatedUI = generatedUI
     self.scopeLabel = scopeLabel
     self.engineLabel = engineLabel
     self.modelLabel = modelLabel
@@ -52,7 +58,11 @@ struct AIConversationEntry: Identifiable, Hashable, Codable {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     id = try container.decode(UUID.self, forKey: .id)
     question = try container.decode(String.self, forKey: .question)
-    answer = try container.decode(String.self, forKey: .answer)
+    let decodedAnswer = try container.decode(String.self, forKey: .answer)
+    answer = decodedAnswer
+    sourceMessageID = try? container.decode(UUID.self, forKey: .sourceMessageID)
+    let ui = try? container.decode(JSONRenderSnapshot.self, forKey: .generatedUI)
+    generatedUI = ui.flatMap { $0.isValid && $0.fingerprint == JSONRenderSnapshot.fingerprint(decodedAnswer) ? $0 : nil }
     scopeLabel = try container.decode(String.self, forKey: .scopeLabel)
     engineLabel = try container.decodeIfPresent(String.self, forKey: .engineLabel)
     modelLabel = try container.decodeIfPresent(String.self, forKey: .modelLabel)

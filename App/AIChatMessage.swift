@@ -10,6 +10,7 @@ struct AIChatMessage: Identifiable, Hashable {
   var id = UUID()
   var role: Role
   var text: String
+  var generatedUI: JSONRenderSnapshot?
   var attachment: AIAttachment?
   var mentions: [ComposerMention] = []
   /// Per-turn explicit selection; the persisted chat-history format stays unchanged.
