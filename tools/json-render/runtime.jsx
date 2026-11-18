@@ -116,11 +116,25 @@ function Runtime() {
 }
 window.memoraJSONRender={
   receive(payload){ if(receive) receive(payload); else current=payload; },
+  setViewport(top,height){
+    document.documentElement.style.setProperty('--memora-viewport-top',`${top}px`);
+    document.documentElement.style.setProperty('--memora-viewport-height',`${height}px`);
+  },
   resolve(id,ok,result){const call=pending.get(id);if(!call)return;clearTimeout(call.timeout);pending.delete(id);ok?call.resolve(result):call.reject(Error(result?.message??'操作は実行されませんでした。'));},
 };
 const root=createRoot(document.getElementById('root'));
 root.render(<Runtime/>);
-new ResizeObserver(()=>post({kind:'height',height:Math.ceil(document.body.scrollHeight)})).observe(document.body);
+// scrollHeight is at least the current viewport height, so it cannot report a
+// smaller answer after a disclosure or conditional section closes.
+new ResizeObserver(()=>post({kind:'height',height:Math.ceil(document.body.getBoundingClientRect().height)})).observe(document.body);
+new MutationObserver(()=>{
+  // The upstream action confirmation uses an inline fixed flex layer, while
+  // shadcn dialogs/drawers expose stable slot attributes.
+  for(const layer of document.querySelectorAll('#root div[style*="position: fixed"]')) {
+    if(layer.style.display==='flex'&&layer.style.alignItems==='center')layer.dataset.memoraConfirmation='true';
+  }
+  if(document.querySelector('[data-slot="dialog-content"][data-state="open"],[data-slot="drawer-content"][data-state="open"],[data-memora-confirmation]'))post({kind:'viewport'});
+}).observe(document.body,{childList:true,subtree:true});
 window.addEventListener('unhandledrejection',event=>{event.preventDefault();post({kind:'error'});});
 document.addEventListener('click',event=>{
   const link=event.target.closest('a[href]');

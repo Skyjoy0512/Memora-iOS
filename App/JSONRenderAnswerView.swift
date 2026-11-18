@@ -80,7 +80,7 @@ struct JSONRenderAnswerView: View {
             }
           }, onFailure: { if !isStreaming { failure = true } })
           .id(reloadID)
-          .frame(height: min(700, max(1, height)))
+          .frame(height: max(1, height))
           .accessibilityLabel("操作できる生成回答")
         if failure {
           Button("構造化表示を再読み込み", icon: .arrowClockwise) {

@@ -116,11 +116,14 @@ test('the structured answer example renders the comparison table and Row', async
   await screen.getByLabel('メニュー').tap();
   await screen.getByTestId('sidebar.settings').tap();
   await openSettingsGallery(screen);
-  await screen.getByText('構造化回答（表示の確認）').tap();
+  await scrollToText(screen, '構造化回答（表示の確認）');
+  await tapControl(screen.getByRole('button', { name: '構造化回答（表示の確認）', exact: true }));
   await expect(screen.getByText('選択肢の比較')).toBeVisible();
   await expect(screen.getByText('候補').first()).toBeVisible();
+  await app.screenshot('structured-answer-table');
   await scrollToText(screen, '午前の件数');
   await expect(screen.getByText('午後の件数')).toBeVisible();
+  await app.screenshot('structured-answer-row');
 });
 
 test('the structured answer example replays its streaming state', async ({ app, device, screen }) => {
@@ -128,7 +131,8 @@ test('the structured answer example replays its streaming state', async ({ app, 
   await screen.getByLabel('メニュー').tap();
   await screen.getByTestId('sidebar.settings').tap();
   await openSettingsGallery(screen);
-  await screen.getByText('構造化回答（表示の確認）').tap();
+  await scrollToText(screen, '構造化回答（表示の確認）');
+  await tapControl(screen.getByRole('button', { name: '構造化回答（表示の確認）', exact: true }));
   await screen.getByText('ストリーミングを確認').tap();
   await expect(screen.getByText('表示を停止')).toBeVisible();
 });

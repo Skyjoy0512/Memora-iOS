@@ -27,6 +27,12 @@ const rules=[
 writeFileSync(join(output,'JSONRenderPrompt.txt'),catalog.prompt({mode:'inline',directives,editModes:['patch','merge','diff'],customRules:rules}));
 writeFileSync(join(output,'JSONRenderCatalog.json'),JSON.stringify({version:'0.23.1',components:catalog.componentNames,actions:catalog.actionNames,schema:catalog.jsonSchema()},null,2));
 writeFileSync(join(output,'JSONRenderExample.txt'),'表示検証用の架空データです。入力や操作はこの回答の中だけで動きます。\n\n```json-render\n'+JSON.stringify(example)+'\n```');
+const longExample=structuredClone(example);
+const paragraphs=Array.from({length:12},(_,index)=>'long-text-'+index);
+longExample.elements.card.children.unshift(...paragraphs);
+for(const [index,id] of paragraphs.entries())longExample.elements[id]={type:'Text',props:{text:`表示確認用の段落 ${index+1}。長い回答でも本文と生成UIは同じ画面で自然にスクロールし、末尾の操作から開いたダイアログを現在の表示範囲で確認できる必要があります。これは架空の固定データです。`},children:[]};
+longExample.elements.copy.on.press.confirm={title:'コピー前の確認',message:'この名前をコピーしますか？',confirmLabel:'コピーする',cancelLabel:'キャンセル'};
+writeFileSync(join(output,'JSONRenderLongExample.txt'),'表示検証用の架空データです。入力や操作はこの回答の中だけで動きます。\n\n```json-render\n'+JSON.stringify(longExample)+'\n```');
 const patches=[{op:'add',path:'/root',value:example.root},{op:'add',path:'/state',value:example.state},...Object.entries(example.elements).map(([key,value])=>({op:'add',path:'/elements/'+key,value}))];
 writeFileSync(join(output,'JSONRenderPatchExample.txt'),'JSON Patchの表示検証です。架空のデータを使います。\n\n```spec\n'+patches.map(patch=>JSON.stringify(patch)).join('\n')+'\n```');
 writeFileSync(join(output,'JSONRenderYAMLExample.txt'),'YAMLの表示検証です。架空のデータを使います。\n\n```yaml-spec\n'+yaml(example)+'\n```');

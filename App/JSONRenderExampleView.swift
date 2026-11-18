@@ -35,6 +35,7 @@ struct JSONRenderExampleView: View {
     case .form: "JSONRenderExample"
     case .patch: "JSONRenderPatchExample"
     case .yaml: "JSONRenderYAMLExample"
+    case .long: "JSONRenderLongExample"
     }
     guard let url = Bundle.main.url(forResource: file, withExtension: "txt"),
           let text = try? String(contentsOf: url, encoding: .utf8) else { return "表示データを読み込めませんでした。" }
@@ -58,7 +59,7 @@ struct JSONRenderExampleView: View {
   }
 
   private enum ExampleMode: String, CaseIterable, Identifiable {
-    case form = "フォーム", patch = "JSON Patch", yaml = "YAML"
+    case form = "フォーム", patch = "JSON Patch", yaml = "YAML", long = "長文"
     var id: String { rawValue }
   }
 }

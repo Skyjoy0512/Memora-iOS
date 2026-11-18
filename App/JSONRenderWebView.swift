@@ -30,7 +30,9 @@ struct JSONRenderWebView: UIViewRepresentable {
     view.isOpaque = false
     view.backgroundColor = .clear
     view.scrollView.backgroundColor = .clear
-    view.scrollView.isScrollEnabled = true
+    // The surrounding conversation owns scrolling; an inner viewport cuts
+    // through cards and competes with the person's reading position.
+    view.scrollView.isScrollEnabled = false
     view.scrollView.bounces = false
     view.navigationDelegate = context.coordinator
     context.coordinator.webView = view
@@ -98,6 +100,7 @@ struct JSONRenderWebView: UIViewRepresentable {
       if kind == "ready" { ready = true; sendIfNeeded(); return }
       guard body["token"] as? String == token, body["fingerprint"] as? String == owner.fingerprint else { return }
       switch kind {
+      case "viewport": publishViewport()
       case "height":
         if let height = body["height"] as? Double, height.isFinite, height >= 0, height <= 50_000 { owner.onHeight(height) }
       case "state":
@@ -120,6 +123,21 @@ struct JSONRenderWebView: UIViewRepresentable {
       case "error": owner.onFailure()
       default: break
       }
+    }
+
+    private func publishViewport() {
+      guard let webView, let window = webView.window else { return }
+      var visible = webView.bounds.intersection(webView.convert(window.safeAreaLayoutGuide.layoutFrame, from: window))
+      var ancestor = webView.superview
+      while let view = ancestor {
+        if view.clipsToBounds { visible = visible.intersection(webView.convert(view.bounds, from: view)) }
+        ancestor = view.superview
+      }
+      guard !visible.isNull, !visible.isEmpty else { return }
+      // A full-height answer can extend far beyond the window. Fixed web
+      // dialogs must anchor inside the portion the person can currently see.
+      webView.callAsyncJavaScript("window.memoraJSONRender.setViewport(top, height)",
+        arguments: ["top": visible.minY, "height": visible.height], in: nil, in: .page, completionHandler: nil)
     }
 
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {

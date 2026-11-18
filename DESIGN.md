@@ -41,6 +41,9 @@ Brand assets follow the supplied canonical artwork in docs/BRANDING.md. Floating
 - Read-only answer components are included in copy/share/saved documents. Referenced
   tasks, events and other cards resolve through current grants at the action;
   display JSON never supplies their titles, dates or permissions.
+- Generated answer UI shares the conversation's scroll and grows with its measured
+  content. Closing supporting content shrinks the frame. Dialogs, drawers and
+  confirmations fit the currently visible native viewport, including long answers.
 - Files (ファイル) and Projects (プロジェクト) switch through the existing pill tabs beneath the Library title.
   Display, sort, filter and selection remain in the adjacent native menu. Library
   sources continue in the lazy list without a three-item preview or a See All link.
