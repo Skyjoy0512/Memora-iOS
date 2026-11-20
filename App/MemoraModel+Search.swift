@@ -4,9 +4,10 @@ extension MemoraModel {
   /// The records whose searchable text contains `query` and that pass every
   /// active filter.
   func searchMeetings(matching query: String, filters: SearchFilters) -> [Meeting] {
-    let startedAt = Date()
     let cutOff = filters.period.cutOff()
-    let results = meetings.filter { meeting in
+    // This runs inside a view body. Appending to an observable log here can
+    // trigger another render while the keyboard is updating search results.
+    return meetings.filter { meeting in
       guard searchText(for: meeting).localizedCaseInsensitiveContains(query) else { return false }
       if let cutOff, meeting.createdAt < cutOff { return false }
       if let personID = filters.personID,
@@ -17,12 +18,6 @@ extension MemoraModel {
       if let status = filters.status, !status.matches(meeting.status) { return false }
       return true
     }
-    performance.record(
-      "検索（会議）",
-      milliseconds: Date.now.timeIntervalSince(startedAt) * 1_000,
-      count: meetings.count
-    )
-    return results
   }
 
   /// Tasks that match the query. The period and person filters read the task's

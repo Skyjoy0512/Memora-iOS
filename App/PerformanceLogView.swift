@@ -135,7 +135,9 @@ struct PerformanceLogView: View {
 
     let filters = SearchFilters()
     for _ in 0..<20 {
-      _ = model.searchMeetings(matching: "計測用", filters: filters)
+      _ = log.measureSync("検索（会議）", count: { _ in model.meetings.count }) {
+        model.searchMeetings(matching: "計測用", filters: filters)
+      }
       await Task.yield()
     }
     model.persistMeetings()

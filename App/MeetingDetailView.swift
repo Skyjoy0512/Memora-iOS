@@ -6,6 +6,7 @@ struct MeetingDetailView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.dynamicTypeSize) private var typeSize
   var meetingID: UUID
   @State private var detailTab: RootTab?
   /// When set, the transcript opens and plays from here — used when an AI answer's
@@ -71,8 +72,9 @@ struct MeetingDetailView: View {
       if let meeting = model.meeting(id: meetingID) {
         ScrollViewReader { proxy in
           ScrollView {
-            VStack(alignment: .leading, spacing: MemoraSpacing.xxl) {
+            LazyVStack(alignment: .leading, spacing: MemoraSpacing.xxl, pinnedViews: [.sectionHeaders]) {
               meetingHeader(meeting)
+                .id(ScrollTarget.top)
 
               if !meeting.recordingMarkers.isEmpty {
                 RecordingMarkersView(markers: meeting.recordingMarkers,
@@ -83,15 +85,31 @@ struct MeetingDetailView: View {
                   onDelete: { model.removeMeetingRecordingMarker(meetingID: meeting.id, markerID: $0) })
               }
 
-              MemoraSectionPicker(
-                items: MeetingDetailSection.allCases,
-                selection: $selectedSection,
-                title: \.label
-              )
-
-              sectionContent(meeting)
-              if selectedSection == .summary, !meeting.summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                MeetingQuestionSuggestionsView(meetingID: meeting.id)
+              Section {
+                VStack(alignment: .leading, spacing: MemoraSpacing.xxl) {
+                  sectionContent(meeting)
+                  if selectedSection == .summary, !meeting.summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    MeetingQuestionSuggestionsView(meetingID: meeting.id)
+                  }
+                }
+              } header: {
+                MemoraSectionPicker(
+                  items: MeetingDetailSection.allCases,
+                  selection: Binding(get: { selectedSection }, set: { section in
+                    guard section != selectedSection else { return }
+                    // A shorter section has no content at the old offset.
+                    withTransaction(Transaction(animation: nil)) {
+                      proxy.scrollTo(ScrollTarget.top, anchor: .top)
+                      selectedSection = section
+                    }
+                  }),
+                  title: \.label
+                )
+                .padding(.vertical, MemoraSpacing.sm)
+                .background {
+                  MemoraPalette.background
+                    .padding(.horizontal, -MemoraSpacing.screen)
+                }
               }
             }
             .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
@@ -293,15 +311,24 @@ struct MeetingDetailView: View {
     .onDisappear { pdfExport.cancel() }
   }
 
+  private enum ScrollTarget: Hashable {
+    case top
+  }
+
   private func participantsRow(_ meeting: Meeting) -> some View {
     let names = model.participants(in: meeting.id).map(\.name).joined(separator: "、")
+    let layout = typeSize.isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.xs))
+      : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: MemoraSpacing.sm))
     return Button { isAddingPeople = true } label: {
-      HStack(alignment: .firstTextBaseline, spacing: MemoraSpacing.sm) {
+      layout {
         Text("参加者")
-        Text(names)
-          .frame(maxWidth: .infinity, alignment: .leading)
-        Image(icon: .chevronRight, size: MemoraIconMetrics.accessory)
-          .accessibilityHidden(true)
+        HStack(alignment: .firstTextBaseline, spacing: MemoraSpacing.sm) {
+          Text(names)
+            .frame(maxWidth: .infinity, alignment: .leading)
+          Image(icon: .chevronRight, size: MemoraIconMetrics.accessory)
+            .accessibilityHidden(true)
+        }
       }
       .font(MemoraTypography.secondary)
       .foregroundStyle(MemoraPalette.textSecondary)
@@ -459,7 +486,7 @@ struct MeetingDetailView: View {
   }
 
   private func meetingHeader(_ meeting: Meeting) -> some View {
-    VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: .leading, spacing: MemoraSpacing.md) {
       Text(meeting.displayTitle)
         .font(MemoraTypography.screenTitle)
         .memoraTextReveal()

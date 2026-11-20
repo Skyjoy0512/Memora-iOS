@@ -4,7 +4,7 @@ import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { seedSummaryFixture } from './summary-fixture-helpers';
 import { sql } from './sqlite-fixture-helpers';
-import { scrollToControl } from './ui-helpers';
+import { scrollToControl, tapControl } from './ui-helpers';
 
 test('narrow summary supports larger text, horizontal tables, checklist and long reading', { timeout: 360_000 }, async ({ app, device, screen }) => {
   const paragraph = '公開日はまだ確定していません。性能試験と監査承認の両方が終わるまで公開しない条件を維持し、当初案と最新の状態を区別します。';
@@ -29,8 +29,10 @@ test('narrow summary supports larger text, horizontal tables, checklist and long
     const body = screen.getByRole('button', { name: paragraph, exact: true }).first();
     await expect(body).toBeVisible();
     const normal = await body.boundingBox();
-    if (!normal) throw new Error('Missing paragraph bounds');
-    expect(normal.x + normal.width).toBeLessThanOrEqual(402);
+    const screenWidth = await screen.getByTestId('記録').boundingBox();
+    if (!normal || !screenWidth) throw new Error('Missing paragraph or navigation bounds');
+    expect(normal.x - screenWidth.x).toBeGreaterThanOrEqual(16);
+    expect(screenWidth.x + screenWidth.width - normal.x - normal.width).toBeGreaterThanOrEqual(16);
     await app.screenshot('summary-narrow-normal');
     setSize('accessibility-large');
     await expect.poll(async () => (await body.boundingBox())?.height ?? 0).toBeGreaterThan(normal.height * 1.2);
@@ -58,6 +60,13 @@ test('narrow summary supports larger text, horizontal tables, checklist and long
     const stored = JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"));
     expect(stored[0].summary).toBe(summary);
     expect(stored[0].transcript[0].text).toBe(paragraph + footer);
+    const transcript = screen.getByRole('button', { name: '文字起こし', exact: true });
+    await expect(transcript).toBeVisible();
+    const switcher = await transcript.boundingBox();
+    if (!switcher) throw new Error('Record section switcher has no frame');
+    expect(switcher.y).toBeLessThan(220);
+    await tapControl(transcript);
+    await expect(screen.getByTestId('transcript.readable')).toBeVisible();
   } finally {
     setSize(previous);
     await device.setAppearance('light');

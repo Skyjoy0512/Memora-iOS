@@ -9,6 +9,7 @@ struct SearchView: View {
   var isComposing = false
   var onOpenSidebar: () -> Void
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.dynamicTypeSize) private var typeSize
 
   var body: some View {
     @Bindable var model = model
@@ -135,16 +136,9 @@ struct SearchView: View {
 
   private var searchSheet: some View {
     NavigationStack {
-      Group {
-        if query.isEmpty {
-          ContentUnavailableView(
-            "会話を検索",
-            icon: .magnifyingglass,
-            description: Text("タイトル、発言、決定、タスクから探せます。")
-          )
-        } else {
-          resultsView
-        }
+      VStack(spacing: 0) {
+        if CollectionSearch.hasQuery(query) { filterBar }
+        resultsView
       }
       .navigationTitle("検索")
       .navigationBarTitleDisplayMode(.inline)
@@ -160,88 +154,111 @@ struct SearchView: View {
   private var resultsView: some View {
     // Each search walks every record's text, so it runs once per redraw and
     // the list, the animation keys and the empty state share the result.
-    let matchingMeetings = model.searchMeetings(matching: query, filters: filters)
-    let matchingTasks = model.searchTasks(matching: query, filters: filters)
+    let hasQuery = CollectionSearch.hasQuery(query)
+    let matchingMeetings = hasQuery ? model.searchMeetings(matching: query, filters: filters) : []
+    let matchingTasks = hasQuery ? model.searchTasks(matching: query, filters: filters) : []
 
     return List {
-      Section {
-        Button {
-          isSearchSheetPresented = false
-          Task {
-            try? await Task.sleep(for: .milliseconds(250))
-            model.sendAIChat(query)
-          }
-        } label: {
-          Label("「\(query)」をMemoraに聞く", icon: .sparkles)
-            .font(.headline)
-            .foregroundStyle(.primary)
-            .lineLimit(2)
+      if !hasQuery {
+        Section {
+          CollectionSearchState(title: "会話を検索",
+            message: "タイトル、発言、決定、タスクから探せます。", isEmbedded: true)
         }
-      }
+        .listRowSeparator(.hidden)
+      } else {
+        Section {
+          Button {
+            let question = query.trimmingCharacters(in: .whitespacesAndNewlines)
+            isSearchSheetPresented = false
+            Task {
+              try? await Task.sleep(for: .milliseconds(250))
+              model.sendAIChat(question)
+            }
+          } label: {
+            Label("検索語をMemoraに聞く", icon: .sparkles)
+              .font(.headline)
+              .foregroundStyle(.primary)
+              .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget, alignment: .leading)
+              .contentShape(Rectangle())
+          }
+          .accessibilityHint("入力した検索語を質問として送信します")
+        }
 
-      if !matchingMeetings.isEmpty {
-        Section("会話") {
-          ForEach(matchingMeetings) { meeting in
-            NavigationLink {
-              MeetingDetailView(meetingID: meeting.id)
-            } label: {
-              MeetingRow(meeting: meeting, showsDisclosure: false)
+        if matchingMeetings.isEmpty && matchingTasks.isEmpty {
+          Section {
+            if filters.isActive {
+              CollectionSearchState(title: "条件に合う結果がありません",
+                message: "絞り込みを解除するか、別の語句を入力してください。",
+                clear: { filters.reset() }, clearTitle: "絞り込みを解除", isEmbedded: true)
+            } else {
+              CollectionSearchState(title: "見つかりませんでした",
+                message: "別の語句を入力してください。", isEmbedded: true)
+            }
+          }
+          .listRowSeparator(.hidden)
+        }
+
+        if !matchingMeetings.isEmpty {
+          Section("会話") {
+            ForEach(matchingMeetings) { meeting in
+              NavigationLink {
+                MeetingDetailView(meetingID: meeting.id)
+              } label: {
+                MeetingRow(meeting: meeting, showsDisclosure: false)
+              }
             }
           }
         }
-      }
 
-      if !matchingTasks.isEmpty {
-        Section("タスク") {
-          ForEach(matchingTasks) { task in
-            TaskRow(task: task, showsSource: true)
+        if !matchingTasks.isEmpty {
+          Section("タスク") {
+            ForEach(matchingTasks) { task in
+              TaskRow(task: task, showsSource: true)
+            }
           }
         }
       }
     }
     .memoraPlainList()
-    .safeAreaInset(edge: .top, spacing: 0) { filterBar }
-    .overlay {
-      if matchingMeetings.isEmpty && matchingTasks.isEmpty {
-        if filters.isActive {
-          ContentUnavailableView {
-            Label("条件に合う結果がありません", icon: .line3HorizontalDecreaseCircle)
-          } description: {
-            Text("絞り込みを変えるか、解除してみてください。")
-          } actions: {
-            Button("絞り込みを解除") { filters.reset() }
-          }
-        } else {
-          ContentUnavailableView.search(text: query)
-        }
-      }
-    }
   }
 
   /// Narrows the results by period, person, project and state. Kept above the
   /// results so a filter is never scrolled out of sight while it is applied.
   private var filterBar: some View {
-    ScrollView(.horizontal) {
-      HStack(spacing: 8) {
-        periodMenu
-        personMenu
-        spaceMenu
-        statusMenu
-        if filters.isActive {
-          Button("解除", icon: .xmarkCircle) {
-            filters.reset()
-          }
-          .font(.subheadline.weight(.medium))
-          .padding(.horizontal, MemoraSpacing.md)
-          .padding(.vertical, MemoraSpacing.sm)
-          .background(Color.primary.opacity(0.06), in: Capsule())
-          .contentShape(Capsule())
+    Group {
+      if typeSize.isAccessibilitySize {
+        Menu {
+          periodMenu
+          personMenu
+          spaceMenu
+          statusMenu
+          if filters.isActive { Button("絞り込みを解除") { filters.reset() } }
+        } label: {
+          filterChip(title: filters.isActive ? "絞り込み中" : "絞り込み",
+            symbol: .line3HorizontalDecrease, isActive: filters.isActive)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, MemoraSpacing.lg)
+      } else {
+        ScrollView(.horizontal) {
+          HStack(spacing: MemoraSpacing.sm) {
+            periodMenu
+            personMenu
+            spaceMenu
+            statusMenu
+            if filters.isActive {
+              Button { filters.reset() } label: {
+                filterChip(title: "解除", symbol: .xmarkCircle, isActive: false, showsMenuIndicator: false)
+              }
+              .accessibilityLabel("絞り込みを解除")
+            }
+          }
+          .padding(.horizontal, MemoraSpacing.lg)
+        }
+        .scrollIndicators(.hidden)
       }
-      .padding(.horizontal, MemoraSpacing.lg)
-      .padding(.vertical, MemoraSpacing.sm)
     }
-    .scrollIndicators(.hidden)
+    .padding(.vertical, MemoraSpacing.sm)
     .background(.bar)
   }
 
@@ -260,6 +277,7 @@ struct SearchView: View {
       )
     }
     .accessibilityLabel("期間で絞り込む")
+    .accessibilityValue(filters.period.title)
   }
 
   private var personMenu: some View {
@@ -278,6 +296,7 @@ struct SearchView: View {
       )
     }
     .accessibilityLabel("人で絞り込む")
+    .accessibilityValue(filters.personID.flatMap { model.person(id: $0)?.name } ?? "すべて")
   }
 
   private var spaceMenu: some View {
@@ -296,6 +315,7 @@ struct SearchView: View {
       )
     }
     .accessibilityLabel("プロジェクトで絞り込む")
+    .accessibilityValue(filters.spaceID.flatMap { model.space(id: $0)?.name } ?? "すべて")
   }
 
   private var statusMenu: some View {
@@ -314,18 +334,20 @@ struct SearchView: View {
       )
     }
     .accessibilityLabel("状態で絞り込む")
+    .accessibilityValue(filters.status?.title ?? "すべて")
   }
 
-  private func filterChip(title: String, symbol: MemoraIcon, isActive: Bool) -> some View {
-    HStack(spacing: 4) {
+  private func filterChip(title: String, symbol: MemoraIcon, isActive: Bool, showsMenuIndicator: Bool = true) -> some View {
+    HStack(spacing: MemoraSpacing.xs) {
       Image(icon: symbol, size: 11)
       Text(title)
-      Image(icon: .chevronDown, size: 11)
+      if showsMenuIndicator { Image(icon: .chevronDown, size: 11) }
     }
     .font(.subheadline.weight(.medium))
     .foregroundStyle(.primary)
     .padding(.horizontal, MemoraSpacing.md)
     .padding(.vertical, MemoraSpacing.sm)
+    .frame(minHeight: MemoraSpacing.touchTarget)
     .background(Color.primary.opacity(isActive ? 0.12 : 0.06), in: Capsule())
     .contentShape(Capsule())
   }
