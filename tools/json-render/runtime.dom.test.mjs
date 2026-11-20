@@ -69,3 +69,29 @@ test('real DOM: state watchers, action confirmation, resolved parameters and onS
  await user.click(screen.getByRole('button',{name:'実行'}));await waitFor(()=>assert.equal(copied,'Memora'));await waitFor(()=>assert.ok(screen.getByText('コピー完了')));
  cleanup();
 });
+
+test('generated charts place losses before zero and keep zero-length bars invisible', () => {
+ const spec = {
+  root: 'chart',
+  state: {},
+  elements: {
+   chart: {
+    type: 'BarChart',
+    props: {
+     title: '増減',
+     unit: '件',
+     items: [{label: '前月', value: -4}, {label: '今月', value: 2}, {label: '変化なし', value: 0}],
+    },
+    children: [],
+   },
+  },
+ };
+ const {container} = render(surface(spec, boundedStore(spec.state)));
+ const bars = [...container.querySelectorAll('.chart-bar')];
+ assert.deepEqual(bars.map(bar => [bar.style.insetInlineStart, bar.style.width]), [
+  ['0%', '50%'], ['50%', '25%'], ['50%', '0%'],
+ ]);
+ assert.ok(screen.getByText('-4 件'));
+ assert.ok(screen.getByText('0 件'));
+ assert.ok(bars.every(bar => bar.parentElement.getAttribute('aria-hidden') === 'true'));
+});
