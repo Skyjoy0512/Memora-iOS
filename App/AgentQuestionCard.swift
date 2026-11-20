@@ -1,8 +1,6 @@
 import SwiftUI
 
-/// The agent's questions, one at a time: pick a choice or write your own. A
-/// choices wait for explicit confirmation. The answers
-/// go back to the agent, which goes on from there.
+/// Answers wait for explicit confirmation before returning to the agent.
 struct AgentQuestionCard: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -42,7 +40,7 @@ struct AgentQuestionCard: View {
         model.resolveAgentQuestions(nil, requestID: request.id)
       } label: {
         Image(icon: .xmark, size: 13)
-          .foregroundStyle(.tertiary)
+          .foregroundStyle(MemoraPalette.textSecondary)
           .frame(width: 44, height: 44)
           .contentShape(Rectangle())
       }
@@ -55,20 +53,20 @@ struct AgentQuestionCard: View {
   // MARK: - Question
 
   private func questionView(_ question: AgentQuestion, at questionIndex: Int) -> some View {
-    VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: .leading, spacing: MemoraSpacing.md) {
       Text(question.text)
         .font(.subheadline.weight(.semibold))
         .padding(.trailing, MemoraSpacing.section)
         .fixedSize(horizontal: false, vertical: true)
 
-      VStack(alignment: .leading, spacing: 2) {
+      VStack(alignment: .leading, spacing: MemoraSpacing.xxs) {
         ForEach(Array(question.options.enumerated()), id: \.offset) { optionIndex, option in
           let isOn = picked[questionIndex, default: []].contains(optionIndex)
           Button {
             choose(optionIndex, in: question)
             InteractionFeedback.shared.send(.selection)
           } label: {
-            HStack(spacing: 10) {
+            HStack(spacing: MemoraSpacing.md) {
               mark(isOn: isOn, multiple: question.allowsMultiple)
               Text(option)
                 .font(.subheadline)
@@ -76,8 +74,8 @@ struct AgentQuestionCard: View {
                 .multilineTextAlignment(.leading)
               Spacer(minLength: 0)
             }
-            .padding(.vertical, 7)
-            .frame(minHeight: 44)
+            .padding(.vertical, MemoraSpacing.sm)
+            .frame(minHeight: MemoraSpacing.touchTarget)
             .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
@@ -94,7 +92,9 @@ struct AgentQuestionCard: View {
         ))
         .font(.subheadline)
         .padding(.leading, MemoraSpacing.section)
-        .padding(.vertical, 7)
+        .padding(.vertical, MemoraSpacing.sm)
+        .frame(minHeight: MemoraSpacing.touchTarget)
+        .accessibilityLabel("その他の回答")
         .submitLabel(isLast ? .send : .next)
         .onSubmit { if hasAnswer { advance() } }
       }
@@ -104,9 +104,9 @@ struct AgentQuestionCard: View {
   private func mark(isOn: Bool, multiple: Bool) -> some View {
     ZStack {
       if multiple {
-        RoundedRectangle(cornerRadius: 5, style: .continuous)
+        RoundedRectangle(cornerRadius: MemoraRadius.small, style: .continuous)
           .strokeBorder(isOn ? Color.clear : Color.secondary.opacity(0.5), lineWidth: 1.5)
-          .background(isOn ? Color.primary : Color.clear, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+          .background(isOn ? Color.primary : Color.clear, in: RoundedRectangle(cornerRadius: MemoraRadius.small, style: .continuous))
         Image(icon: .checkmark, size: 11)
           .foregroundStyle(Color(uiColor: .systemBackground))
           .opacity(isOn ? 1 : 0)
@@ -129,9 +129,9 @@ struct AgentQuestionCard: View {
   private var footer: some View {
     let layout = typeSize.isAccessibilitySize
       ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
-      : AnyLayout(HStackLayout(spacing: 6))
+      : AnyLayout(HStackLayout(spacing: MemoraSpacing.sm))
     return layout {
-      HStack(spacing: 6) {
+      HStack(spacing: MemoraSpacing.sm) {
         Button { go(to: index - 1) } label: {
           Image(icon: .chevronUp, size: 13)
             .frame(width: 44, height: 44).contentShape(Rectangle())
@@ -154,12 +154,15 @@ struct AgentQuestionCard: View {
 
       if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
 
-      HStack(spacing: 6) {
-        Button("スキップ", action: skip)
-        .font(.subheadline)
-        .foregroundStyle(.secondary)
-        .padding(.horizontal, MemoraSpacing.md)
-        .frame(minHeight: 44)
+      HStack(spacing: MemoraSpacing.sm) {
+        Button(action: skip) {
+          Text("スキップ")
+            .font(.subheadline)
+            .foregroundStyle(MemoraPalette.textSecondary)
+            .padding(.horizontal, MemoraSpacing.md)
+            .frame(minHeight: MemoraSpacing.touchTarget)
+            .contentShape(Rectangle())
+        }
 
         Button {
           InteractionFeedback.shared.send(.tap)
@@ -169,7 +172,7 @@ struct AgentQuestionCard: View {
             .font(.subheadline.weight(.semibold))
             .foregroundStyle(Color(uiColor: .systemBackground))
             .padding(.horizontal, MemoraSpacing.lg)
-            .frame(minHeight: 44)
+            .frame(minHeight: MemoraSpacing.touchTarget)
             .background(hasAnswer ? Color.primary : Color.secondary.opacity(0.4), in: Capsule())
         }
         .buttonStyle(.plain)

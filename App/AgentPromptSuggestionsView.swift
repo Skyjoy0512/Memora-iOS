@@ -15,7 +15,7 @@ struct AgentPromptSuggestionsView: View {
             y: max(32, proxy.size.height / 2 - 32))
         if !isComposing && model.composerDraft.isEmpty && model.composerAttachment == nil {
           ScrollView {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: MemoraSpacing.md) {
               ForEach(suggestions.prefix(3)) { suggestion in
                 AgentPromptSuggestionRow(suggestion: suggestion) {
                   InteractionFeedback.shared.send(.selection)
@@ -25,7 +25,7 @@ struct AgentPromptSuggestionsView: View {
               }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 14).padding(.top, 12)
+            .padding(.horizontal, MemoraSpacing.lg).padding(.top, 12)
             .padding(.bottom, model.bottomContentClearance)
           }
           .scrollBounceBehavior(.basedOnSize)

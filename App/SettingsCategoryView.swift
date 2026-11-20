@@ -93,7 +93,7 @@ struct SettingsCategoryView: View {
       .alert("アプリロックを設定できません", isPresented: Binding(
         get: { appLockError != nil }, set: { if !$0 { appLockError = nil } }
       )) {
-        Button("OK", role: .cancel) { appLockError = nil }
+        Button("閉じる", role: .cancel) { appLockError = nil }
       } message: {
         Text(appLockError ?? "")
       }
@@ -130,7 +130,7 @@ struct SettingsCategoryView: View {
                 .foregroundStyle(.secondary)
             } label: {
               Label {
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
                   Text(account.displayName)
                     .font(.body.weight(.medium))
                   Text(account.email)

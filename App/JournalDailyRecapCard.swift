@@ -11,7 +11,7 @@ struct JournalDailyRecapCard: View {
       InteractionFeedback.shared.send(.tap)
       onOpenDetails()
     } label: {
-      VStack(alignment: .leading, spacing: 7) {
+      VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
         HStack {
           Text("1日のサマリー")
             .font(MemoraTypography.metadata.weight(.medium))
@@ -33,7 +33,7 @@ struct JournalDailyRecapCard: View {
             .font(.caption.weight(.medium))
             .foregroundStyle(MemoraPalette.textSecondary)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.top, 5)
+            .padding(.top, MemoraSpacing.xs)
         }
       }
       .foregroundStyle(MemoraPalette.textPrimary)

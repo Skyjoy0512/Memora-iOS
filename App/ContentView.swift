@@ -33,6 +33,7 @@ struct ContentView: View {
     }
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.hasCompletedOnboarding)
     .background { GestureHapticsInstaller() }
+    .accessibilityHidden(model.isImporting || appLock.isLocked || appLock.isCovered)
     .sheet(isPresented: $model.isCapturePresented, onDismiss: {
       model.completeCaptureDismissal()
     }) {
@@ -87,7 +88,7 @@ struct ContentView: View {
       Text("録音は許可した時だけ始まります。設定でマイクを許可すると、会話をこのiPhoneに保存できます。")
     }
     .alert("録音を開始できませんでした", isPresented: recordingErrorBinding) {
-      Button("OK", role: .cancel) {}
+      Button("閉じる", role: .cancel) {}
     } message: {
       Text(model.recordingErrorMessage ?? "もう一度お試しください。")
     }
@@ -100,7 +101,7 @@ struct ContentView: View {
       Text("録音と下書きは端末に残っています。保存できるまで、新しい録音は始められません。「再試行」で保存してください。")
     }
     .alert("インポートできませんでした", isPresented: importErrorBinding) {
-      Button("OK", role: .cancel) {}
+      Button("閉じる", role: .cancel) {}
     } message: {
       Text(model.importErrorMessage ?? "別の音声ファイルをお試しください。")
     }
@@ -108,12 +109,12 @@ struct ContentView: View {
       get: { model.projectFilingNotice != nil },
       set: { if !$0 { model.projectFilingNotice = nil } }
     )) {
-      Button("OK", role: .cancel) { model.projectFilingNotice = nil }
+      Button("閉じる", role: .cancel) { model.projectFilingNotice = nil }
     } message: {
       Text(model.projectFilingNotice ?? "")
     }
     .alert("音声を取り込みます", isPresented: pendingImportNoticeBinding) {
-      Button("OK", role: .cancel) {}
+      Button("閉じる", role: .cancel) {}
     } message: {
       Text(model.pendingImportNotice ?? "")
     }
@@ -125,17 +126,17 @@ struct ContentView: View {
       Text("\(model.pendingInboxCount ?? 0)件の音声が、前回の取り込みの途中で残っています。")
     }
     .alert("保存データを読み込めませんでした", isPresented: loadFailureBinding) {
-      Button("OK", role: .cancel) {}
+      Button("閉じる", role: .cancel) {}
     } message: {
       Text(model.loadFailureMessage ?? "")
     }
     .alert("ファイルを削除できませんでした", isPresented: deletionFailureBinding) {
-      Button("OK", role: .cancel) {}
+      Button("閉じる", role: .cancel) {}
     } message: {
       Text(model.deletionFailureMessage ?? "")
     }
     .alert("保存できませんでした", isPresented: persistenceFailureBinding) {
-      Button("OK", role: .cancel) {}
+      Button("閉じる", role: .cancel) {}
     } message: {
       Text(model.persistenceFailureMessage ?? "")
     }
@@ -156,7 +157,7 @@ struct ContentView: View {
       }
     }
     .alert("チーム共有", isPresented: cloudShareMessageBinding) {
-      Button("OK", role: .cancel) {}
+      Button("閉じる", role: .cancel) {}
     } message: {
       Text(model.cloudShareMessage ?? "")
     }
@@ -167,7 +168,7 @@ struct ContentView: View {
           model.isRecentlyDeletedPresented = true
         }
       }
-      Button("OK", role: .cancel) {}
+      Button("閉じる", role: .cancel) {}
     } message: {
       Text(model.missingRecordNotice?.message ?? "")
     }

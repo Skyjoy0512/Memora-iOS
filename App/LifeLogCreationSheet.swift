@@ -87,7 +87,7 @@ struct LifeLogCreationSheet: View {
         editingPhoto = PhotoEditRequest(data: data)
       }
       .alert("保存できませんでした", isPresented: $saveError) {
-        Button("OK", role: .cancel) {}
+        Button("閉じる", role: .cancel) {}
       } message: {
         Text("人物の登録状態や保存領域を確認して、もう一度お試しください。入力内容はこの画面に残っています。")
       }

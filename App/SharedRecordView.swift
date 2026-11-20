@@ -11,7 +11,7 @@ struct SharedRecordView: View {
       let meeting = record.meeting
 
       ScrollView {
-        VStack(alignment: .leading, spacing: 22) {
+        VStack(alignment: .leading, spacing: MemoraSpacing.xl) {
           header(record)
 
           CollapsibleInsightSection(.summary, showsDivider: false) {
@@ -38,7 +38,7 @@ struct SharedRecordView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             } else {
-              VStack(alignment: .leading, spacing: 10) {
+              VStack(alignment: .leading, spacing: MemoraSpacing.md) {
                 ForEach(record.tasks) { task in
                   taskRow(task)
                 }
@@ -75,7 +75,7 @@ struct SharedRecordView: View {
   }
 
   private func header(_ record: SharedRecord) -> some View {
-    VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: .leading, spacing: MemoraSpacing.md) {
       SharedOwnerBadge(ownerName: record.ownerName)
 
       Text(record.meeting.displayTitle)
@@ -104,7 +104,7 @@ struct SharedRecordView: View {
     } else {
       VStack(alignment: .leading, spacing: 8) {
         ForEach(items.indices, id: \.self) { index in
-          HStack(alignment: .firstTextBaseline, spacing: 10) {
+          HStack(alignment: .firstTextBaseline, spacing: MemoraSpacing.md) {
             Circle()
               .fill(Color.primary)
               .frame(width: 5, height: 5)
@@ -118,7 +118,7 @@ struct SharedRecordView: View {
   }
 
   private func taskRow(_ task: MemoraTask) -> some View {
-    HStack(alignment: .firstTextBaseline, spacing: 10) {
+    HStack(alignment: .firstTextBaseline, spacing: MemoraSpacing.md) {
       Image(icon: task.isCompleted ? .checkmarkCircleFill : .circle)
         .foregroundStyle(task.isCompleted ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
       VStack(alignment: .leading, spacing: 2) {
@@ -136,7 +136,7 @@ struct SharedRecordView: View {
   }
 
   private func transcript(_ meeting: Meeting) -> some View {
-    VStack(alignment: .leading, spacing: 14) {
+    VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
       Divider()
         .padding(.bottom, MemoraSpacing.sm)
       Label("文字起こし", icon: .textBubble)

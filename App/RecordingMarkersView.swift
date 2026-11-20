@@ -32,7 +32,7 @@ struct RecordingMarkersView: View {
   }
 
   private func markerLabel(_ marker: RecordingMarker) -> some View {
-    HStack(spacing: 10) {
+    HStack(spacing: MemoraSpacing.md) {
       Image(icon: .flag).foregroundStyle(.tint)
       Text(MemoraFormat.duration(marker.timestamp)).monospacedDigit()
       Text(marker.displayTitle).frame(maxWidth: .infinity, alignment: .leading)

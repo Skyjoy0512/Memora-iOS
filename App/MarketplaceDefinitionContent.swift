@@ -3,7 +3,7 @@ import SwiftUI
 struct MarketplaceDefinitionContent: View {
   var definition: MarketplaceDefinition
   var body: some View {
-    VStack(alignment: .leading, spacing: 18) {
+    VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
       if let skill = definition.skill {
         Text("使い方").font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
         Text(skill.instructions).memoraReadingText()

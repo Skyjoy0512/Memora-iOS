@@ -27,7 +27,7 @@ struct RecordingMethodSheet: View {
               .lineLimit(2)
           }
 
-          VStack(spacing: 10) {
+          VStack(spacing: MemoraSpacing.md) {
             ForEach(methods) { method in
               Button {
                 onChoose(method)
@@ -66,7 +66,7 @@ struct RecordingMethodSheet: View {
   }
 
   private func row(for method: RecordingMethod) -> some View {
-    HStack(spacing: 14) {
+    HStack(spacing: MemoraSpacing.lg) {
       MemoraInterfaceIcon(icon: method.icon)
 
       VStack(alignment: .leading, spacing: 2) {

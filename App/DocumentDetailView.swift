@@ -172,20 +172,20 @@ struct DocumentDetailView: View {
         : "削除した資料は元に戻せません。")
     }
     .alert("削除できませんでした", isPresented: $deleteError) {
-      Button("OK", role: .cancel) {}
+      Button("閉じる", role: .cancel) {}
     } message: { Text("資料は残っています。保存先を確認して、もう一度お試しください。") }
     .alert("書き出せませんでした", isPresented: Binding(
       get: { exportErrorMessage != nil },
       set: { if !$0 { exportErrorMessage = nil } }
     )) {
-      Button("OK", role: .cancel) {}
+      Button("閉じる", role: .cancel) {}
     } message: {
       Text(exportErrorMessage ?? "")
     }
   }
 
   private func header(_ document: MemoraDocument) -> some View {
-    VStack(alignment: .leading, spacing: 6) {
+    VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
       Text(document.displayTitle)
         .font(MemoraTypography.screenTitle)
         .memoraTextReveal()

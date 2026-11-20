@@ -27,7 +27,7 @@ test('failed transcript saves keep the stored record and durable or in-memory dr
   const finish = () => tapControl(screen.getByRole('button', { name: '完了', exact: true }));
   async function dismissFailure() {
     await expect(screen.getByText('データを保存できませんでした。ストレージの空き容量を確認してください。', { exact: true })).toBeVisible();
-    await tapControl(screen.getByRole('button', { name: 'OK', exact: true }));
+    await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }).last());
   }
   try {
     await tapControl(screen.getByRole('button', { name: '文字起こし', exact: true }));
@@ -68,7 +68,7 @@ test('failed transcript saves keep the stored record and durable or in-memory dr
     // The debounced draft write now fails too. Its alert resigns the editor,
     // so waiting for the keyboard's Done button would target a dismissed UI.
     await expect(screen.getByText('下書きを保存できませんでした。入力内容はアプリ内に保持していますが、再起動すると失われる可能性があります。ストレージの空き容量を確認して、保存し直してください。', { exact: true })).toBeVisible();
-    await tapControl(screen.getByRole('button', { name: 'OK', exact: true }));
+    await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }).last());
     expect(read()).toEqual(committed);
     expect(draft()).toBe('');
     await tapControl(screen.getByRole('button', { name: secondEdit, exact: true }));
@@ -107,7 +107,7 @@ test('PNG write failure keeps the preview and a retry uses the real share sheet'
     await expect(screen.getByText('画像を書き出せませんでした', { exact: true })).toBeVisible();
     expect(pngFiles()).toEqual(originalFiles);
     await app.screenshot('summary-png-write-failure');
-    await tapControl(screen.getByRole('button', { name: 'OK', exact: true }));
+    await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }).last());
     await expect(screen.getByTestId('summary.poster.image')).toBeVisible();
   } finally { chmodSync(folder, originalMode); }
   await exportPNG();

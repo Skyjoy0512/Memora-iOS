@@ -41,7 +41,7 @@ struct DialerView: View {
         }
       }
       .alert("電話をかけられません", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
-        Button("OK", role: .cancel) {}
+        Button("閉じる", role: .cancel) {}
       } message: {
         Text(errorMessage ?? "")
       }
@@ -57,16 +57,16 @@ struct DialerView: View {
   ]
 
   private var keypad: some View {
-    VStack(spacing: 18) {
+    VStack(spacing: MemoraSpacing.xl) {
       Spacer()
       Text(number.isEmpty ? " " : number)
-        .font(.system(size: 36, weight: .regular).monospacedDigit())
+        .font(.largeTitle.monospacedDigit())
         .lineLimit(1)
         .minimumScaleFactor(0.5)
         .padding(.horizontal, MemoraSpacing.xxl)
         .accessibilityLabel(number.isEmpty ? "番号未入力" : number)
 
-      LazyVGrid(columns: Array(repeating: GridItem(.fixed(84), spacing: 22), count: 3), spacing: 16) {
+      LazyVGrid(columns: Array(repeating: GridItem(.fixed(84), spacing: MemoraSpacing.xl), count: 3), spacing: 16) {
         ForEach(Self.keys, id: \.digit) { key in
           Button {
             number.append(key.digit)
@@ -89,7 +89,7 @@ struct DialerView: View {
         }
       }
 
-      HStack(spacing: 22) {
+      HStack(spacing: MemoraSpacing.xl) {
         Color.clear.frame(width: 84, height: 84)
         callButton { call(number, name: nil) }
           .disabled(PhoneNumberFormat.e164(number) == nil || isCalling)

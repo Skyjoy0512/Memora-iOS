@@ -20,7 +20,7 @@ struct AgentPromptSuggestionRow: View {
           .fixedSize(horizontal: false, vertical: true)
       }
       .foregroundStyle(MemoraPalette.textSecondary)
-      .padding(.horizontal, 14).padding(.vertical, 10)
+      .padding(.horizontal, MemoraSpacing.lg).padding(.vertical, MemoraSpacing.md)
       .frame(minHeight: MemoraSpacing.touchTarget, alignment: .leading)
       .background(MemoraPalette.card, in: Capsule())
       .contentShape(Capsule())

@@ -78,7 +78,7 @@ struct LifeLogEntryDetailView: View {
         Text("この場所の周辺では自動の記録を行いません。")
       }
       .alert("削除できませんでした", isPresented: $deletionFailed) {
-        Button("OK", role: .cancel) {}
+        Button("閉じる", role: .cancel) {}
       } message: {
         Text("記録は削除していません。保存領域を確認して、もう一度お試しください。")
       }

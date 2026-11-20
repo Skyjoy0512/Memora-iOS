@@ -26,7 +26,7 @@ struct SearchView: View {
       .memoraAppear()
       .background(MemoraPalette.background)
       .safeAreaInset(edge: .top, spacing: 0) {
-        VStack(spacing: 10) {
+        VStack(spacing: MemoraSpacing.md) {
           assistantHeader
           if model.isRecording {
             ActiveRecordingStrip()
@@ -233,7 +233,7 @@ struct SearchView: View {
           }
           .font(.subheadline.weight(.medium))
           .padding(.horizontal, MemoraSpacing.md)
-          .padding(.vertical, 7)
+          .padding(.vertical, MemoraSpacing.sm)
           .background(Color.primary.opacity(0.06), in: Capsule())
           .contentShape(Capsule())
         }
@@ -325,7 +325,7 @@ struct SearchView: View {
     .font(.subheadline.weight(.medium))
     .foregroundStyle(.primary)
     .padding(.horizontal, MemoraSpacing.md)
-    .padding(.vertical, 7)
+    .padding(.vertical, MemoraSpacing.sm)
     .background(Color.primary.opacity(isActive ? 0.12 : 0.06), in: Capsule())
     .contentShape(Capsule())
   }

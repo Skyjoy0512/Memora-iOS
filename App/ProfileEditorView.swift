@@ -109,7 +109,7 @@ struct ProfileEditorView: View {
         }
       }
       .alert("写真を保存できませんでした", isPresented: $saveFailed) {
-        Button("OK", role: .cancel) {}
+        Button("閉じる", role: .cancel) {}
       } message: {
         Text("iPhoneの空き容量を確認して、もう一度お試しください。")
       }

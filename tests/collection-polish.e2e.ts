@@ -76,7 +76,7 @@ test('collection polish: documents menu keeps existing actions and search empty 
   }
   await tapControl(screen, screen.getByRole('button', { name: '今週の週報を作る', exact: true }));
   await expect(screen.getByText('今週はまだ記録がありません')).toBeVisible();
-  await tapControl(screen, screen.getByRole('button', { name: 'OK', exact: true }));
+  await tapControl(screen, screen.getByRole('button', { name: '閉じる', exact: true }).last());
   await tapControl(screen, screen.getByLabel('資料を検索'));
   await expect(screen.getByTestId('documents.search.state')).toHaveText(/タイトル・本文/);
   await expect(screen.getByTestId('ai.composer.input')).not.toBeVisible();

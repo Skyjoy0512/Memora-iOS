@@ -72,7 +72,7 @@ struct RecorderAudioImportView: View {
       }
     }
     .alert("音声を取り込めませんでした", isPresented: $showsFailure) {
-      Button("OK", role: .cancel) {}
+      Button("閉じる", role: .cancel) {}
     } message: {
       Text(failure)
     }

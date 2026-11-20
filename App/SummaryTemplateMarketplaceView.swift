@@ -89,11 +89,11 @@ struct SummaryTemplateMarketplaceView: View {
     return NavigationLink {
       SummaryTemplateDetailView(templateID: template.id)
     } label: {
-      HStack(spacing: 14) {
+      HStack(spacing: MemoraSpacing.lg) {
         MemoraInterfaceIcon(icon: template.symbol)
 
-        VStack(alignment: .leading, spacing: 3) {
-          HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
+          HStack(spacing: MemoraSpacing.sm) {
             Text(template.title)
               .font(.body.weight(.medium))
               .foregroundStyle(.primary)

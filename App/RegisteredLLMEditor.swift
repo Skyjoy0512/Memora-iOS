@@ -76,7 +76,7 @@ struct RegisteredLLMEditor: View {
       .onAppear(perform: refreshKey)
       .onChange(of: draft.provider) { _, _ in refreshKey() }
       .alert("保存できませんでした", isPresented: $saveError) {
-        Button("OK", role: .cancel) {}
+        Button("閉じる", role: .cancel) {}
       } message: {
         Text("同じプロバイダーとモデルIDはすでに登録されています。既存のモデルを編集してください。")
       }

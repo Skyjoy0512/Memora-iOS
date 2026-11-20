@@ -24,8 +24,8 @@ struct MeetingTranscriptContent: View {
       CollectionSearch.matches(query, fields: [$0.text, $0.speaker])
     } : meeting.transcript
 
-    VStack(alignment: .leading, spacing: 22) {
-      VStack(alignment: .leading, spacing: 6) {
+    VStack(alignment: .leading, spacing: MemoraSpacing.xl) {
+      VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
         if !meeting.transcript.isEmpty, meeting.audioURL != nil {
           Button("話者を端末内で解析", icon: .personWave2) {
             Task { await model.analyzeSpeakers(meeting.id) }
@@ -57,7 +57,7 @@ struct MeetingTranscriptContent: View {
           Text(segments.isEmpty ? "一致する発言はありません" : "\(segments.count)件の発言")
             .font(MemoraTypography.metadata).foregroundStyle(.secondary)
         }
-        LazyVStack(alignment: .leading, spacing: 22) {
+        LazyVStack(alignment: .leading, spacing: MemoraSpacing.xl) {
           ForEach(segments) { segment in
             TranscriptSegmentText(
               meetingID: meeting.id,

@@ -69,7 +69,7 @@ struct JournalMovementSheet: View {
         Text("\(movement.entries.count)件を「最近削除した項目」に移動します。取り消せます。")
       }
       .alert("削除できませんでした", isPresented: $deletionFailed) {
-        Button("OK", role: .cancel) {}
+        Button("閉じる", role: .cancel) {}
       } message: {
         Text("記録は削除していません。保存領域を確認して、もう一度お試しください。")
       }

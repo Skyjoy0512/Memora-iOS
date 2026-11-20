@@ -16,7 +16,7 @@ test('an unreadable summary draft blocks editing and retains its original bytes'
   await tapControl(screen.getByRole('button', { name: new RegExp('^' + title) }).first());
   const notice = '下書きを読み込めなかったため、上書きを止めています。画面を閉じて、もう一度開いてください。';
   await expect(screen.getByText(notice, { exact: true })).toBeVisible();
-  await tapControl(screen.getByRole('button', { name: 'OK', exact: true }));
+  await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }).last());
   const paragraph = screen.getByRole('button', { name: '予算は10万円ではなく12万円。承認された場合だけ来週実施する。', exact: true });
   await scrollToControl(screen, paragraph);
   await tapControl(paragraph);

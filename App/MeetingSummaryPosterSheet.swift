@@ -94,7 +94,7 @@ struct MeetingSummaryPosterSheet: View {
         }
       }
       .alert("画像を書き出せませんでした", isPresented: Binding(get: { failure != nil && image != nil }, set: { if !$0 { failure = nil } })) {
-        Button("OK", role: .cancel) { failure = nil }
+        Button("閉じる", role: .cancel) { failure = nil }
       } message: { Text(failure ?? "") }
       .onDisappear(perform: cleanUp)
     }

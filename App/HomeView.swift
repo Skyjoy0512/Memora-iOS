@@ -286,17 +286,15 @@ struct HomeView: View {
   @ViewBuilder
   private func searchResults(_ entries: [LifeLogEntry]) -> some View {
     if !CollectionSearch.hasQuery(query) {
-      MemoraEmptyState(icon: .magnifyingglass, title: "記録を検索",
-        message: "タイトルや本文で検索")
-        .padding(.top, MemoraSpacing.xxl)
+      CollectionSearchState(title: "ジャーナルを検索",
+        message: "日付をまたいで、記録のタイトルや本文から探せます。", isEmbedded: true)
     } else if entries.isEmpty {
-      MemoraEmptyState(icon: .magnifyingglass, title: "見つかりませんでした",
-        message: "「\(query)」に一致する記録はありません。",
-        actionTitle: "検索をやり直す", actionIcon: .xmark) { query = "" }
-        .padding(.top, MemoraSpacing.xxl)
+      CollectionSearchState(title: "見つかりませんでした",
+        message: "別の語句を入力してください。",
+        clear: { query = "" }, clearTitle: "検索をやり直す", isEmbedded: true)
     } else {
       ForEach(dayGroups(of: entries)) { group in
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: MemoraSpacing.md) {
           Text(dayLabel(for: group.day))
             .font(.title2.bold())
 
@@ -381,7 +379,7 @@ struct HomeView: View {
       tasks: tasks
     )
 
-    VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: .leading, spacing: MemoraSpacing.md) {
       // The day heading the list had before, with the rows grouped under it and
       // the all-day events right below it.
       Text("タイムライン")
@@ -528,7 +526,7 @@ struct HomeView: View {
   }
 
   private func allDayChip(_ event: JournalCalendarEvent) -> some View {
-    HStack(spacing: 6) {
+    HStack(spacing: MemoraSpacing.sm) {
       if let color = event.calendarColor {
         Circle()
           .fill(color)

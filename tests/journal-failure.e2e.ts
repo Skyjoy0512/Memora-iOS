@@ -41,7 +41,7 @@ test('journal SQLite failures retain drafts and records, then recover through th
     let recover = failWrites('memoraLifeLogEntries');
     await tapControl(screen, screen.getByRole('button', { name: '追加', exact: true }));
     await expect(screen.getByText('保存できませんでした', { exact: true }).last()).toBeVisible();
-    await tapControl(screen, screen.getByRole('button', { name: 'OK', exact: true }));
+    await tapControl(screen, screen.getByRole('button', { name: '閉じる', exact: true }).last());
     await expect(screen.getByRole('textbox', { name: 'メモのタイトル', exact: true })).toHaveValue('Retained journal draft');
     await expect(screen.getByRole('textbox', { name: 'ひとことや背景', exact: true })).toHaveValue('Draft survives the failed transaction');
     await app.screenshot('journal-create-failure-retains-input');
@@ -57,7 +57,7 @@ test('journal SQLite failures retain drafts and records, then recover through th
     recover = failWrites('memoraLifeLogEntries');
     await tapControl(screen, screen.getByRole('button', { name: '保存', exact: true }));
     await expect(screen.getByText('保存できませんでした', { exact: true }).last()).toBeVisible();
-    await tapControl(screen, screen.getByRole('button', { name: 'OK', exact: true }));
+    await tapControl(screen, screen.getByRole('button', { name: '閉じる', exact: true }).last());
     await expect(screen.getByRole('textbox', { name: 'タイトル', exact: true })).toHaveValue('Recovered journal edit');
     await expect(screen.getByRole('textbox', { name: '本文', exact: true })).toHaveValue('Edit survives the failed transaction');
     await app.screenshot('journal-edit-failure-retains-input');
@@ -72,7 +72,7 @@ test('journal SQLite failures retain drafts and records, then recover through th
     await expect(screen.getByRole('group', { name: 'この記録を削除しますか？', exact: true })).toBeVisible();
     await tapControl(screen, screen.getByRole('button', { name: '削除', exact: true }));
     await expect(screen.getByText('削除できませんでした', { exact: true })).toBeVisible();
-    await tapControl(screen, screen.getByRole('button', { name: 'OK', exact: true }));
+    await tapControl(screen, screen.getByRole('button', { name: '閉じる', exact: true }).last());
     await expect(screen.getByText('Edit survives the failed transaction', { exact: true }).last()).toBeVisible();
     await expect(screen.getByLabel('その他')).toBeVisible();
     await app.screenshot('journal-delete-failure-keeps-detail');

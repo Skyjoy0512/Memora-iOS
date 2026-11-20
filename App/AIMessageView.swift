@@ -188,7 +188,7 @@ struct AIMessageView: View {
   private var sourceList: some View {
     VStack(alignment: .leading, spacing: 8) {
       ForEach(spokenSources) { source in
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
           NavigationLink {
             MeetingDetailView(meetingID: source.meetingID)
           } label: {
@@ -211,7 +211,7 @@ struct AIMessageView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, MemoraSpacing.md)
-        .padding(.vertical, 9)
+        .padding(.vertical, MemoraSpacing.sm)
         .background(
           Color.primary.opacity(0.06),
           in: RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous)

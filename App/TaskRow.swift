@@ -53,7 +53,7 @@ struct TaskRow: View {
     let dateLayout = typeSize.isAccessibilitySize
       ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.xs))
       : AnyLayout(HStackLayout(spacing: MemoraSpacing.sm))
-    return VStack(alignment: .leading, spacing: 6) {
+    return VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
       Text(task.title)
         .font(.body)
         .strikethrough(task.isCompleted)

@@ -85,7 +85,7 @@ struct DocumentsView: View {
       if request != nil && isSidebarRoot && !model.isToolsPresented { isSearching = true }
     }
     .alert("今週はまだ記録がありません", isPresented: $isEmptyWeekNoticePresented) {
-      Button("OK", role: .cancel) {}
+      Button("閉じる", role: .cancel) {}
     } message: {
       Text("会議やジャーナルの記録、完了したタスクがあると、週報を作れます。")
     }
@@ -109,7 +109,7 @@ struct DocumentsView: View {
         : "削除した資料は元に戻せません。")
     }
     .alert("操作を完了できませんでした", isPresented: Binding(get: { operationError != nil }, set: { if !$0 { operationError = nil } })) {
-      Button("OK", role: .cancel) { operationError = nil }
+      Button("閉じる", role: .cancel) { operationError = nil }
     } message: { Text(operationError ?? "") }
   }
 }

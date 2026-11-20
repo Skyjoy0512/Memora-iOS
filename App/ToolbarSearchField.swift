@@ -22,7 +22,8 @@ struct ToolbarSearchField: View {
           .foregroundStyle(.secondary)
           .accessibilityHidden(true)
 
-        TextField(typeSize.isAccessibilitySize ? "検索" : prompt, text: $text)
+        TextField("", text: $text, prompt: Text(typeSize.isAccessibilitySize ? "検索" : prompt)
+          .foregroundStyle(MemoraPalette.textSecondary))
           .focused($isFocused)
           .submitLabel(.search)
           .autocorrectionDisabled()
@@ -54,6 +55,9 @@ struct ToolbarSearchField: View {
     .background(MemoraPalette.background)
     .preservesComposerFocus()
     .onAppear { isFocused = true }
+    .onChange(of: text) { previous, current in
+      if isPresented, !previous.isEmpty, current.isEmpty { isFocused = true }
+    }
   }
 
   /// Closing also clears the query, so the screen returns to its full list.

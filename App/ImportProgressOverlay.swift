@@ -27,11 +27,13 @@ struct ImportProgressOverlay: View {
         }
       }
       .padding(MemoraSpacing.xxl)
-      .frame(maxWidth: 310)
+      .frame(maxWidth: 320)
       .background(.regularMaterial, in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
-      .shadow(color: .black.opacity(0.12), radius: 24, y: 10)
+      .padding(.horizontal, MemoraSpacing.screen)
     }
-    .accessibilityElement(children: .combine)
-    .accessibilityLabel(progress.map { "音声を取り込み中、\(Int($0 * 100))パーセント" } ?? "音声を取り込み中")
+    .accessibilityElement(children: .ignore)
+    .accessibilityAddTraits(.isModal)
+    .accessibilityLabel("音声を取り込み中")
+    .accessibilityValue(progress.map { $0.formatted(.percent.precision(.fractionLength(0))) } ?? "")
   }
 }

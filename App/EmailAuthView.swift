@@ -98,7 +98,7 @@ struct EmailAuthView: View {
     .navigationTitle(selectedMode.label)
     .navigationBarTitleDisplayMode(.inline)
     .alert("アカウントはまだ接続されていません", isPresented: $isUnavailableNoticePresented) {
-      Button("OK", role: .cancel) {}
+      Button("閉じる", role: .cancel) {}
     } message: {
       Text("この画面からはアカウントを作成・ログインできません。端末には何も保存していません。")
     }

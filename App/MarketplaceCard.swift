@@ -21,7 +21,7 @@ struct MarketplaceCard: View {
           Spacer(minLength: 8)
           if featured {
             Text("表示").font(.subheadline.weight(.semibold))
-              .padding(.horizontal, 18).padding(.vertical, 9)
+              .padding(.horizontal, MemoraSpacing.lg).padding(.vertical, MemoraSpacing.sm)
               .foregroundStyle(MemoraPalette.actionLabel)
               .background(MemoraPalette.action, in: Capsule())
           } else {

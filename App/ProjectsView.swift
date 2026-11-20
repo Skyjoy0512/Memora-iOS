@@ -31,7 +31,7 @@ struct ProjectsView: View {
     let remaining = visibleProjects.filter { !recentIDs.contains($0.id) }
 
     ScrollView {
-      LazyVStack(alignment: .leading, spacing: 18) {
+      LazyVStack(alignment: .leading, spacing: MemoraSpacing.lg) {
         if model.shareInboxFailure != nil {
           Button("共有からの取り込みを確認") { isShareInboxPresented = true }
             .font(MemoraTypography.secondary).frame(minHeight: 44).tint(MemoraPalette.textPrimary)
@@ -67,12 +67,12 @@ struct ProjectsView: View {
           projectRows(remaining)
         } else if visibleShared.isEmpty {
           if isAwaitingQuery {
-            MemoraEmptyState(icon: .magnifyingglass, title: "プロジェクトを検索",
-              message: "プロジェクト名や、共有した人の名前から探せます。")
+            CollectionSearchState(title: "プロジェクトを検索",
+              message: "プロジェクト名や、共有した人の名前から探せます。", isEmbedded: true)
           } else if isSearching {
-            MemoraEmptyState(icon: .magnifyingglass, title: "見つかりませんでした",
-              message: "「\(query)」に一致するプロジェクトはありません。",
-              actionTitle: "検索をやり直す", actionIcon: .xmark) { query = "" }
+            CollectionSearchState(title: "見つかりませんでした",
+              message: "別の語句を入力してください。",
+              clear: { query = "" }, clearTitle: "検索をやり直す", isEmbedded: true)
           } else if filter == .shared {
             VStack(alignment: .leading, spacing: 8) {
               Text(filter.emptyTitle).font(MemoraTypography.body.weight(.medium))

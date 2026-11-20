@@ -10,7 +10,7 @@ struct PeopleStrip: View {
 
   var body: some View {
     ScrollView(.horizontal) {
-      HStack(spacing: 14) {
+      HStack(spacing: MemoraSpacing.md) {
         item(title: "すべて", symbol: .squareGrid2x2, imageData: nil, isSelected: selectedID == nil) {
           onSelect(nil)
         }

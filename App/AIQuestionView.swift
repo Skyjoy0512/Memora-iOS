@@ -149,7 +149,7 @@ struct AIQuestionView: View {
   }
 
   private func answerContent(_ answer: String) -> some View {
-    VStack(alignment: .leading, spacing: 18) {
+    VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
       AIResponseText(text: AnswerSourceCitation.stripped(answer), isStreaming: isAnswering)
       SourceCitationList(citations: sourceCitations)
       AttachmentCitationList(citations: attachmentCitations)
@@ -162,7 +162,7 @@ struct AIQuestionView: View {
 
   /// A failure says what went wrong and nothing else: it has no grounds to show.
   private func failureContent(_ message: String) -> some View {
-    VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: .leading, spacing: MemoraSpacing.md) {
       Label("回答できませんでした", icon: .exclamationmarkTriangle)
         .font(.headline)
         .foregroundStyle(.primary)
@@ -178,13 +178,13 @@ struct AIQuestionView: View {
   /// The records that were sent, each with the stored lines that matched. Nothing
   /// here is invented to look like a quote; a line plays from its own time.
   private var sourceList: some View {
-    VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: .leading, spacing: MemoraSpacing.md) {
       Text("AIに渡した参考資料")
         .font(.caption.weight(.semibold))
         .foregroundStyle(.secondary)
 
       ForEach(sources) { source in
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
           if model.isActiveDetail(source.meetingID) {
             Button {
               openInExistingDetail(source.meetingID, time: nil)
@@ -238,7 +238,7 @@ struct AIQuestionView: View {
   }
 
   private func sourceHeader(_ source: AIChatSource) -> some View {
-    HStack(spacing: 10) {
+    HStack(spacing: MemoraSpacing.md) {
       Image(icon: .quoteBubble, size: 17)
         .foregroundStyle(.primary)
       Text(source.title)

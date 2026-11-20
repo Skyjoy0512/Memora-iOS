@@ -27,7 +27,7 @@ struct SummaryHistoryDetailView: View {
       Text("原音声・文字起こし・タスクは変更しません。")
     }
     .alert("要約を復元できませんでした", isPresented: $restorationFailed) {
-      Button("OK", role: .cancel) {}
+      Button("閉じる", role: .cancel) {}
     } message: {
       Text("現在の要約を保持しています。記録の状態や保存先を確認して、もう一度お試しください。")
     }

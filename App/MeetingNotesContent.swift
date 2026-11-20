@@ -15,7 +15,7 @@ struct MeetingNotesContent: View {
     let photos = model.meeting(id: meetingID)?.photoFileNames ?? []
     let noteText = model.meeting(id: meetingID)?.notes ?? ""
 
-    VStack(alignment: .leading, spacing: 14) {
+    VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
       Text("ノート")
         .font(MemoraTypography.sectionHeading)
 
@@ -30,7 +30,7 @@ struct MeetingNotesContent: View {
       )
 
       ScrollView(.horizontal) {
-        HStack(spacing: 10) {
+        HStack(spacing: MemoraSpacing.md) {
           ForEach(Array(photos.enumerated()), id: \.offset) { index, name in
             if let image = photoImages[name] {
               Image(uiImage: image)

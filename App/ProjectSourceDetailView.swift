@@ -36,7 +36,7 @@ struct ProjectSourceDetailView: View {
       ScrollViewReader { proxy in
         ScrollView {
           LazyVStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
               Text(source.title).font(MemoraTypography.screenTitle).textSelection(.enabled)
                 .memoraTextReveal()
               Text(metadataDescription(for: source)).font(.caption).foregroundStyle(.secondary)
@@ -103,7 +103,7 @@ struct ProjectSourceDetailView: View {
                   retry: { textRetry += 1 }, cancel: { textLoader.stop() }) {
                     LazyVStack(alignment: .leading, spacing: 20) {
                       ForEach(Array(extracted.enumerated()), id: \.offset) { index, block in
-                        VStack(alignment: .leading, spacing: 6) {
+                        VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
                           if let page = block.page, source.kind == .pdf {
                             NavigationLink("ページ \(page)", value: LibraryRoute.projectPDF(sourceID, page))
                               .font(.footnote).frame(minHeight: 44)
@@ -289,7 +289,7 @@ struct ProjectSourceDetailView: View {
 
   private func attachedSourcesSection(_ source: ProjectSource) -> some View {
     let attachments = model.attachedSources(of: source)
-    return VStack(alignment: .leading, spacing: 10) {
+    return VStack(alignment: .leading, spacing: MemoraSpacing.md) {
       Text("添付資料").font(MemoraTypography.sectionHeading)
       Text("添付資料はそれぞれ独立して検索・引用されます。").font(.caption).foregroundStyle(.secondary)
       ForEach(Array(attachments.enumerated()), id: \.element.id) { index, attachment in

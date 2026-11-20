@@ -61,7 +61,7 @@ struct OmiDeviceDetailView: View {
       Text("保存した録音は残ります。再び使うときは接続し直してください。")
     }
     .alert("ファームウェア", isPresented: $isFirmwareNoticePresented) {
-      Button("OK", role: .cancel) {}
+      Button("閉じる", role: .cancel) {}
     } message: {
       Text("ファームウェアの確認と更新はまだ対応していません。")
     }

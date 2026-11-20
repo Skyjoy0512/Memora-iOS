@@ -70,7 +70,7 @@ test('experience: search states clear their real query and hide the underlying p
   await query.fill('存在しない記録xyz');
   await tapControl(screen, screen.getByRole('button', { name: '検索をやり直す', exact: true }));
   await expect(query).not.toHaveValue('存在しない記録xyz');
-  await expect(screen.getByText('ファイルを検索', { exact: true })).toBeVisible();
+  await expect(screen.getByText('記録や参考資料のタイトル・本文から探せます。', { exact: true })).toBeVisible();
   await tapControl(screen, screen.getByRole('button', { name: 'キャンセル', exact: true }));
   await device.openLink('memora://projects');
   await tapControl(screen, screen.getByRole('button', { name: 'プロジェクトを作成', exact: true }).first());
@@ -79,7 +79,7 @@ test('experience: search states clear their real query and hide the underlying p
   await device.openLink('memora://projects');
   await expect(screen.getByText('E2E Search Scope')).toBeVisible();
   await openSidebarSearch(screen);
-  await expect(screen.getByText('プロジェクトを検索')).toBeVisible();
+  await expect(screen.getByText('プロジェクト名や、共有した人の名前から探せます。', { exact: true })).toBeVisible();
   await expect(screen.getByText('E2E Search Scope')).not.toBeVisible();
   await query.fill('存在しないプロジェクトxyz');
   await expect(screen.getByText('見つかりませんでした')).toBeVisible();
@@ -188,7 +188,7 @@ test('experience: task, people and document screens retain their working actions
   await tapControl(screen, screen.getByLabel('資料の操作'));
   await tapControl(screen, screen.getByRole('button', { name: '今週の週報を作る', exact: true }));
   await expect(screen.getByText('今週はまだ記録がありません')).toBeVisible();
-  await tapControl(screen, screen.getByRole('button', { name: 'OK', exact: true }));
+  await tapControl(screen, screen.getByRole('button', { name: '閉じる', exact: true }).last());
 });
 
 test('experience: journal creation keeps the selected date across restart and the system memo link opens the shared editor', async ({ app, device, screen }) => {

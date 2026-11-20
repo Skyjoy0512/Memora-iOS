@@ -79,12 +79,12 @@ struct SettingsBackupView: View {
       ActivityView(items: shareItems, onComplete: cleanUpTemporaryBackup)
     }
     .alert("バックアップ", isPresented: errorPresented) {
-      Button("OK", role: .cancel) {}
+      Button("閉じる", role: .cancel) {}
     } message: {
       Text(errorMessage ?? "")
     }
     .alert("バックアップ", isPresented: statusPresented) {
-      Button("OK", role: .cancel) {}
+      Button("閉じる", role: .cancel) {}
     } message: {
       Text(statusMessage ?? "")
     }

@@ -76,7 +76,7 @@ struct LifeLogEditSheet: View {
         }
       }
       .alert("保存できませんでした", isPresented: $saveError) {
-        Button("OK", role: .cancel) {}
+        Button("閉じる", role: .cancel) {}
       } message: {
         Text("記録と人物の登録状態を確認して、もう一度お試しください。入力内容はこの画面に残っています。")
       }

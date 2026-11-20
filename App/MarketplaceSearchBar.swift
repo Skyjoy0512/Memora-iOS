@@ -16,7 +16,8 @@ struct MarketplaceSearchBar: View {
         Image(icon: .magnifyingglass, size: 20)
           .foregroundStyle(MemoraPalette.textSecondary)
           .accessibilityHidden(true)
-        TextField(typeSize.isAccessibilitySize ? "検索" : prompt, text: $query)
+        TextField("", text: $query, prompt: Text(typeSize.isAccessibilitySize ? "検索" : prompt)
+          .foregroundStyle(MemoraPalette.textSecondary))
           .focused($isFocused)
           .submitLabel(.search)
           .autocorrectionDisabled()
@@ -25,9 +26,10 @@ struct MarketplaceSearchBar: View {
           .accessibilityIdentifier("collection.search.input")
           .onSubmit { isFocused = false }
         if !query.isEmpty {
-          Button("検索語を消去", icon: .xmark) { query = "" }
-            .labelStyle(.iconOnly)
-            .frame(width: 44, height: 44)
+          MemoraIconButton("検索語を消去", icon: .xmark) {
+            query = ""
+            isFocused = true
+          }
         }
       }
       .padding(.leading, MemoraSpacing.lg)
@@ -36,12 +38,15 @@ struct MarketplaceSearchBar: View {
       .memoraGlass(in: Capsule(), interactive: true, backed: false)
 
       if isSearching {
-        Button("キャンセル") {
+        Button {
           isFocused = false
           query = ""
           isSearching = false
+        } label: {
+          Text("キャンセル")
+            .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget)
+            .contentShape(Rectangle())
         }
-        .frame(minWidth: 44, minHeight: 44)
         .accessibilityIdentifier("collection.search.cancel")
       }
     }

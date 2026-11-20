@@ -40,35 +40,42 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
           // clear of the status bar and home indicator.
           .padding(.top, windowInsets.top)
           .padding(.bottom, windowInsets.bottom)
-          // Letting the panel trail slightly behind the content reads as
-          // depth instead of two boards sliding as one.
-          .offset(x: -(1 - progress) * width * 0.24)
+          // Keep the mounted panel outside the viewport while closed so
+          // hosting views cannot expose controls at their old positions.
+          .offset(x: -(1 - progress) * width)
           .opacity(progress)
           .allowsHitTesting(isOpen)
+          .accessibilityElement(children: .contain)
+          .accessibilityAddTraits(.isModal)
+          .accessibilityAction(.escape) { setOpen(false) }
           .accessibilityHidden(!isOpen)
 
         content()
           .frame(width: proxy.size.width, height: proxy.size.height)
           .compositingGroup()
+          .accessibilityHidden(isOpen)
           .overlay {
             if isOpen || progress > 0 {
               // A light wash, not a blur: the pushed-aside screen stays readable
               // behind the drawer. It also catches the tap or drag that closes it.
-              Rectangle()
-                .fill(Color(uiColor: .systemBackground).opacity(0.45))
-                .contentShape(Rectangle())
-                .onTapGesture { setOpen(false) }
-                .gesture(closeDrag(width: width))
-                .allowsHitTesting(isOpen)
-                .accessibilityLabel("メニューを閉じる")
-                .accessibilityAddTraits(.isButton)
+              Button { setOpen(false) } label: {
+                Rectangle()
+                  .fill(Color(uiColor: .systemBackground).opacity(0.45))
+                  .frame(width: max(0, proxy.size.width - offset))
+                  .contentShape(Rectangle())
+              }
+              .buttonStyle(.plain)
+              .accessibilityLabel("メニューを閉じる")
+              .accessibilityHidden(!isOpen)
+              .gesture(closeDrag(width: width))
+              .allowsHitTesting(isOpen)
+              .frame(maxWidth: .infinity, alignment: .leading)
             }
           }
           // Clip the closing overlay too, so it cannot fill the rounded corners.
           .clipShape(RoundedRectangle(cornerRadius: 56 * progress, style: .continuous))
-          .accessibilityHidden(isOpen)
           .modifier(SidebarSlideEffect(offset: offset, onClosed: onCloseAnimationCompleted))
-          .shadow(color: .black.opacity(0.10 * progress), radius: 12, x: -3)
+          .shadow(color: .black.opacity(0.08 * progress), radius: 8, x: -4)
 
         if isEnabled && !isOpen {
           // Narrow enough to stay out of the way of content taps, matching the

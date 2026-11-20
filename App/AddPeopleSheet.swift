@@ -39,7 +39,7 @@ struct AddPeopleSheet: View {
 
         Section {
           if isLoadingContacts {
-            HStack(spacing: 10) {
+            HStack(spacing: MemoraSpacing.md) {
               ProgressView()
               Text("連絡先を読み込んでいます")
                 .foregroundStyle(.secondary)

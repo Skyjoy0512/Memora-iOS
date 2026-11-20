@@ -18,7 +18,7 @@ struct ProjectCard: View {
               .frame(width: 44, height: 44)
               .background(MemoraPalette.selection, in: RoundedRectangle(cornerRadius: MemoraRadius.field))
               .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
               Text(space.name)
                 .font(.headline)
                 .fixedSize(horizontal: false, vertical: true)
@@ -29,7 +29,7 @@ struct ProjectCard: View {
             }
           }
           ViewThatFits(in: .horizontal) {
-            HStack(spacing: 14) { counts }
+            HStack(spacing: MemoraSpacing.md) { counts }
             VStack(alignment: .leading, spacing: 8) { counts }
           }
           .font(MemoraTypography.secondary)

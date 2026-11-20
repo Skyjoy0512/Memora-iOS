@@ -30,7 +30,7 @@ struct CalendarEventSheet: View {
     .presentationDetents(editing == nil ? [.medium, .large] : [.large])
     .interactiveDismissDisabled(editing != nil)
     .alert("編集できません", isPresented: $showsEditError) {
-      Button("OK", role: .cancel) {}
+      Button("閉じる", role: .cancel) {}
     } message: {
       Text("予定が変更・削除されたか、編集権限が変わりました。カレンダーで現在の状態を確認してください。")
     }

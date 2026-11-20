@@ -5,7 +5,7 @@ struct DocumentPDFExportProgressView: View {
   var cancel: () -> Void
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 18) {
+    VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
       Text("PDFを書き出しています").font(.headline)
       switch progress {
       case .preparing:

@@ -227,7 +227,7 @@ struct LibraryView: View {
         Text("チーム共有は、選んだファイルを音声・写真つきのパッケージとして書き出し、チームのメンバーに渡せます。")
       }
       .alert("チーム共有を作成できませんでした", isPresented: teamShareErrorBinding) {
-        Button("OK", role: .cancel) {}
+        Button("閉じる", role: .cancel) {}
       } message: {
         Text(teamShareErrorMessage ?? "")
       }
@@ -274,7 +274,7 @@ struct LibraryView: View {
   @ViewBuilder
   private var listHeaderRows: some View {
     if !upcoming.meetings.isEmpty {
-      VStack(spacing: 18) {
+      VStack(spacing: MemoraSpacing.xl) {
         UpcomingEventsRow(
           meetings: upcoming.meetings,
           onRecordInPerson: { meeting in
@@ -333,14 +333,15 @@ struct LibraryView: View {
       if sections.isEmpty && !hasSavedSources && !hasSharedRecords {
         Group {
           if isAwaitingQuery {
-            MemoraEmptyState(icon: .magnifyingglass, title: "記録を検索",
-              message: "タイトルや本文で検索")
+            CollectionSearchState(title: "ファイルを検索",
+              message: "記録や参考資料のタイトル・本文から探せます。", isEmbedded: true)
           } else if CollectionSearch.hasQuery(query), completedSourceQuery != query {
-            ProgressView("検索しています")
+            ProgressView("参考資料の本文を検索しています…")
+              .padding(.vertical, MemoraSpacing.lg)
           } else if CollectionSearch.hasQuery(query) {
-            MemoraEmptyState(icon: .magnifyingglass, title: "見つかりませんでした",
-              message: "「\(query)」に一致する記録はありません。",
-              actionTitle: "検索をやり直す", actionIcon: .xmark) { query = "" }
+            CollectionSearchState(title: "見つかりませんでした",
+              message: "別の語句を入力してください。",
+              clear: { query = "" }, clearTitle: "検索をやり直す", isEmbedded: true)
           } else if statusFilter != .all {
             filteredEmpty
           } else {
@@ -350,7 +351,12 @@ struct LibraryView: View {
         .frame(maxWidth: .infinity)
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
-        .listRowInsets(EdgeInsets(top: 48, leading: 18, bottom: 48, trailing: 18))
+        .listRowInsets(EdgeInsets(
+          top: isSearching ? 0 : MemoraSpacing.section,
+          leading: 0,
+          bottom: isSearching ? 0 : MemoraSpacing.section,
+          trailing: 0
+        ))
       } else {
         // Grouped by date, each heading inside the list so it scrolls away.
         ForEach(sections) { section in
@@ -588,7 +594,7 @@ struct LibraryView: View {
       InteractionFeedback.shared.send(.tap)
       action()
     } label: {
-      VStack(spacing: 3) {
+      VStack(spacing: MemoraSpacing.xs) {
         Image(icon: icon, size: 20)
         Text(title)
           .font(.caption2.weight(.medium))
@@ -608,14 +614,14 @@ struct LibraryView: View {
   private var emptyFilesPrompt: some View {
     MemoraEmptyState(
       icon: .waveform,
-      title: "録音を始めましょう",
-      message: "記録はここに並びます。",
+      title: "ファイルはまだありません",
+      message: "録音した会話や取り込んだ資料がここに並びます。",
       actionTitle: "録音する",
       actionIcon: .waveform
     ) {
       Task { await model.performCaptureMenuAction(.recording, projectID: model.visibleProjectID) }
     }
-    .padding(.vertical, MemoraSpacing.group)
+    .padding(.vertical, MemoraSpacing.xl)
   }
 
   // MARK: - Selection

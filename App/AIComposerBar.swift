@@ -102,7 +102,8 @@ struct AIComposerBar: View {
   }
 
   private var textField: some View {
-    TextField(placeholder, text: $text, selection: $textSelection, axis: .vertical)
+    TextField("", text: $text, selection: $textSelection,
+      prompt: Text(placeholder).foregroundStyle(MemoraPalette.textSecondary), axis: .vertical)
       .font(.body)
       .lineLimit(AIComposerLayoutPolicy.lines(isExpanded: isExpanded, isTall: isEditorTall,
         lineHeight: editorLineHeight))
@@ -389,12 +390,12 @@ struct AIComposerBar: View {
       }
     }
     .alert("添付できませんでした", isPresented: importErrorPresented) {
-      Button("OK") { importErrorMessage = nil }
+      Button("閉じる") { importErrorMessage = nil }
     } message: {
       Text(importErrorMessage ?? "")
     }
     .alert("音声入力を利用できません", isPresented: speechErrorPresented) {
-      Button("OK") { speechInput.clearError() }
+      Button("閉じる") { speechInput.clearError() }
     } message: {
       Text(speechInput.errorMessage ?? "")
     }
@@ -457,11 +458,11 @@ struct AIComposerBar: View {
       InteractionFeedback.shared.send(.tap)
       onResearch?()
     })) {
-      HStack(spacing: 5) {
+      HStack(spacing: MemoraSpacing.xs) {
         ToolbarIconGlyph(icon: .magnifyingglass)
         if researchSelected { Text("Web").font(.caption.weight(.medium)) }
       }
-      .padding(.horizontal, researchSelected ? 10 : 0)
+      .padding(.horizontal, researchSelected ? MemoraSpacing.sm : 0)
       .frame(minWidth: 44, minHeight: 44)
       .background(.primary.opacity(researchSelected ? 0.08 : 0), in: Capsule())
       .contentShape(Capsule())
@@ -491,7 +492,6 @@ struct AIComposerBar: View {
           Image(icon: actionSymbol)
         }
       }
-        .font(.system(size: 20, weight: .semibold))
         .foregroundStyle(isConversation || onStop != nil || canSend || isBusy || speechInput.isListening
           ? MemoraPalette.actionLabel : MemoraPalette.textPrimary)
         .contentTransition(.opacity)
@@ -649,7 +649,7 @@ struct AIComposerBar: View {
       isFieldFocused = false
       isModelSheetPresented = true
     } label: {
-      HStack(spacing: 5) {
+      HStack(spacing: MemoraSpacing.xs) {
         Text(model.askAIModelName).font(.subheadline).lineLimit(1)
         Image(icon: .chevronDown, size: 12)
       }

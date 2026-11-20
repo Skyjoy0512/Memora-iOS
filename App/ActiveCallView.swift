@@ -10,7 +10,7 @@ struct ActiveCallView: View {
 
   var body: some View {
     VStack(spacing: 12) {
-      VStack(alignment: .leading, spacing: 10) {
+      VStack(alignment: .leading, spacing: MemoraSpacing.md) {
         Text(session.title)
           .font(.title2.bold())
         TextField("メモを自由にどうぞ…", text: $session.notes, axis: .vertical)
@@ -40,7 +40,7 @@ struct ActiveCallView: View {
   }
 
   private var controls: some View {
-    VStack(spacing: 14) {
+    VStack(spacing: MemoraSpacing.lg) {
       HStack {
         VStack(alignment: .leading, spacing: 2) {
           Text(session.contactName ?? PhoneNumberFormat.display(session.number))
@@ -67,7 +67,7 @@ struct ActiveCallView: View {
           session.onRecordingChange(session.isRecording)
         } label: {
           Image(icon: session.isRecording ? .pauseFill : .waveform)
-            .frame(width: 64, height: 40)
+            .frame(width: 64, height: MemoraSpacing.touchTarget)
             .background(.white.opacity(0.14), in: Capsule())
         }
         .accessibilityLabel(session.isRecording ? "録音を一時停止" : "録音を再開")
@@ -83,7 +83,7 @@ struct ActiveCallView: View {
           onEnd()
         } label: {
           Image(icon: .phoneDownFill)
-            .frame(width: 64, height: 40)
+            .frame(width: 64, height: MemoraSpacing.touchTarget)
             .background(.red, in: Capsule())
         }
         .accessibilityLabel("通話を終える")
@@ -98,7 +98,7 @@ struct ActiveCallView: View {
   private func roundButton(_ icon: MemoraIcon, label: String, isOn: Bool, action: @escaping () -> Void) -> some View {
     Button(action: action) {
       Image(icon: icon)
-        .frame(width: 40, height: 40)
+        .frame(width: MemoraSpacing.touchTarget, height: MemoraSpacing.touchTarget)
         .background(isOn ? AnyShapeStyle(.white) : AnyShapeStyle(.white.opacity(0.14)), in: Circle())
         .foregroundStyle(isOn ? .black : .white)
     }

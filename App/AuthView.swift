@@ -54,7 +54,7 @@ struct AuthView: View {
         }
       }
       .alert("サインインは準備中です", isPresented: $isUnavailableNoticePresented) {
-        Button("OK", role: .cancel) {}
+        Button("閉じる", role: .cancel) {}
       } message: {
         Text("認証サービスは未接続です。アカウントは作成されません。ログインせず利用できます。")
       }

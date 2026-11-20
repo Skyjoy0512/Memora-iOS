@@ -139,7 +139,7 @@ test('design: project mentions preserve scope and the workspace three tabs', asy
   await expect(screen.getByLabel('ScopeEvidence、利用不可、情報を表示')).toBeVisible();
   await tap(screen, screen.getByRole('button', { name: '送信', exact: true }));
   await expect(screen.getByText(/このソースは所属プロジェクト内のAsk AI/)).toBeVisible();
-  await tap(screen, screen.getByRole('button', { name: 'OK', exact: true }));
+  await tap(screen, screen.getByRole('button', { name: '閉じる', exact: true }).last());
   await expect(input).toHaveValue(/ScopeEvidence/);
   await input.fill('');
 });
