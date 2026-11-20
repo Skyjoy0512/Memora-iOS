@@ -95,3 +95,28 @@ test('generated charts place losses before zero and keep zero-length bars invisi
  assert.ok(screen.getByText('0 件'));
  assert.ok(bars.every(bar => bar.parentElement.getAttribute('aria-hidden') === 'true'));
 });
+
+test('generated form labels identify controls and repeated names cannot target another field', async () => {
+ const spec = {
+  root: 'form',
+  state: {first: false, second: false},
+  elements: {
+   form: {type: 'Stack', props: {}, children: ['name', 'category', 'count', 'first', 'second']},
+   name: {type: 'Input', props: {label: '案件名'}, children: []},
+   category: {type: 'Select', props: {label: '分類', options: ['社内', '社外']}, children: []},
+   count: {type: 'Slider', props: {label: '参加人数', min: 1, max: 10}, children: []},
+   first: {type: 'Checkbox', props: {name: 'selected', label: '一件目', checked: {$bindState: '/first'}}, children: []},
+   second: {type: 'Checkbox', props: {name: 'selected', label: '二件目', checked: {$bindState: '/second'}}, children: []},
+  },
+ };
+ const store = boundedStore(spec.state);
+ render(surface(spec, store));
+ assert.ok(screen.getByRole('textbox', {name: '案件名'}));
+ assert.ok(screen.getByRole('combobox', {name: '分類'}));
+ assert.ok(screen.getByRole('slider', {name: '参加人数'}));
+ assert.notEqual(screen.getByRole('checkbox', {name: '一件目'}).id, screen.getByRole('checkbox', {name: '二件目'}).id);
+ const user = userEvent.setup({document: dom.window.document});
+ await user.click(screen.getByText('二件目'));
+ assert.equal(store.get('/first'), false);
+ assert.equal(store.get('/second'), true);
+});

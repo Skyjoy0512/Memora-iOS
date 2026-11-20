@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useId, useLayoutEffect, useRef} from 'react';
 import {defineRegistry} from '@json-render/react';
 import {shadcnComponents} from '@json-render/shadcn';
 import {catalog} from './catalog.mjs';
@@ -28,5 +28,43 @@ const BarChart=({props})=>{
   </section>;
 };
 const Panel=({props,children,slots})=><section aria-label={props.label??undefined} className="panel">{slots?.header&&<header>{slots.header}</header>}{children}{slots?.footer&&<footer>{slots.footer}</footer>}</section>;
-export const {registry}=defineRegistry(catalog,{components:{...shadcnComponents,Metric,BarChart,Panel}});
+
+function namedField(Component, fallback, controlRole) {
+  return function NamedField({props, ...context}) {
+    const id = useId();
+    const field = useRef(null);
+    const label = (props.label || '').trim() || (props.placeholder || '').trim() || fallback;
+
+    useLayoutEffect(() => {
+      if (!controlRole) return;
+      // These upstream components render a visible label without linking it
+      // to the Radix trigger, group, or thumb that receives focus.
+      const visibleLabel = field.current?.querySelector('label');
+      const control = field.current?.querySelector(`[role="${controlRole}"]`);
+      if (visibleLabel && control) {
+        visibleLabel.id = `${id}-label`;
+        control.setAttribute('aria-labelledby', visibleLabel.id);
+      }
+    });
+
+    // A spec can omit a name or reuse it inside a repeated item. The mounted
+    // field owns its DOM id. The JSON spec's state paths stay on the bindings.
+    const rendered = <Component {...context} props={{...props, name: id, label}}/>;
+    return controlRole ? <div ref={field}>{rendered}</div> : rendered;
+  };
+}
+
+const formComponents = {
+  Input: namedField(shadcnComponents.Input, '入力'),
+  Textarea: namedField(shadcnComponents.Textarea, '複数行の入力'),
+  Select: namedField(shadcnComponents.Select, '選択', 'combobox'),
+  Checkbox: namedField(shadcnComponents.Checkbox, 'チェックボックス'),
+  Radio: namedField(shadcnComponents.Radio, '選択肢', 'radiogroup'),
+  Switch: namedField(shadcnComponents.Switch, '切り替え'),
+  Slider: namedField(shadcnComponents.Slider, '値', 'slider'),
+};
+
+export const {registry}=defineRegistry(catalog,{
+  components:{...shadcnComponents,...formComponents,Metric,BarChart,Panel}
+});
 
