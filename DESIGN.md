@@ -21,11 +21,10 @@ Brand assets follow the supplied canonical artwork in docs/BRANDING.md. Floating
 
 - The bottom row centers three icons 64pt apart for Library, Journal, and
   Ask AI. The selected Lucide glyph is filled. The row shares the footer's
-  opaque canvas color. A short blur behind the composer fades into that color
-  as content scrolls underneath. The buttons carry spoken
-  names, identifiers and selection. `TabView` retains each navigation stack.
-  The sidebar keeps the
-  static wordmark, scoped search, Marketplace, Tasks, Documents, People and
+  opaque canvas color. The composer floats above the row. A short blur starts
+  below the composer and fades into the canvas color by the icons. The buttons
+  carry spoken names, identifiers and selection. `TabView` retains each navigation
+  stack. The sidebar keeps the static wordmark, scoped search, Marketplace, Tasks, Documents, People and
   Settings. Secondary collections and detail screens use native back navigation.
 
 - Library, Journal and project workspaces hold Ask AI and one capture plus in

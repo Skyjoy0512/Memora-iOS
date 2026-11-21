@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ComposerBackdrop: View {
+struct RootTabBackdrop: View {
   @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
   var body: some View {
@@ -16,15 +16,10 @@ struct ComposerBackdrop: View {
             }
         }
       }
-      .frame(height: MemoraSpacing.group)
-      // Bring in the blur just inside the footer so the list above stays sharp.
       .mask {
-        VStack(spacing: 0) {
-          LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
-            .frame(height: MemoraSpacing.sm)
-          Color.black
-        }
+        LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
       }
+      .frame(height: MemoraSpacing.lg)
       MemoraPalette.background
     }
     .allowsHitTesting(false)

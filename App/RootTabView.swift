@@ -316,11 +316,7 @@ struct RootTabView: View {
       if showsPrimaryTabs {
         RootTabBar(selection: $model.selectedTab)
           .padding(.bottom, safeAreaInsets.bottom)
-      }
-    }
-    .background {
-      if shouldShowComposer || showsPlaybackBar {
-        ComposerBackdrop()
+          .background { RootTabBackdrop() }
       }
     }
     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
