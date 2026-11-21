@@ -4,23 +4,21 @@ struct RootTabBackdrop: View {
   @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
   var body: some View {
-    VStack(spacing: 0) {
-      Group {
-        if reduceTransparency {
-          MemoraPalette.background
-        } else {
-          Rectangle()
-            .fill(.regularMaterial)
-            .overlay {
-              LinearGradient(colors: [.clear, MemoraPalette.background], startPoint: .top, endPoint: .bottom)
-            }
-        }
+    Group {
+      if reduceTransparency {
+        MemoraPalette.background
+      } else {
+        Rectangle()
+          .fill(.regularMaterial)
+          .overlay { MemoraPalette.background.opacity(0.45) }
       }
-      .mask {
+    }
+    .mask {
+      VStack(spacing: 0) {
         LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
+          .frame(height: MemoraSpacing.lg)
+        Color.black
       }
-      .frame(height: MemoraSpacing.lg)
-      MemoraPalette.background
     }
     .allowsHitTesting(false)
     .accessibilityHidden(true)

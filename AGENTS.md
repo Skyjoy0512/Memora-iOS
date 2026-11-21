@@ -38,8 +38,8 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 
 - **Navigation**: the app opens on Library. `RootTabBar` shows three icon-only
   tabs in this order: Library, Journal, Ask AI. Use outlined Lucide glyphs and
-  their filled variants for selection. The row has no glass, container, or
-  selected capsule. Keep button names, stable IDs and the selected trait.
+  their filled variants for selection, with a gray capsule under the selected
+  icon. Keep button names, stable IDs and the selected trait.
   The underlying `TabView` preserves the
   navigation stacks and the active Ask AI conversation. Keep `RootTab` raw
   values, restoration aliases and deep links compatible. The side menu holds
@@ -78,8 +78,8 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 - **Bottom edge**: one measured footer lays out playback, the shared composer
   and the centered tab row in order. Scroll clearance reserves their combined
   height. The composer floats over the content. At the top of the tab row,
-  below the composer, a short blur fades into the canvas color and covers
-  scrolling text behind the icons.
+  below the composer, a short fade introduces a frosted background that softens
+  scrolling content behind the icons. Reduce Transparency uses the canvas color.
   Keep the editor and capture importer identity across changes in tab visibility.
   Search and file selection hide the tabs, composer and capture controls; the
   results or share / move / delete bar own the bottom edge. Hide tabs during

@@ -17,6 +17,11 @@ struct RootTabBar: View {
           selection = tab
         } label: {
           glyph(for: tab, isSelected: isSelected)
+            .frame(
+              width: Self.itemWidth - MemoraSpacing.sm,
+              height: MemoraSpacing.touchTarget - MemoraSpacing.sm
+            )
+            .background(isSelected ? MemoraPalette.selection : Color.clear, in: Capsule())
             .contentTransition(.opacity)
             .animation(reduceMotion ? nil : MemoraMotion.control, value: isSelected)
             .accessibilityHidden(true)
@@ -41,7 +46,7 @@ struct RootTabBar: View {
         if tab == .home, isSelected {
           // Keep the separator legible inside the selected calendar silhouette.
           Capsule()
-            .fill(MemoraPalette.background)
+            .fill(MemoraPalette.selection)
             .frame(width: 14, height: 1.5)
             .padding(.top, 8)
         }
