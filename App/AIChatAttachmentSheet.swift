@@ -10,36 +10,45 @@ struct AIChatAttachmentSheet: View {
   var body: some View {
     NavigationStack {
       ScrollView {
-        VStack(spacing: 16) {
-          LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: typeSize.isAccessibilitySize ? 1 : 3), spacing: 8) {
+        VStack(spacing: MemoraSpacing.md) {
+          let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: MemoraSpacing.sm))
+            : AnyLayout(HStackLayout(spacing: MemoraSpacing.sm))
+          let labelLayout = typeSize.isAccessibilitySize
+            ? AnyLayout(HStackLayout(spacing: MemoraSpacing.md))
+            : AnyLayout(VStackLayout(spacing: MemoraSpacing.sm))
+          layout {
             ForEach([AIComposerAttachmentAction.camera, .photo, .file]) { action in
               Button { select(action) } label: {
-                VStack(spacing: 10) {
+                labelLayout {
                   Image(icon: action.icon, size: 22).accessibilityHidden(true)
-                  Text(action.displayTitle).font(.body)
+                  Text(action.displayTitle)
                 }
-                .frame(maxWidth: .infinity, minHeight: typeSize.isAccessibilitySize ? 76 : 100)
-                .background(MemoraPalette.card, in: RoundedRectangle(cornerRadius: 24))
-                .contentShape(RoundedRectangle(cornerRadius: 24))
+                  .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget,
+                    alignment: typeSize.isAccessibilitySize ? .leading : .center)
+                  .padding(.vertical, MemoraSpacing.xs)
+                  .contentShape(Rectangle())
               }
               .buttonStyle(.plain)
             }
           }
+          Divider()
           Button { select(.photo) } label: {
             Label("最近の写真を表示", icon: .photoOnRectangle)
-              .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-              .padding(.horizontal, 20)
-              .background(MemoraPalette.elevated, in: Capsule())
+              .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget, alignment: .leading)
+              .contentShape(Rectangle())
           }
-          .buttonStyle(.plain).foregroundStyle(MemoraPalette.focus)
+          .buttonStyle(.plain)
           if let onResearch {
             Toggle("Webで検索", isOn: Binding(get: { researchSelected }, set: { _ in onResearch() }))
-              .padding(.horizontal, 8)
+              .frame(minHeight: MemoraSpacing.touchTarget)
           }
         }
-        .padding(20).frame(maxWidth: .infinity)
+        .padding(.horizontal, MemoraSpacing.screen)
+        .padding(.vertical, MemoraSpacing.lg)
+        .frame(maxWidth: .infinity)
       }
-      .background(MemoraPalette.secondaryBackground)
+      .background(MemoraPalette.background)
       .navigationTitle("チャットに追加")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
@@ -48,7 +57,7 @@ struct AIChatAttachmentSheet: View {
         }
       }
     }
-    .presentationDetents([.height(340), .large])
+    .presentationDetents(typeSize.isAccessibilitySize ? [.large] : [.height(280), .large])
     .presentationDragIndicator(.visible)
   }
 

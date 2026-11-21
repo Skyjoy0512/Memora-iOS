@@ -22,6 +22,7 @@ struct AIChatModelSheet: View {
             .listRowBackground(MemoraPalette.elevated)
         }
       }
+      .listStyle(.insetGrouped)
       .scrollContentBackground(.hidden)
       .background(MemoraPalette.secondaryBackground)
       .navigationTitle("モデルを選択")
@@ -45,13 +46,15 @@ struct AIChatModelSheet: View {
       model.registeredLLMs.select(id)
       dismiss()
     } label: {
-      HStack(spacing: 12) {
-        VStack(alignment: .leading, spacing: 5) {
+      HStack(spacing: MemoraSpacing.md) {
+        VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
           Text(title).font(.body).foregroundStyle(.primary)
           Text(detail).font(.footnote).foregroundStyle(.secondary)
         }.frame(maxWidth: .infinity, alignment: .leading)
         if model.registeredLLMs.selectedID == id {
-          Image(icon: .checkmark, size: 20).foregroundStyle(MemoraPalette.focus)
+          Image(icon: .checkmark, size: 20)
+            .foregroundStyle(MemoraPalette.textPrimary)
+            .accessibilityHidden(true)
         }
       }.frame(minHeight: 52).contentShape(Rectangle())
     }
