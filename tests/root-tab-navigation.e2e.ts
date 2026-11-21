@@ -37,7 +37,7 @@ test('bottom tabs keep three equally spaced destinations below the composer', { 
       const centers = [first, second, third].map(frame => frame.x + frame.width / 2);
       expect(centers[1] - centers[0]).toBeCloseTo(64, 0);
       expect(centers[2] - centers[1]).toBeCloseTo(64, 0);
-      if (index === 2) expect(centers[1]).toBeCloseTo(field.x + field.width / 2, -1);
+      if (index === 2) expect(Math.abs(centers[1] - (field.x + field.width / 2))).toBeLessThan(5);
       expect(field.y + field.height).toBeLessThan(first.y);
       await app.screenshot(`root-${index}-${appearance}`);
     }

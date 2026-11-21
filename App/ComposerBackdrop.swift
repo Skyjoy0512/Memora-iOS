@@ -4,27 +4,27 @@ struct ComposerBackdrop: View {
   @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
   var body: some View {
-    Group {
-      if reduceTransparency {
-        Color(uiColor: .systemBackground)
-      } else {
-        Rectangle()
-          .fill(.thinMaterial)
+    let edgeHeight = MemoraSpacing.xl
+    MemoraPalette.background
+      .overlay(alignment: .top) {
+        Group {
+          if reduceTransparency {
+            MemoraPalette.background
+          } else {
+            Rectangle()
+              .fill(.thinMaterial)
+              .overlay {
+                LinearGradient(colors: [.clear, MemoraPalette.background], startPoint: .top, endPoint: .bottom)
+              }
+          }
+        }
+        .mask {
+          LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
+        }
+        .frame(height: edgeHeight)
+        .offset(y: -edgeHeight)
       }
-    }
-    .mask {
-      LinearGradient(
-        stops: [
-          .init(color: .clear, location: 0),
-          .init(color: .black.opacity(0.35), location: 0.25),
-          .init(color: .black.opacity(0.85), location: 0.6),
-          .init(color: .black, location: 1)
-        ],
-        startPoint: .top,
-        endPoint: .bottom
-      )
-    }
-    .allowsHitTesting(false)
-    .accessibilityHidden(true)
+      .allowsHitTesting(false)
+      .accessibilityHidden(true)
   }
 }

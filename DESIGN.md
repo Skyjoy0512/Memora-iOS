@@ -20,8 +20,9 @@ Brand assets follow the supplied canonical artwork in docs/BRANDING.md. Floating
 ## Everyday interactions
 
 - The bottom row centers three icons 64pt apart for Library, Journal, and
-  Ask AI. The selected Lucide glyph is filled. The row is transparent, without
-  glass, a border, a shadow or a selection capsule. The buttons carry spoken
+  Ask AI. The selected Lucide glyph is filled. The row shares the footer's
+  opaque canvas color. A short blur at the footer's top softens the transition
+  as content scrolls underneath. The buttons carry spoken
   names, identifiers and selection. `TabView` retains each navigation stack.
   The sidebar keeps the
   static wordmark, scoped search, Marketplace, Tasks, Documents, People and

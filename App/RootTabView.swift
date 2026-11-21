@@ -318,6 +318,11 @@ struct RootTabView: View {
           .padding(.bottom, safeAreaInsets.bottom)
       }
     }
+    .background {
+      if shouldShowComposer || showsPlaybackBar {
+        ComposerBackdrop()
+      }
+    }
     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
       if abs(model.bottomControlsHeight - height) > 0.5 {
         model.bottomControlsHeight = height
@@ -383,13 +388,6 @@ struct RootTabView: View {
     .padding(.top, 4)
     // The tab row reserves the home inset whenever it is visible.
     .padding(.bottom, showsPrimaryTabs ? MemoraSpacing.xs : (isKeyboardVisible ? 14 : safeAreaInsets.bottom))
-    .background {
-      if shouldShowComposer && !showsPrimaryTabs {
-        ComposerBackdrop()
-          .containerRelativeFrame(.horizontal)
-          .padding(.top, -32)
-      }
-    }
     .animation(reduceMotion || model.selectedTab == .askAI ? nil : MemoraMotion.control, value: isComposing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.activePlayback != nil)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isInlineEditing)

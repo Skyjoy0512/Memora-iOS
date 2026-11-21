@@ -76,8 +76,9 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   `isFileSelectionActive`; do not defer that flag to an `onChange`. The selection
   actions use a capsule-shaped glass bar.
 - **Bottom edge**: one measured footer lays out playback, the shared composer
-  and the centered transparent tab row in order. Scroll clearance reserves
-  their combined height. Keep the primary footer free of a solid backdrop.
+  and the centered tab row in order. Scroll clearance reserves their combined
+  height. The footer uses the canvas color to cover scrolling text and blurs
+  only its upper transition. The tab row has no separate background.
   Keep the editor and capture importer identity across changes in tab visibility.
   Search and file selection hide the tabs, composer and capture controls; the
   results or share / move / delete bar own the bottom edge. Hide tabs during
