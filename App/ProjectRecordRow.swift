@@ -5,6 +5,7 @@ struct ProjectRecordRow: View {
   var showsReadyStatus = false
   var showsSourceIcon = true
   var selectionState: Bool? = nil
+  var minimumHeight: CGFloat = ProjectLayout.minimumRowHeight
 
   @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -45,7 +46,7 @@ struct ProjectRecordRow: View {
       }
       .frame(maxWidth: .infinity, alignment: .leading)
     }
-    .frame(minHeight: ProjectLayout.minimumRowHeight, alignment: .center)
+    .frame(minHeight: minimumHeight, alignment: .center)
     .fixedSize(horizontal: false, vertical: true)
     .contentShape(Rectangle())
     .accessibilityElement(children: .combine)

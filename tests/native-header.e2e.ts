@@ -39,7 +39,7 @@ test('native header: journal sidebar search preserves its destination and flat c
   await app.screenshot('native-journal-sidebar-search');
   await tapControl(screen, screen.getByRole('button', { name: 'キャンセル', exact: true }));
   await expect(screen.getByTestId('recorder.toolbarStatus')).toBeVisible();
-  await expect(screen.getByLabel('新規作成')).toBeVisible();
+  await expect(screen.getByLabel('追加メニュー', { exact: true })).toBeVisible();
 });
 
 test('native header: Ask AI sidebar search retains the existing chat actions', async ({ app, device, screen }) => {

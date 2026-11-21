@@ -10,29 +10,24 @@ struct LibraryRecordRow: View {
   @Environment(\.dynamicTypeSize) private var typeSize
 
   var body: some View {
-    let layout = typeSize.isAccessibilitySize
-      ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.xs))
-      : AnyLayout(HStackLayout(alignment: .top, spacing: MemoraSpacing.md))
-    return layout {
-      VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
-        ProjectRecordRow(meeting: meeting, showsReadyStatus: false, showsSourceIcon: false,
-          selectionState: isSelecting ? isSelected : nil)
-        if let sharedBy {
-          SharedOwnerBadge(ownerName: sharedBy)
-        }
-        if SampleContent.isSample(meetingID: meeting.id), !meeting.displayTitle.contains("（サンプル）") {
-          SampleTag()
-        }
-        if showsPreview, hasPreview {
-          Text(meeting.shortSummaryPreview)
-            .font(MemoraTypography.secondary)
-            .foregroundStyle(MemoraPalette.textSecondary)
-            .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
-        }
+    VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
+      ProjectRecordRow(meeting: meeting, showsReadyStatus: false, showsSourceIcon: false,
+        selectionState: isSelecting ? isSelected : nil,
+        minimumHeight: showsPreview ? ProjectLayout.minimumRowHeight : 56)
+      if let sharedBy {
+        SharedOwnerBadge(ownerName: sharedBy)
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
+      if SampleContent.isSample(meetingID: meeting.id), !meeting.displayTitle.contains("（サンプル）") {
+        SampleTag()
+      }
+      if showsPreview, hasPreview {
+        Text(meeting.shortSummaryPreview)
+          .font(MemoraTypography.secondary)
+          .foregroundStyle(MemoraPalette.textSecondary)
+          .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
+      }
     }
-    .frame(maxWidth: .infinity, minHeight: ProjectLayout.minimumRowHeight, alignment: .leading)
+    .frame(maxWidth: .infinity, alignment: .leading)
     .fixedSize(horizontal: false, vertical: true)
     .foregroundStyle(.primary)
     .contentShape(Rectangle())

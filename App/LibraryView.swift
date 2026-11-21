@@ -471,13 +471,17 @@ struct LibraryView: View {
   /// One file row. Tapping opens it, or selects it while a selection is being
   /// made. A left swipe starts selecting with this record already chosen.
   private func meetingRow(_ meeting: Meeting) -> some View {
-    Group {
-      if layout == .card {
-        cardRow(meeting)
-      } else {
-        listRow(meeting)
-      }
+    Button {
+      openOrSelect(meeting)
+    } label: {
+      LibraryRecordRow(meeting: meeting, showsPreview: layout == .card,
+        isSelecting: isSelectionMode, isSelected: selectedMeetingIDs.contains(meeting.id))
     }
+    .buttonStyle(.plain)
+    .listRowInsets(recordRowInsets)
+    .listRowSeparator(layout == .card ? .visible : .hidden, edges: .bottom)
+    .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+    .listRowBackground(Color.clear)
     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
       if !isSelectionMode {
         Button(role: .destructive) {
@@ -517,36 +521,10 @@ struct LibraryView: View {
     }
   }
 
-  private func cardRow(_ meeting: Meeting) -> some View {
-    Button {
-      openOrSelect(meeting)
-    } label: {
-      LibraryRecordRow(
-        meeting: meeting,
-        showsPreview: true,
-        isSelecting: isSelectionMode,
-        isSelected: selectedMeetingIDs.contains(meeting.id)
-      )
-    }
-    .buttonStyle(.plain)
-    .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset, bottom: 8, trailing: ProjectLayout.horizontalInset))
-    .listRowSeparator(.visible, edges: .bottom)
-    .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
-    .listRowBackground(Color.clear)
-  }
-
-  private func listRow(_ meeting: Meeting) -> some View {
-    Button {
-      openOrSelect(meeting)
-    } label: {
-      LibraryRecordRow(meeting: meeting, showsPreview: false,
-        isSelecting: isSelectionMode, isSelected: selectedMeetingIDs.contains(meeting.id))
-    }
-    .buttonStyle(.plain)
-    .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset, bottom: 8, trailing: ProjectLayout.horizontalInset))
-    .listRowSeparator(.visible, edges: .bottom)
-    .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
-    .listRowBackground(Color.clear)
+  private var recordRowInsets: EdgeInsets {
+    let vertical = layout == .card ? MemoraSpacing.sm : MemoraSpacing.xs
+    return EdgeInsets(top: vertical, leading: ProjectLayout.horizontalInset,
+      bottom: vertical, trailing: ProjectLayout.horizontalInset)
   }
 
   /// A teammate's record: opens read-only, with none of the actions that
@@ -560,8 +538,8 @@ struct LibraryView: View {
         .matchedTransitionSource(id: record.id, in: zoomNamespace)
     }
     .buttonStyle(.plain)
-    .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset, bottom: 8, trailing: ProjectLayout.horizontalInset))
-    .listRowSeparator(.visible, edges: .bottom)
+    .listRowInsets(recordRowInsets)
+    .listRowSeparator(layout == .card ? .visible : .hidden, edges: .bottom)
     .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
     .listRowBackground(Color.clear)
   }

@@ -19,37 +19,36 @@ struct FileSidebarView: View {
       )
 
       ScrollView {
-        VStack(spacing: 0) {
-          SidebarRow(title: "ライブラリ", symbol: .folder,
-            isSelected: isSelected(.library)) {
-            onSelectTab(.library)
+        VStack(spacing: MemoraSpacing.lg) {
+          VStack(spacing: 0) {
+            SidebarRow(title: "ライブラリ", symbol: .folder,
+              isSelected: isSelected(.library)) {
+              onSelectTab(.library)
+            }
+            SidebarRow(title: "ジャーナル", symbol: .calendar,
+              isSelected: isSelected(.home)) {
+              onSelectTab(.home)
+            }
+            SidebarRow(title: "Ask AI", symbol: .sparkles,
+              isSelected: !model.isToolsPresented && model.selectedTab == .askAI) {
+              onSelectTab(.askAI)
+            }
+            SidebarRow(title: "マーケットプレイス", symbol: .bag, isSelected: model.isToolsPresented) {
+              onOpenTools()
+            }
           }
-          SidebarRow(title: "ジャーナル", symbol: .calendar,
-            isSelected: isSelected(.home)) {
-            onSelectTab(.home)
+          VStack(spacing: 0) {
+            SidebarRow(title: "タスク", symbol: .checkmarkSquare,
+              isSelected: isSelected(.home, route: .tasks), action: onOpenTasks)
+            SidebarRow(title: "資料", symbol: .docRichtext,
+              isSelected: isSelected(.library, route: .documents), action: onOpenDocuments)
+            SidebarRow(title: "人物", symbol: .person2,
+              isSelected: isSelected(.library, route: .people), action: onOpenPeople)
           }
-          SidebarRow(title: "Ask AI", symbol: .sparkles,
-            isSelected: !model.isToolsPresented && model.selectedTab == .askAI) {
-            onSelectTab(.askAI)
-          }
-          SidebarRow(title: "マーケットプレイス", symbol: .bag, isSelected: model.isToolsPresented) {
-            onOpenTools()
-          }
-
-          Divider()
-            .overlay(MemoraPalette.border)
-            .padding(.vertical, MemoraSpacing.lg)
-            .padding(.horizontal, MemoraSpacing.sm)
-
-          SidebarRow(title: "タスク", symbol: .checkmarkSquare,
-            isSelected: isSelected(.home, route: .tasks), action: onOpenTasks)
-          SidebarRow(title: "資料", symbol: .docRichtext,
-            isSelected: isSelected(.library, route: .documents), action: onOpenDocuments)
-          SidebarRow(title: "人物", symbol: .person2,
-            isSelected: isSelected(.library, route: .people), action: onOpenPeople)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, MemoraSpacing.screen)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("sidebar.navigation")
       }
       .scrollIndicators(.hidden)
@@ -95,7 +94,7 @@ private struct SidebarRow: View {
       HStack(spacing: MemoraSpacing.md) {
         MemoraInterfaceIcon(icon: symbol)
         Text(title)
-          .font(.body)
+          .font(.body.weight(isSelected ? .semibold : .regular))
           .fixedSize(horizontal: false, vertical: true)
           .frame(maxWidth: .infinity, alignment: .leading)
       }
@@ -103,7 +102,7 @@ private struct SidebarRow: View {
       .padding(.vertical, MemoraSpacing.sm)
       .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
       .padding(.horizontal, MemoraSpacing.sm)
-      .background(isSelected ? MemoraPalette.card : Color.clear,
+      .background(isSelected ? MemoraPalette.selection : Color.clear,
         in: RoundedRectangle(cornerRadius: MemoraRadius.field))
       .contentShape(Rectangle())
     }

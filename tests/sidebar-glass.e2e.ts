@@ -19,9 +19,14 @@ test('sidebar glass: supplied logo sits above Library in both appearances', asyn
     const row = await library.boundingBox();
     expect(mark).not.toBeNull();
     expect(row).not.toBeNull();
-    expect(mark!.width).toBeCloseTo(144, 0);
-    expect(mark!.height).toBeCloseTo(144 * 68 / 410, 0);
+    expect(mark!.width).toBeCloseTo(120, 0);
+    expect(mark!.height).toBeCloseTo(120 * 65 / 346, 0);
     expect(mark!.y + mark!.height).toBeLessThan(row!.y);
+    const search = screen.getByTestId('sidebar.search');
+    await expect(search).toHaveText('ファイルを検索');
+    const scope = await search.boundingBox();
+    expect(scope!.height).toBeGreaterThanOrEqual(44);
+    expect(scope!.y + scope!.height).toBeLessThanOrEqual(row!.y);
     await expect(screen.getByTestId('sidebar.settings')).toBeVisible();
     await app.screenshot(`sidebar-logo-${appearance}`);
     await tap(screen, library);

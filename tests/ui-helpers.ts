@@ -99,7 +99,7 @@ export async function selectLibrarySection(screen: any, name: string) {
 
 export async function openSidebarSearch(screen: any) {
   await tapControl(screen, screen.getByLabel('メニュー').first());
-  await tapControl(screen, screen.getByRole('button', { name: '検索', exact: true }));
+  await tapControl(screen, screen.getByTestId('sidebar.search'));
   const input = screen.getByRole('textbox', { visible: true }).first();
   await expect(input).toBeVisible();
   await stableBounds(input);

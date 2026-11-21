@@ -33,9 +33,10 @@ test('Library selection keeps wrapped text inside its rows through repeated mode
   const diagnostics = screen.getByTestId('settings.category.diagnostics');
   await scrollToControl(screen, diagnostics);
   await tapControl(diagnostics);
-  const reset = screen.getByRole('button', { name: 'デモデータを入れ直す（今の内容を置き換えます）', exact: true });
+  const reset = screen.getByRole('button', { name: 'デモデータに置き換える', exact: true });
   await scrollToControl(screen, reset);
   await tapControl(reset);
+  await tapControl(screen.getByRole('button', { name: '置き換える', exact: true }));
   await tapControl(screen.getByTestId('BackButton'));
   await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }));
 
@@ -76,4 +77,16 @@ test('Library selection keeps wrapped text inside its rows through repeated mode
     await tapControl(screen.getByRole('button', { name: 'キャンセル', exact: true }));
     await verifyRowLayout(screen);
   }
+
+  await tapControl(screen.getByLabel('表示と並べ替え', { exact: true }));
+  await tapControl(screen.getByRole('button', { name: '表示', exact: true }));
+  await tapControl(screen.getByRole('button', { name: 'コンパクト', exact: true }));
+  const compact = screen.getByRole('button', { name: new RegExp(`^${longTitle}、`) });
+  await expect(compact).toBeVisible();
+  await expect(compact.getByText(/次期リリースは/)).not.toBeVisible();
+  const compactBox = await compact.boundingBox();
+  if (!compactBox) throw new Error('Compact record has no frame');
+  expect(compactBox.height).toBeLessThan(before.rowBox.height);
+  expect(compactBox.height).toBeGreaterThanOrEqual(44);
+  await app.screenshot('library-compact');
 });

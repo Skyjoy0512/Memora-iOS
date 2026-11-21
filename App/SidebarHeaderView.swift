@@ -5,30 +5,34 @@ struct SidebarHeaderView: View {
   var onSearch: () -> Void
 
   var body: some View {
-    HStack(spacing: MemoraSpacing.sm) {
+    VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
       SidebarBrandMark()
         .frame(minHeight: MemoraSpacing.touchTarget)
-        .accessibilityLabel("Memora")
-
-      Spacer(minLength: 0)
+        .padding(.leading, MemoraSpacing.sm)
 
       Button {
         InteractionFeedback.shared.send(.tap)
         onSearch()
       } label: {
-        Label("検索", icon: .magnifyingglass)
-          .labelStyle(.iconOnly)
-          .frame(width: MemoraSpacing.touchTarget, height: MemoraSpacing.touchTarget)
-          .contentShape(Circle())
-          .memoraGlass(in: Circle(), interactive: true)
+        HStack(spacing: MemoraSpacing.md) {
+          MemoraInterfaceIcon(icon: .magnifyingglass)
+          Text("\(searchDestinationTitle)を検索")
+            .font(MemoraTypography.secondary)
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, MemoraSpacing.sm)
+        .padding(.vertical, MemoraSpacing.xs)
+        .frame(minHeight: MemoraSpacing.touchTarget)
+        .background(MemoraPalette.card, in: RoundedRectangle(cornerRadius: MemoraRadius.field))
+        .contentShape(Rectangle())
       }
-      .accessibilityHint("\(searchDestinationTitle)を検索します")
       .accessibilityIdentifier("sidebar.search")
     }
-    .buttonStyle(.plain)
+    .buttonStyle(MemoraQuietButtonStyle())
     .foregroundStyle(MemoraPalette.textPrimary)
-    .padding(.leading, MemoraSpacing.section)
-    .padding(.trailing, MemoraSpacing.screen)
+    .padding(.horizontal, MemoraSpacing.screen)
     .padding(.vertical, MemoraSpacing.md)
   }
 }
