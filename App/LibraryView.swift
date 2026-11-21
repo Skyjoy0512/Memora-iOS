@@ -112,7 +112,7 @@ struct LibraryView: View {
 
     NavigationStack(path: $model.libraryPath) {
       VStack(spacing: 0) {
-        if !isSearching, !isSelectionMode {
+        if !isSearching {
           HStack(spacing: 0) {
             librarySectionPicker
             if !typeSize.isAccessibilitySize {
@@ -128,6 +128,8 @@ struct LibraryView: View {
           .padding(.top, MemoraSpacing.sm)
           .padding(.trailing, MemoraSpacing.md)
           .padding(.bottom, MemoraSpacing.sm)
+          // Keep the list at the same origin when its native swipe commits.
+          .disabled(isSelectionMode)
         }
         Group {
           if model.librarySection == .files {
@@ -327,6 +329,7 @@ struct LibraryView: View {
           .padding(.horizontal, MemoraSpacing.screen)
       }
       // The row pages edge to edge; its own margins line the cards up.
+      .disabled(isSelectionMode)
       .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 12, trailing: 0))
       .listRowSeparator(.hidden)
       .listRowBackground(Color.clear)
@@ -334,6 +337,7 @@ struct LibraryView: View {
 
     if model.isRecording {
       ActiveRecordingStrip()
+        .disabled(isSelectionMode)
         .listRowInsets(EdgeInsets(top: 0, leading: 18, bottom: 10, trailing: 18))
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
@@ -359,15 +363,17 @@ struct LibraryView: View {
     let resultCount = count + savedSources.count
     let isSearchingSourceText = CollectionSearch.hasQuery(query)
       && statusFilter == .all && !model.projectSources.isEmpty && !hasCompletedSourceSearch
-    let hasSharedRecords = !isSearching && !isSelectionMode && statusFilter == .all && !sharedRecords.isEmpty
-    let hasSavedSources = !savedSources.isEmpty && !isAwaitingQuery && !isSelectionMode
+    let hasSharedRecords = !isSearching && statusFilter == .all && !sharedRecords.isEmpty
+    let hasSavedSources = !savedSources.isEmpty && !isAwaitingQuery
 
     return List {
-      if !isSearching && !isSelectionMode {
+      // Keep surrounding rows in place while the native swipe closes.
+      if !isSearching {
         listHeaderRows
 
         if model.hasSampleContent {
           SampleNoticeRow()
+            .disabled(isSelectionMode)
             .listRowInsets(EdgeInsets(top: 0, leading: 18, bottom: 10, trailing: 18))
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
@@ -375,7 +381,7 @@ struct LibraryView: View {
       }
 
       if statusFilter != .all {
-        filterChipRow
+        filterChipRow.disabled(isSelectionMode)
       }
 
       if sections.isEmpty && !hasSavedSources && !hasSharedRecords {
@@ -426,7 +432,7 @@ struct LibraryView: View {
         if hasSharedRecords {
           Section {
             ForEach(sharedRecords) { record in
-              sharedRow(record)
+              sharedRow(record).disabled(isSelectionMode)
             }
           } header: {
             Label("チームから共有", icon: .person2)
@@ -443,6 +449,7 @@ struct LibraryView: View {
                 ProjectSourceRow(source: source)
                   .matchedTransitionSource(id: source.id, in: zoomNamespace)
               }
+                .disabled(isSelectionMode)
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset,
                   bottom: 8, trailing: ProjectLayout.horizontalInset))
@@ -468,8 +475,7 @@ struct LibraryView: View {
         }
       }
     }
-    // UICollectionView must measure the settled row layout, not interpolate
-    // cached heights while selection removes headers and changes safe areas.
+    // The selection footer changes safe areas while native swipe is settling.
     .transaction(value: isSelectionMode) { transaction in
       transaction.animation = nil
       transaction.disablesAnimations = true
@@ -509,12 +515,13 @@ struct LibraryView: View {
   }
 
   /// One file row. Tapping opens it, or selects it while a selection is being
-  /// made. A left swipe starts selecting with this record already chosen.
+  /// made. Swiping from the leading edge starts with this record selected.
   private func meetingRow(_ meeting: Meeting) -> some View {
     Button {
       openOrSelect(meeting)
     } label: {
       LibraryRecordRow(meeting: meeting, showsPreview: layout == .card,
+        reservesSelectionSpace: true,
         isSelecting: isSelectionMode, isSelected: selectedMeetingIDs.contains(meeting.id))
     }
     .buttonStyle(.plain)

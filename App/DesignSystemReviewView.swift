@@ -22,7 +22,8 @@ struct DesignSystemReviewView: View {
               selectedFiles.remove(meeting.id)
             }
           } label: {
-            LibraryRecordRow(meeting: meeting, showsPreview: true, isSelecting: isSelectingFiles,
+            LibraryRecordRow(meeting: meeting, showsPreview: true, reservesSelectionSpace: true,
+              isSelecting: isSelectingFiles,
               isSelected: selectedFiles.contains(meeting.id))
           }
           .buttonStyle(.plain)

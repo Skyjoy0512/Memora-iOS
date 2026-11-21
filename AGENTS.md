@@ -71,7 +71,10 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   share one `libraryPath`. Persist the selected `LibrarySection` as a setting.
   Library records omit source icons and align titles, metadata and previews to
   the row's leading edge. Multiple selection puts its mark at the trailing edge
-  of the metadata row; never change title width or animate wrapped row heights.
+  of the metadata row. Reserve its space before selection. Keep the collection's
+  top controls and surrounding rows in place and disable non-selection actions
+  while selecting. Moving the collection during native swipe dismissal leaves
+  the swiped row at its old position over the new rows.
   Enter and leave selection in one non-animated transaction, including
   `isFileSelectionActive`; do not defer that flag to an `onChange`. The selection
   actions use a capsule-shaped glass bar.

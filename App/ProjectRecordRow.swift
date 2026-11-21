@@ -4,6 +4,7 @@ struct ProjectRecordRow: View {
   var meeting: Meeting
   var showsReadyStatus = false
   var showsSourceIcon = true
+  var reservesSelectionSpace = false
   var selectionState: Bool? = nil
   var minimumHeight: CGFloat = ProjectLayout.minimumRowHeight
 
@@ -32,10 +33,12 @@ struct ProjectRecordRow: View {
             .font(MemoraTypography.metadata)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
-          // Selection must not take width away from a wrapped title.
-          if let selectionState {
-            Image(icon: selectionState ? .checkmarkCircleFill : .circle, size: 17)
+          // A swipe can still be settling when selection starts. Keep the
+          // metadata's wrapping and the cell's measured height stable.
+          if reservesSelectionSpace || selectionState != nil {
+            Image(icon: selectionState == true ? .checkmarkCircleFill : .circle, size: 17)
               .frame(width: ProjectLayout.iconSide, height: 20)
+              .opacity(selectionState == nil ? 0 : 1)
               .accessibilityHidden(true)
           }
         }

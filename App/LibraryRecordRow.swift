@@ -3,6 +3,7 @@ import SwiftUI
 struct LibraryRecordRow: View {
   var meeting: Meeting
   var showsPreview: Bool
+  var reservesSelectionSpace = false
   var isSelecting = false
   var isSelected = false
   var sharedBy: String?
@@ -12,6 +13,7 @@ struct LibraryRecordRow: View {
   var body: some View {
     VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
       ProjectRecordRow(meeting: meeting, showsReadyStatus: false, showsSourceIcon: false,
+        reservesSelectionSpace: reservesSelectionSpace,
         selectionState: isSelecting ? isSelected : nil,
         minimumHeight: showsPreview ? ProjectLayout.minimumRowHeight : 56)
       if let sharedBy {
