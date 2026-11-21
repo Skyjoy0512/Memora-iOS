@@ -12,26 +12,25 @@ struct ProjectListRow: View {
   @Environment(\.dynamicTypeSize) private var typeSize
 
   var body: some View {
-    HStack(alignment: .top, spacing: 0) {
+    HStack(alignment: typeSize.isAccessibilitySize ? .top : .center, spacing: 0) {
       NavigationLink(value: LibraryRoute.space(space.id)) {
-        let layout = typeSize.isAccessibilitySize
-          ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.sm))
-          : AnyLayout(HStackLayout(alignment: .top, spacing: MemoraSpacing.md))
-        layout {
+        HStack(alignment: typeSize.isAccessibilitySize ? .top : .center, spacing: MemoraSpacing.md) {
           MemoraInterfaceIcon(icon: space.icon)
-          VStack(alignment: .leading, spacing: 4) {
+          VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
             Text(space.name)
-              .font(.body.weight(.semibold))
+              .font(.body.weight(.medium))
               .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
               .fixedSize(horizontal: false, vertical: true)
-            Text(metadata)
-              .font(.footnote)
-              .foregroundStyle(.secondary)
-              .fixedSize(horizontal: false, vertical: true)
+            if recordCount > 0 { detail("記録\(recordCount)件") }
+            if typeSize.isAccessibilitySize, let latestActivity { detail(latestActivity) }
           }
           .frame(maxWidth: .infinity, alignment: .leading)
+          if !typeSize.isAccessibilitySize, let latestActivity {
+            detail(latestActivity).fixedSize(horizontal: true, vertical: false)
+          }
         }
-        .frame(maxWidth: .infinity, minHeight: ProjectLayout.minimumRowHeight, alignment: .leading)
+        .padding(.vertical, MemoraSpacing.xs)
+        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
         .foregroundStyle(.primary)
         .contentShape(Rectangle())
         .matchedTransitionSource(id: space.id, in: zoomNamespace)
@@ -51,15 +50,23 @@ struct ProjectListRow: View {
       .accessibilityLabel("\(space.name)の操作")
       .tint(MemoraPalette.textPrimary)
     }
-    .overlay(alignment: .bottom) {
-      Divider().padding(.leading, ProjectLayout.iconSide + 12).accessibilityHidden(true)
-    }
+  }
+
+  private func detail(_ value: String) -> some View {
+    Text(value)
+      .font(MemoraTypography.metadata)
+      .foregroundStyle(MemoraPalette.textSecondary)
+      .fixedSize(horizontal: false, vertical: true)
+  }
+
+  private var latestActivity: String? {
+    latestRecordDate.map(MemoraFormat.relativeDate)
   }
 
   private var metadata: String {
     guard recordCount > 0 else { return "まだ記録がありません" }
-    guard let latestRecordDate else { return "\(recordCount)件" }
-    return "\(recordCount)件 · \(MemoraFormat.relativeDate(latestRecordDate))"
+    guard let latestActivity else { return "記録\(recordCount)件" }
+    return "記録\(recordCount)件、最新の記録は\(latestActivity)"
   }
 
   @ViewBuilder private var actions: some View {

@@ -7,7 +7,7 @@ afterEach(async ({ device }) => { await device.setAppearance('light'); });
 test('agent entry: suggestions stage an editable request without sending', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await tapTab(screen, 'Ask AI');
-  await expect(screen.getByText('あなたのAIエージェント', { exact: true })).toBeVisible();
+  await expect(screen.getByTestId('ai.agentSuggestions')).toBeVisible();
   await expect(screen.getByTestId(/^ai.suggestion\./)).toHaveCount(3);
   await app.screenshot('agent-suggestions-light');
   await device.setAppearance('dark');
@@ -23,7 +23,7 @@ test('agent entry: suggestions stage an editable request without sending', async
   await tapTab(screen, 'Ask AI');
   await expect(input).toHaveValue(/宛先は推測せず/);
   await expect(screen.getByLabel('新しいチャット')).toBeDisabled();
-  await expect(screen.getByTestId('ai.suggestion.tasks')).toBeDisabled();
+  await expect(screen.getByTestId('ai.agentSuggestions')).not.toBeVisible();
   await expect(input).toHaveValue(stagedDraft);
   await expect(screen.getByLabel('新しいチャット')).toBeDisabled();
 });

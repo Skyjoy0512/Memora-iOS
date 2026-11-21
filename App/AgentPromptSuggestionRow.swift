@@ -14,16 +14,22 @@ struct AgentPromptSuggestionRow: View {
 
   var body: some View {
     Button(action: onSelect) {
-      HStack(spacing: 8) {
-        Image(icon: icon, size: 20).accessibilityHidden(true)
-        Text(suggestion.title).font(.body)
+      HStack(spacing: MemoraSpacing.md) {
+        Image(icon: icon, size: 18)
+          .foregroundStyle(MemoraPalette.textSecondary)
+          .accessibilityHidden(true)
+        Text(suggestion.title).font(.subheadline)
+          .foregroundStyle(MemoraPalette.textPrimary)
+          .multilineTextAlignment(.leading)
           .fixedSize(horizontal: false, vertical: true)
+          .frame(maxWidth: .infinity, alignment: .leading)
+        Image(icon: .chevronRight, size: 12)
+          .foregroundStyle(MemoraPalette.textSecondary)
+          .accessibilityHidden(true)
       }
-      .foregroundStyle(MemoraPalette.textSecondary)
-      .padding(.horizontal, MemoraSpacing.lg).padding(.vertical, MemoraSpacing.md)
+      .padding(.vertical, MemoraSpacing.sm)
       .frame(minHeight: MemoraSpacing.touchTarget, alignment: .leading)
-      .background(MemoraPalette.card, in: Capsule())
-      .contentShape(Capsule())
+      .contentShape(Rectangle())
     }
     .buttonStyle(MemoraQuietButtonStyle())
     .accessibilityValue(suggestion.sourceTitle ?? "")

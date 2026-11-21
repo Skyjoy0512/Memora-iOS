@@ -337,6 +337,10 @@ test('the project list filters all, mine and shared', async ({ app, device, scre
   await tapTab(screen, 'ライブラリ');
   await tapControl(screen, screen.getByRole('button', { name: 'プロジェクト', exact: true }));
 
+  await tapControl(screen.getByRole('button', { name: 'プロジェクトを検索', exact: true }));
+  await expect(screen.getByTestId('collection.search.input')).toBeFocused();
+  await tapControl(screen.getByTestId('collection.search.cancel'));
+
   const options = screen.getByLabel('プロジェクトの表示オプション');
   await tapControl(screen, options);
   await tapControl(screen, screen.getByRole('button', { name: '自分', exact: true }).last());

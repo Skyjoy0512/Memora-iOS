@@ -8,7 +8,7 @@ struct ProjectsView: View {
   @Binding var query: String
   var isSearching: Bool
   var zoomNamespace: Namespace.ID
-  var onSearch: () -> Void = {}
+  var onSearch: () -> Void
   @State private var renameTarget: MemoraSpace?
   @State private var deleteTarget: MemoraSpace?
   @State private var isShareInboxPresented = false
@@ -25,7 +25,7 @@ struct ProjectsView: View {
     let visibleProjects = isAwaitingQuery || filter == .shared ? [] : projects
     let visibleShared = isAwaitingQuery || filter == .mine ? [] : shared
     let total = visibleProjects.count + visibleShared.count
-    let recent = !isSearching && recentFirst && visibleProjects.count > 3
+    let recent = !isSearching && recentFirst && !visibleProjects.isEmpty
       ? Array(model.recentProjects.filter { matchingIDs.contains($0.id) }.prefix(3)) : []
     let recentIDs = Set(recent.map(\.id))
     let remaining = visibleProjects.filter { !recentIDs.contains($0.id) }
@@ -36,16 +36,21 @@ struct ProjectsView: View {
           Button("共有からの取り込みを確認") { isShareInboxPresented = true }
             .font(MemoraTypography.secondary).frame(minHeight: 44).tint(MemoraPalette.textPrimary)
         }
-        HStack {
-          if total > 0 {
-            Text(isSearching ? "検索結果 \(total)件" : "\(total)件")
+        HStack(spacing: MemoraSpacing.xs) {
+          if isSearching && total > 0 {
+            Text("検索結果 \(total)件")
               .font(MemoraTypography.secondary)
               .foregroundStyle(.secondary)
+          } else if filter == .all && !isSearching && total > 0 {
+            Text("\(total)件")
+              .font(MemoraTypography.metadata)
+              .foregroundStyle(MemoraPalette.textSecondary)
               .accessibilityLabel("プロジェクト\(total)件")
-          } else if filter != .all {
-            Text(filter.title).font(MemoraTypography.secondary).foregroundStyle(.secondary)
           }
-          Spacer()
+          Spacer(minLength: 0)
+          if !isSearching {
+            MemoraIconButton("プロジェクトを検索", icon: .magnifyingglass, action: onSearch)
+          }
           orderMenu
         }
         if filter != .all {
@@ -58,14 +63,14 @@ struct ProjectsView: View {
           }
         }
         if !recent.isEmpty {
-          heading("最近使用", count: nil)
+          heading("最近開いたプロジェクト", count: nil)
           projectRows(recent)
         }
 
-        if !visibleProjects.isEmpty {
-          if !recent.isEmpty, !remaining.isEmpty { heading("その他のプロジェクト", count: nil) }
+        if !remaining.isEmpty {
+          if !recent.isEmpty { heading("その他のプロジェクト", count: nil) }
           projectRows(remaining)
-        } else if visibleShared.isEmpty {
+        } else if visibleProjects.isEmpty && visibleShared.isEmpty {
           if isAwaitingQuery {
             CollectionSearchState(title: "プロジェクトを検索",
               message: "プロジェクト名や、共有した人の名前から探せます。", isEmbedded: true)
@@ -154,8 +159,6 @@ struct ProjectsView: View {
 
   private var orderMenu: some View {
     Menu {
-      Button("プロジェクトを検索", icon: .magnifyingglass, action: onSearch)
-      Divider()
       Button("プロジェクトを作成", icon: .folder) { model.isFileCreationPresented = true }
         .disabled(model.isRestoring || model.isStoreProtected)
       Divider()
@@ -166,7 +169,7 @@ struct ProjectsView: View {
         Picker("並べ替え", selection: $order) {
           ForEach(ProjectListOrder.allCases) { Text($0.title).tag($0) }
         }
-        Toggle("最近使用を先に", isOn: $recentFirst)
+        Toggle("最近開いたものを先に", isOn: $recentFirst)
       }
     } label: {
       Image(icon: .ellipsis, size: MemoraIconMetrics.glyph)

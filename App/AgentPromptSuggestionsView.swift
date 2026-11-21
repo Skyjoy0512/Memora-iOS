@@ -6,16 +6,18 @@ struct AgentPromptSuggestionsView: View {
 
   var body: some View {
     let suggestions = model.agentPromptSuggestions
+    let showsSuggestions = !isComposing && model.composerDraft.isEmpty && model.composerAttachment == nil
     GeometryReader { proxy in
-      ZStack {
-        MemoraBrandMark(width: min(190, proxy.size.width * 0.46))
-          .opacity(0.10)
-          .accessibilityHidden(true)
-          .position(x: proxy.size.width / 2,
-            y: max(32, proxy.size.height / 2 - 32))
-        if !isComposing && model.composerDraft.isEmpty && model.composerAttachment == nil {
-          ScrollView {
-            VStack(alignment: .leading, spacing: MemoraSpacing.md) {
+      let bottomInset = model.bottomContentClearance
+      ScrollView {
+        VStack(spacing: 0) {
+          Spacer(minLength: MemoraSpacing.section)
+          MemoraBrandMark(width: min(96, proxy.size.width * 0.26))
+            .opacity(0.26)
+            .accessibilityHidden(true)
+          Spacer(minLength: MemoraSpacing.section)
+          if showsSuggestions && !suggestions.isEmpty {
+            VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
               ForEach(suggestions.prefix(3)) { suggestion in
                 AgentPromptSuggestionRow(suggestion: suggestion) {
                   InteractionFeedback.shared.send(.selection)
@@ -25,17 +27,17 @@ struct AgentPromptSuggestionsView: View {
               }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, MemoraSpacing.lg).padding(.top, 12)
-            .padding(.bottom, model.bottomContentClearance)
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("ai.agentSuggestions")
           }
-          .scrollBounceBehavior(.basedOnSize)
-          .fixedSize(horizontal: false, vertical: true)
-          .frame(maxWidth: MemoraSpacing.readingWidth)
-          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-          .accessibilityIdentifier("ai.agentSuggestions")
         }
+        .frame(minHeight: max(0, proxy.size.height - bottomInset))
+        .padding(.horizontal, MemoraSpacing.screen)
+        .padding(.bottom, bottomInset)
+        .frame(maxWidth: MemoraSpacing.messageWidth)
+        .frame(maxWidth: .infinity)
       }
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .scrollBounceBehavior(.basedOnSize)
     }
   }
 }

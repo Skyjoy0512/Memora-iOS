@@ -32,8 +32,9 @@ struct LibraryView: View {
 
   private var librarySectionPicker: some View {
     @Bindable var model = model
-    return MemoraTextTabBar(items: LibrarySection.allCases, selection: $model.librarySection) { $0.title }
-      .accessibilityLabel("ライブラリの表示")
+    return MemoraTextTabBar(items: LibrarySection.allCases, selection: $model.librarySection,
+      horizontalPadding: typeSize.isAccessibilitySize ? MemoraSpacing.sm : MemoraSpacing.screen) { $0.title }
+        .accessibilityLabel("ライブラリの表示")
   }
 
   private var fileViewOptionsMenu: some View {
@@ -85,7 +86,7 @@ struct LibraryView: View {
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(.top, MemoraSpacing.md)
-          .padding(.trailing, MemoraSpacing.screen)
+          .padding(.trailing, model.librarySection == .files ? MemoraSpacing.screen : 0)
           .padding(.bottom, MemoraSpacing.sm)
         }
         Group {
