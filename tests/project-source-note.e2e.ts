@@ -34,5 +34,11 @@ test('a note is saved, extracted, listed as text and restored after restart', { 
   await tapControl(screen.getByRole('button', { name: '参考資料', exact: true }));
   await tapControl(screen.getByRole('button', { name: new RegExp('^' + marker + '、メモ') }).last());
   await expect(screen.getByText(bodyText, { exact: true })).toBeVisible({ timeout: 30_000 });
+  await expect(screen.getByTestId(/^root\.tab\./)).toHaveCount(0);
+  await expect(screen.getByRole('button', { name: '追加メニュー', exact: true })).not.toBeVisible();
+  await expect(screen.getByTestId('ai.composer.input')).toHaveValue('このプロジェクトに質問');
   await app.screenshot('note-entry-restored');
+  await tapControl(screen.getByTestId('BackButton'));
+  await expect(screen.getByTestId('root.tab.files')).toBeSelected();
+  await expect(screen.getByRole('button', { name: '参考資料', exact: true, selected: true })).toBeVisible();
 });

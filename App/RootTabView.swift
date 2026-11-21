@@ -30,8 +30,6 @@ struct RootTabView: View {
   /// The full-bleed drawer hides the safe area from SwiftUI, so the floating
   /// controls re-add the home indicator inset themselves.
   @State private var safeAreaInsets = EdgeInsets()
-  @State private var activeTabContentBottom: CGFloat?
-  @State private var tabBarClearance: CGFloat = 0
 
   var body: some View {
     @Bindable var model = model
@@ -292,23 +290,22 @@ struct RootTabView: View {
 
   private var tabSurface: some View {
     @Bindable var model = model
-    return TabView(selection: $model.selectedTab) {
-      rootTab(.library) { LibraryView(onOpenSidebar: openSidebar).scrollDismissesKeyboard(.immediately) }
-      rootTab(.home) { HomeView(onOpenSidebar: openSidebar).scrollDismissesKeyboard(.immediately) }
-      rootTab(.askAI) { SearchView(isComposing: isComposing, onOpenSidebar: openSidebar) }
-    }
-    .tabBarMinimizeBehavior(.never)
-    .tint(MemoraPalette.textPrimary)
-    .overlay {
-      GeometryReader { geometry in
-        let bottom = geometry.frame(in: .global).maxY
-        let clearance = showsPrimaryTabs ? max(0, bottom - (activeTabContentBottom ?? bottom)) : 0
-        bottomControls
-          .padding(.bottom, clearance)
-          .frame(maxHeight: .infinity, alignment: .bottom)
-          .onChange(of: clearance, initial: true) { _, value in tabBarClearance = value }
+    return VStack(spacing: 0) {
+      TabView(selection: $model.selectedTab) {
+        rootTab(.library) { LibraryView(onOpenSidebar: openSidebar).scrollDismissesKeyboard(.immediately) }
+        rootTab(.home) { HomeView(onOpenSidebar: openSidebar).scrollDismissesKeyboard(.immediately) }
+        rootTab(.askAI) { SearchView(isComposing: isComposing, onOpenSidebar: openSidebar) }
       }
-      .allowsHitTesting(shouldShowComposer || showsPlaybackBar)
+      .frame(maxHeight: .infinity)
+      .overlay(alignment: .bottom) {
+        bottomControls.allowsHitTesting(shouldShowComposer || showsPlaybackBar)
+      }
+
+      if showsPrimaryTabs {
+        RootTabBar(selection: $model.selectedTab)
+          .padding(.bottom, safeAreaInsets.bottom)
+          .background(MemoraPalette.background)
+      }
     }
     .accessibilityHidden(model.isCaptureSourcePresented)
     .background(Color(uiColor: .systemBackground))
@@ -317,18 +314,15 @@ struct RootTabView: View {
   private func rootTab<Content: View>(_ tab: RootTab, @ViewBuilder content: () -> Content) -> some TabContent<RootTab> {
     Tab(value: tab) {
       content()
-        .toolbar(showsPrimaryTabs ? .visible : .hidden, for: .tabBar)
-        .onGeometryChange(for: CGFloat?.self) { geometry in
-          // UIKit has already excluded its tab bar from this content frame.
-          tab == model.selectedTab ? geometry.frame(in: .global).maxY : nil
-        } action: { bottom in
-          if let bottom { activeTabContentBottom = bottom }
-        }
+        .toolbar(.hidden, for: .tabBar)
+        .scrollEdgeEffectStyle(.hard, for: .bottom)
     } label: {
-      Image(icon: tab.symbol, size: 22)
+      Text(tab.title)
     }
-    .accessibilityLabel(tab.title)
-    .accessibilityIdentifier("root.tab.\(tab.rawValue)")
+  }
+
+  private var tabBarClearance: CGFloat {
+    showsPrimaryTabs ? RootTabBar.height + safeAreaInsets.bottom : 0
   }
 
   private var showsPrimaryTabs: Bool {
@@ -386,9 +380,8 @@ struct RootTabView: View {
 
     }
     .padding(.top, 4)
-    // The drawer is full-bleed. Only add the home inset when neither UIKit's
-    // tab bar nor the keyboard is providing the bottom edge.
-    .padding(.bottom, showsPrimaryTabs ? MemoraSpacing.sm : (isKeyboardVisible ? 14 : safeAreaInsets.bottom))
+    // The tab row reserves the home inset whenever it is visible.
+    .padding(.bottom, showsPrimaryTabs ? MemoraSpacing.xs : (isKeyboardVisible ? 14 : safeAreaInsets.bottom))
     .background {
       if shouldShowComposer {
         ComposerBackdrop()

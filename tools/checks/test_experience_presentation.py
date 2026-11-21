@@ -66,7 +66,7 @@ class ExperiencePresentationChecks(unittest.TestCase):
         home = (APP / "HomeView.swift").read_text()
         self.assertIn('accessibilityLabel("今日に戻る")', home)
         self.assertIn("selectedDate = Calendar.current.startOfDay(for: .now)", home)
-        self.assertIn(".disabled(isViewingToday)", home)
+        self.assertIn("if !isViewingToday {", home)
         self.assertIn("AnyLayout(VStackLayout", (APP / "HomeActivityLinks.swift").read_text())
         self.assertIn("JournalInsertionTime.suggestion(on: selectedDate)", home)
         self.assertIn("ForEach(journalAddActions(after: index, in: timeline.items))", home)

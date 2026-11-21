@@ -51,6 +51,8 @@ test('Library selection keeps wrapped text inside its rows through repeated mode
   for (let pass = 0; pass < 3; pass++) {
     await tapControl(screen.getByLabel('表示と並べ替え', { exact: true }));
     await tapControl(screen.getByRole('button', { name: '選択', exact: true }));
+    await expect(screen.getByTestId(/^root\.tab\./)).toHaveCount(0);
+    await expect(screen.getByTestId('ai.composer.input')).not.toBeVisible();
     const selected = await verifyRowLayout(screen);
     expect(selected.titleBox.width).toBeCloseTo(before.titleBox.width, 0);
     const row = screen.getByRole('button', { name: new RegExp(`^${longTitle}、`) });
@@ -75,6 +77,7 @@ test('Library selection keeps wrapped text inside its rows through repeated mode
     expect(shareBox.height).toBeGreaterThanOrEqual(44);
     await app.screenshot(`library-selection-${pass}`);
     await tapControl(screen.getByRole('button', { name: 'キャンセル', exact: true }));
+    await expect(screen.getByTestId('root.tab.files')).toBeSelected();
     await verifyRowLayout(screen);
   }
 

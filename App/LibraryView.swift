@@ -24,6 +24,9 @@ struct LibraryView: View {
   @AppStorage("memora.files.layout") private var layout = FileListLayout.card
   @AppStorage("memora.files.sort") private var sort = FileListSort.newest
   @AppStorage("memora.files.filter") private var statusFilter = FileListFilter.all
+  @AppStorage("memora.projects.listOrder") private var projectOrder = ProjectListOrder.name
+  @AppStorage("memora.projects.recentFirst") private var showsRecentProjects = false
+  @State private var projectFilter = ProjectListFilter.all
   @State private var renameTarget: Meeting?
   @State private var moveTarget: Meeting?
   @State private var shareTarget: Meeting?
@@ -53,8 +56,10 @@ struct LibraryView: View {
 
   @ViewBuilder
   private var fileViewOptions: some View {
-    Button("ファイルを検索", icon: .magnifyingglass) { isSearching = true }
-    Divider()
+    if typeSize.isAccessibilitySize {
+      Button("ファイルを検索", icon: .magnifyingglass) { isSearching = true }
+      Divider()
+    }
     Picker("表示", selection: $layout) {
       ForEach(FileListLayout.allCases) {
         Text($0 == .card ? "プレビュー付き" : "コンパクト").tag($0)
@@ -73,20 +78,55 @@ struct LibraryView: View {
     Button("選択", icon: .checkmarkCircle) { beginSelectionMode() }
   }
 
+  private var projectViewOptionsMenu: some View {
+    Menu {
+      Button("プロジェクトを作成", icon: .folder) { model.isFileCreationPresented = true }
+        .disabled(model.isRestoring || model.isStoreProtected)
+      if typeSize.isAccessibilitySize {
+        Button("プロジェクトを検索", icon: .magnifyingglass) { isSearching = true }
+      }
+      Divider()
+      Picker("表示", selection: $projectFilter) {
+        ForEach(ProjectListFilter.allCases) { Text($0.title).tag($0) }
+      }
+      if projectFilter != .shared {
+        Picker("並べ替え", selection: $projectOrder) {
+          ForEach(ProjectListOrder.allCases) { Text($0.title).tag($0) }
+        }
+        Toggle("最近開いたものを先に", isOn: $showsRecentProjects)
+      }
+    } label: {
+      Image(icon: .ellipsis, size: MemoraIconMetrics.glyph)
+        .foregroundStyle(MemoraPalette.textPrimary)
+        .frame(width: MemoraSpacing.touchTarget, height: MemoraSpacing.touchTarget)
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .tint(MemoraPalette.textPrimary)
+    .accessibilityLabel("プロジェクトの表示オプション")
+    .accessibilityValue(projectOrder.title)
+  }
+
   var body: some View {
     @Bindable var model = model
 
     NavigationStack(path: $model.libraryPath) {
       VStack(spacing: 0) {
         if !isSearching, !isSelectionMode {
-          HStack(spacing: MemoraSpacing.sm) {
+          HStack(spacing: 0) {
             librarySectionPicker
-            Spacer(minLength: 0)
-            if model.librarySection == .files { fileViewOptionsMenu }
+            if !typeSize.isAccessibilitySize {
+              MemoraIconButton(model.librarySection == .files ? "ファイルを検索" : "プロジェクトを検索",
+                icon: .magnifyingglass) { isSearching = true }
+            }
+            if model.librarySection == .files {
+              fileViewOptionsMenu
+            } else {
+              projectViewOptionsMenu
+            }
           }
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(.top, MemoraSpacing.md)
-          .padding(.trailing, model.librarySection == .files ? MemoraSpacing.screen : 0)
+          .padding(.top, MemoraSpacing.sm)
+          .padding(.trailing, MemoraSpacing.md)
           .padding(.bottom, MemoraSpacing.sm)
         }
         Group {
@@ -94,7 +134,7 @@ struct LibraryView: View {
             filesPage
           } else {
             ProjectsView(query: $query, isSearching: isSearching, zoomNamespace: zoomNamespace,
-              onSearch: { isSearching = true })
+              order: projectOrder, recentFirst: showsRecentProjects, filter: $projectFilter)
           }
         }
       }
@@ -172,7 +212,7 @@ struct LibraryView: View {
           if reduceMotion {
             LibraryDestinationView(route: route)
           } else {
-            LibraryDestinationView(route: route)
+            LibraryDestinationView(route: route, zoomNamespace: zoomNamespace)
               .navigationTransition(.zoom(sourceID: id, in: zoomNamespace))
           }
         case .sharedRecord(let id):
@@ -190,7 +230,7 @@ struct LibraryView: View {
               .navigationTransition(.zoom(sourceID: id, in: zoomNamespace))
           }
         default:
-          LibraryDestinationView(route: route)
+          LibraryDestinationView(route: route, zoomNamespace: reduceMotion ? nil : zoomNamespace)
         }
       }
       .confirmationDialog(

@@ -68,7 +68,9 @@ struct RootNavigationChecks {
     precondition(!RootNavigation.searchCoversScreen(tab: .askAI, path: [], isSearching: true, isSelectingFiles: true))
     let documentPath = projectPath + [.document(UUID())]
     precondition(RootNavigation.projectID(in: documentPath) == nil)
-    precondition(RootNavigation.scope(tab: .library, path: documentPath, detailMeetingID: nil) == .global)
+    precondition(!RootNavigation.showsPrimaryTabs(in: documentPath))
+    precondition(RootNavigation.scope(tab: .library, path: documentPath, detailMeetingID: nil) == .space(project))
+    precondition(RootNavigation.scope(tab: .library, path: [.documents, .document(UUID())], detailMeetingID: nil) == .global)
     precondition(RootNavigation.scope(tab: .library, path: [], detailMeetingID: nil) == .global)
     precondition(RootNavigation.scope(tab: .library, path: [.meeting(meeting)], detailMeetingID: nil) == .file(meeting))
     precondition(RootNavigation.scope(tab: .askAI, path: projectPath, detailMeetingID: meeting) == .global)

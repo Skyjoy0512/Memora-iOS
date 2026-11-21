@@ -5,6 +5,7 @@ struct SpaceDetailView: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var spaceID: UUID
+  var zoomNamespace: Namespace.ID?
   @State private var selectedTab = ProjectWorkspaceTab.files
   @State private var isAskingAI = false
   @State private var isRenaming = false
@@ -22,7 +23,7 @@ struct SpaceDetailView: View {
       VStack(spacing: 0) {
         MemoraSectionPicker(items: ProjectWorkspaceTab.allCases, selection: $selectedTab, title: \.title)
           .padding(.horizontal, MemoraSpacing.screen)
-          .padding(.vertical, MemoraSpacing.md)
+          .padding(.vertical, MemoraSpacing.sm)
           .accessibilityIdentifier("project.workspace.sections")
         Group {
           switch selectedTab {
@@ -47,9 +48,8 @@ struct SpaceDetailView: View {
             } else {
               workspaceScroll {
                 ForEach(files) { item in
-                  ProjectWorkspaceRow(item: item)
-                    .padding(.vertical, MemoraSpacing.md)
-                    .overlay(alignment: .bottom) { Divider().overlay(MemoraPalette.border) }
+                  ProjectWorkspaceRow(item: item, zoomNamespace: zoomNamespace)
+                    .padding(.vertical, MemoraSpacing.sm)
                 }
               }
             }
@@ -59,9 +59,8 @@ struct SpaceDetailView: View {
             } else {
               workspaceScroll {
                 ForEach(sources) { item in
-                  ProjectWorkspaceRow(item: item)
-                    .padding(.vertical, MemoraSpacing.md)
-                    .overlay(alignment: .bottom) { Divider().overlay(MemoraPalette.border) }
+                  ProjectWorkspaceRow(item: item, zoomNamespace: zoomNamespace)
+                    .padding(.vertical, MemoraSpacing.sm)
                 }
               }
             }
@@ -122,16 +121,17 @@ struct SpaceDetailView: View {
     }
   }
 
-  /// One scrolling surface per tab. Rows are read from the model, never copied
-  /// between tabs, and keep the open rhythm of a chat list rather than a table.
+  /// One scrolling surface per section, with the same reading width as the composer.
   private func workspaceScroll<Rows: View>(@ViewBuilder rows: () -> Rows) -> some View {
     ScrollView {
       LazyVStack(alignment: .leading, spacing: 0) {
         rows()
       }
+      .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
       .padding(.horizontal, MemoraSpacing.screen)
-      .padding(.top, MemoraSpacing.md)
+      .padding(.top, MemoraSpacing.sm)
       .padding(.bottom, model.bottomContentClearance)
+      .frame(maxWidth: .infinity)
     }
     .scrollIndicators(.visible)
   }

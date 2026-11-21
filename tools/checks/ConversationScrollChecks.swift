@@ -35,6 +35,23 @@ enum ConversationScrollChecks {
     state.follow()
     precondition(state.followsLatest && !state.hasUnseenContent && state.contentArrived())
     precondition(!state.update(.init(offset: .nan, height: 300, contentHeight: 1_200), isUserDriven: false))
-    print("ConversationScrollChecks: passed (stream growth, lazy layout, manual reading, simultaneous scroll/resize, new-answer reset, invalid geometry)")
+
+    var stream = ConversationScrollState()
+    precondition(stream.update(.init(offset: 760, height: 300, contentHeight: 1_000, bottomInset: 60),
+      isUserDriven: false, isStreaming: true))
+    for growth in 1..<32 {
+      precondition(!stream.update(.init(offset: 760, height: 300, contentHeight: Double(1_000 + growth), bottomInset: 60),
+        isUserDriven: false, isStreaming: true))
+    }
+    precondition(stream.update(.init(offset: 760, height: 300, contentHeight: 1_032, bottomInset: 60),
+      isUserDriven: false, isStreaming: true))
+    precondition(stream.update(.init(offset: 792, height: 180, contentHeight: 1_032, bottomInset: 60),
+      isUserDriven: false, isStreaming: true))
+    precondition(!stream.update(.init(offset: 600, height: 180, contentHeight: 1_040, bottomInset: 60),
+      isUserDriven: true, isStreaming: true))
+    precondition(!stream.update(.init(offset: 600, height: 180, contentHeight: 1_120, bottomInset: 60),
+      isUserDriven: false, isStreaming: true))
+    precondition(stream.hasUnseenContent && !stream.followsLatest)
+    print("ConversationScrollChecks: passed (coalesced stream, inset and viewport changes, manual reading, new-answer reset, invalid geometry)")
   }
 }

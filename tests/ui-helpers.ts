@@ -75,15 +75,17 @@ async function stableBounds(control: any) {
 
 export async function tapTab(screen: any, name: string) {
   const destination = name === 'ホーム' ? 'ジャーナル' : name;
-  if (['ライブラリ', 'ジャーナル', 'Ask AI'].includes(destination)) {
-    const tab = screen.getByRole('tab', { name: destination, exact: true });
+  const ids: Record<string, string> = { 'ライブラリ': 'files', 'ジャーナル': 'home', 'Ask AI': 'askAI' };
+  const id = ids[destination];
+  if (id) {
+    const tab = screen.getByTestId(`root.tab.${id}`);
     const closeMarketplace = screen.getByTestId('marketplace.close');
     if (await closeMarketplace.isVisible()) await tapControl(closeMarketplace);
     const back = screen.getByTestId('BackButton').first();
     for (let depth = 0; depth < 4 && !await tab.isVisible() && await back.isVisible(); depth++) {
       await tapControl(back);
     }
-    const selected = screen.getByRole('tab', { name: destination, exact: true, selected: true });
+    const selected = screen.getByRole('button', { name: destination, exact: true, selected: true });
     if (!await selected.isVisible()) await tapControl(tab);
     await expect(tab).toBeSelected();
     return;
@@ -155,7 +157,14 @@ export async function launchMemora(app: any, device: any, screen: any) {
     if (!box) throw new Error('onboarding skip has no frame');
     await screen.tapAt({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
   }
-  await expect(menu).toBeVisible();
+  try {
+    await expect(menu).toBeVisible({ timeout: 4_000 });
+  } catch {
+    // After a fresh install the simulator sometimes exposes only the app
+    // container even with Library visible. Relaunch once to reattach the driver.
+    await app.restart();
+    await expect(menu).toBeVisible();
+  }
 }
 
 export async function scrollToControl(screen: any, control: any, frame?: { minimumY: number; maximumY: number }) {

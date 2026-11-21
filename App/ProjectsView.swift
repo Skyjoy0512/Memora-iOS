@@ -3,16 +3,15 @@ import SwiftUI
 struct ProjectsView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.scenePhase) private var scenePhase
-  @AppStorage("memora.projects.listOrder") private var order = ProjectListOrder.name
-  @AppStorage("memora.projects.recentFirst") private var recentFirst = false
   @Binding var query: String
   var isSearching: Bool
   var zoomNamespace: Namespace.ID
-  var onSearch: () -> Void
+  var order: ProjectListOrder
+  var recentFirst: Bool
+  @Binding var filter: ProjectListFilter
   @State private var renameTarget: MemoraSpace?
   @State private var deleteTarget: MemoraSpace?
   @State private var isShareInboxPresented = false
-  @State private var filter = ProjectListFilter.all
 
   var body: some View {
     let latestDates = model.spaceAggregates.compactMapValues(\.latestDate)
@@ -36,22 +35,14 @@ struct ProjectsView: View {
           Button("共有からの取り込みを確認") { isShareInboxPresented = true }
             .font(MemoraTypography.secondary).frame(minHeight: 44).tint(MemoraPalette.textPrimary)
         }
-        HStack(spacing: MemoraSpacing.xs) {
-          if isSearching && total > 0 {
-            Text("検索結果 \(total)件")
-              .font(MemoraTypography.secondary)
-              .foregroundStyle(.secondary)
-          } else if filter == .all && !isSearching && total > 0 {
-            Text("\(total)件")
-              .font(MemoraTypography.metadata)
-              .foregroundStyle(MemoraPalette.textSecondary)
-              .accessibilityLabel("プロジェクト\(total)件")
-          }
-          Spacer(minLength: 0)
-          if !isSearching {
-            MemoraIconButton("プロジェクトを検索", icon: .magnifyingglass, action: onSearch)
-          }
-          orderMenu
+        if isSearching && total > 0 {
+          Text("検索結果 \(total)件")
+            .font(MemoraTypography.secondary)
+            .foregroundStyle(.secondary)
+        } else if filter == .all && total > 0 {
+          Text("プロジェクト\(total)件")
+            .font(MemoraTypography.metadata)
+            .foregroundStyle(MemoraPalette.textSecondary)
         }
         if filter != .all {
           HStack {
@@ -155,30 +146,6 @@ struct ProjectsView: View {
       await model.refresh()
       await model.cloudSharing.refreshIfConfirmed()
     }
-  }
-
-  private var orderMenu: some View {
-    Menu {
-      Button("プロジェクトを作成", icon: .folder) { model.isFileCreationPresented = true }
-        .disabled(model.isRestoring || model.isStoreProtected)
-      Divider()
-      Picker("表示", selection: $filter) {
-        ForEach(ProjectListFilter.allCases) { Text($0.title).tag($0) }
-      }
-      if filter != .shared {
-        Picker("並べ替え", selection: $order) {
-          ForEach(ProjectListOrder.allCases) { Text($0.title).tag($0) }
-        }
-        Toggle("最近開いたものを先に", isOn: $recentFirst)
-      }
-    } label: {
-      Image(icon: .ellipsis, size: MemoraIconMetrics.glyph)
-        .frame(width: MemoraSpacing.touchTarget, height: MemoraSpacing.touchTarget)
-        .contentShape(Rectangle())
-    }
-    .accessibilityLabel("プロジェクトの表示オプション")
-    .accessibilityValue(order.title)
-    .tint(MemoraPalette.textPrimary)
   }
 
   private func heading(_ title: String, count: Int?) -> some View {

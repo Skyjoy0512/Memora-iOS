@@ -7,8 +7,8 @@ afterEach(async ({ device }) => { await device.setAppearance('light'); });
 test('screen polish: Library is the default and leads Journal in the tab bar', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await expect(screen.getByRole('button', { name: 'ファイル', exact: true, selected: true })).toBeVisible();
-  const library = screen.getByRole('tab', { name: 'ライブラリ', exact: true });
-  const journal = screen.getByRole('tab', { name: 'ジャーナル', exact: true });
+  const library = screen.getByTestId('root.tab.files');
+  const journal = screen.getByTestId('root.tab.home');
   await expect(library).toBeVisible();
   await expect(journal).toBeVisible();
   const libraryBox = await library.boundingBox();

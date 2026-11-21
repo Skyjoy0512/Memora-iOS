@@ -77,34 +77,29 @@ struct HomeView: View {
             let dateLayout = typeSize.isAccessibilitySize
               ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.xs))
               : AnyLayout(HStackLayout(spacing: MemoraSpacing.md))
-            if model.isRecording {
-              ActiveRecordingStrip()
-            }
-
-            if model.hasSampleContent {
-              SampleNoticeRow()
-            }
-
-            VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
+            VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
+              if model.isRecording { ActiveRecordingStrip() }
+              if model.hasSampleContent { SampleNoticeRow() }
               dateLayout {
                 Text(MemoraFormat.monthTitle(selectedDate))
                   .font(MemoraTypography.sectionHeading)
                   .fixedSize(horizontal: false, vertical: true)
                   .accessibilityAddTraits(.isHeader)
-                if !typeSize.isAccessibilitySize { Spacer(minLength: MemoraSpacing.sm) }
-                Button {
-                  InteractionFeedback.shared.send(.selection)
-                  withAnimation(reduceMotion ? nil : MemoraMotion.control) {
-                    selectedDate = Calendar.current.startOfDay(for: .now)
+                if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
+                if !isViewingToday {
+                  Button {
+                    InteractionFeedback.shared.send(.selection)
+                    withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+                      selectedDate = Calendar.current.startOfDay(for: .now)
+                    }
+                  } label: {
+                    Text("今日")
+                      .font(MemoraTypography.secondary.weight(.medium))
+                      .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget)
+                      .contentShape(Rectangle())
                   }
-                } label: {
-                  Text("今日")
-                    .font(MemoraTypography.secondary.weight(.medium))
-                    .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget)
-                    .contentShape(Rectangle())
+                  .accessibilityLabel("今日に戻る")
                 }
-                .accessibilityLabel("今日に戻る")
-                .disabled(isViewingToday)
               }
               .frame(minHeight: MemoraSpacing.touchTarget)
               JournalCalendar(selectedDate: $selectedDate, markedDays: markedDays)
@@ -157,8 +152,7 @@ struct HomeView: View {
         .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
         .padding(.horizontal, MemoraSpacing.screen)
         .frame(maxWidth: .infinity)
-        // The floating composer and tab bar do not inset this scroll view, so
-        // leave room for the last records to clear them.
+        // The tab bar insets the scroll view. Leave extra room for the composer.
         .padding(.bottom, model.bottomContentClearance)
       }
       .refreshable {
@@ -383,8 +377,7 @@ struct HomeView: View {
       // The day heading the list had before, with the rows grouped under it and
       // the all-day events right below it.
       Text("タイムライン")
-        .font(MemoraTypography.metadata.weight(.medium))
-        .foregroundStyle(MemoraPalette.textSecondary)
+        .font(MemoraTypography.body.weight(.semibold))
         .accessibilityAddTraits(.isHeader)
 
       if !timeline.allDayEvents.isEmpty {
@@ -421,16 +414,18 @@ struct HomeView: View {
     case .entry(let entry):
       entryView(entry, connectsToNext: connectsToNext, nextDate: nextDate)
     case .record(let meeting):
+      let time = meeting.createdAt.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP")))
       NavigationLink(value: LibraryRoute.meeting(meeting.id)) {
-        JournalTimelineRow(time: meeting.createdAt.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))),
+        JournalTimelineRow(time: time,
           date: meeting.createdAt, icon: meeting.source.icon, connectsToNext: connectsToNext, nextDate: nextDate) {
-          VStack(alignment: .leading, spacing: 8) {
-            Text(meeting.createdAt.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))))
-              .font(.caption.monospacedDigit())
-            Text(meeting.displayTitle).font(.headline)
+          VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
+            Text(time).font(MemoraTypography.metadata.monospacedDigit()).foregroundStyle(.secondary)
+            Text(meeting.displayTitle).font(MemoraTypography.body.weight(.medium))
+              .fixedSize(horizontal: false, vertical: true)
             Text(meeting.summaryPreview.isEmpty ? "記録の詳細を確認" : meeting.summaryPreview)
-              .font(.subheadline)
+              .font(MemoraTypography.secondary)
               .foregroundStyle(.secondary)
+              .lineSpacing(3)
               .lineLimit(3)
           }
         }
@@ -444,17 +439,18 @@ struct HomeView: View {
     case .nowMarker:
       nowMarker
     case .completedTask(let task):
+      let time = task.completedAt?.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))) ?? ""
       Button {
         InteractionFeedback.shared.send(.tap)
         editingTask = task
       } label: {
-        JournalTimelineRow(time: task.completedAt?.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))) ?? "",
+        JournalTimelineRow(time: time,
           date: task.completedAt ?? selectedDate, icon: .checkmark, connectsToNext: connectsToNext, nextDate: nextDate) {
-          VStack(alignment: .leading, spacing: 8) {
-            Text(task.completedAt?.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))) ?? "")
-              .font(.caption.monospacedDigit())
-            Text(task.title).font(.headline)
-            Text("タスクを完了").font(.subheadline).foregroundStyle(.secondary)
+          VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
+            Text(time).font(MemoraTypography.metadata.monospacedDigit()).foregroundStyle(.secondary)
+            Text(task.title).font(MemoraTypography.body.weight(.medium))
+              .fixedSize(horizontal: false, vertical: true)
+            Text("タスクを完了").font(MemoraTypography.secondary).foregroundStyle(.secondary)
           }
         }
       }

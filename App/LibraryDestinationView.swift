@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LibraryDestinationView: View {
   var route: LibraryRoute
+  var zoomNamespace: Namespace.ID?
 
   var body: some View {
     Group {
@@ -16,8 +17,8 @@ struct LibraryDestinationView: View {
     case .meeting(let id): MeetingDetailView(meetingID: id)
     case .meetingCitation(let id, let time): MeetingDetailView(meetingID: id, initialPlaybackStart: ProjectCitationLocation.playbackTime(time))
     case .transcript(let id): TranscriptView(meetingID: id)
-    case .space(let id): SpaceDetailView(spaceID: id)
-    case .projectSources(let id): ProjectSourcesView(projectID: id)
+    case .space(let id): SpaceDetailView(spaceID: id, zoomNamespace: zoomNamespace)
+    case .projectSources(let id): ProjectSourcesView(projectID: id, zoomNamespace: zoomNamespace)
     case .projectSource(let id): ProjectSourceDetailView(sourceID: id)
     case .projectPDF(let id, let page): ProjectPDFView(sourceID: id, page: page)
     case .projectChat(let id): ProjectChatView(threadID: id)

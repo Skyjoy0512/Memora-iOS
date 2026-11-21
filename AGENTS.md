@@ -36,9 +36,11 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 
 ## Known regressions to avoid
 
-- **Navigation**: the app opens on Library. The native `TabView` shows three
-  icon-only tabs in this order: Library, Journal, Ask AI. Set each tab's spoken
-  label and stable ID through `TabContent`. Switching tabs preserves their
+- **Navigation**: the app opens on Library. `RootTabBar` shows three icon-only
+  tabs in this order: Library, Journal, Ask AI. Use outlined Lucide glyphs and
+  their filled variants for selection. The row has no glass, container, or
+  selected capsule. Keep button names, stable IDs and the selected trait.
+  The underlying `TabView` preserves the
   navigation stacks and the active Ask AI conversation. Keep `RootTab` raw
   values, restoration aliases and deep links compatible. The side menu holds
   Marketplace, Tasks, Documents, People, scoped search and Settings. Keep the
@@ -73,9 +75,9 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Enter and leave selection in one non-animated transaction, including
   `isFileSelectionActive`; do not defer that flag to an `onChange`. The selection
   actions use a capsule-shaped glass bar.
-- **Bottom edge**: the active `TabView` content safe area positions the single
-  shared composer and its capture controls above the native tab bar. Scroll
-  clearance reserves only the shared controls; SwiftUI reserves the tab bar.
+- **Bottom edge**: the primary tab row takes its own layout space beneath the
+  `TabView` and its single shared composer. Scroll clearance reserves only
+  the contextual composer and playback controls.
   Keep the editor and capture importer identity across changes in tab visibility.
   Search and file selection hide the tabs, composer and capture controls; the
   results or share / move / delete bar own the bottom edge. Hide tabs during

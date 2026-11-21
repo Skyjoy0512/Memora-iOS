@@ -31,7 +31,7 @@ test('sidebar glass: supplied logo sits above auxiliary destinations in both app
     await app.screenshot(`sidebar-logo-${appearance}`);
     await tap(screen, marketplace);
     await tap(screen, screen.getByTestId('marketplace.close'));
-    await expect(screen.getByRole('tab', { name: 'ライブラリ', selected: true })).toBeVisible();
+    await expect(screen.getByTestId('root.tab.files')).toBeSelected();
   }
 });
 

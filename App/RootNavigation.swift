@@ -59,6 +59,7 @@ enum RootNavigation {
     case .space(let id): return .space(id)
     case .projectTasks(let id): return .space(id)
     case .projectSources(let id), .projectChats(let id): return id.map(AIQueryScope.space) ?? .global
+    case .document: return projectID(in: Array(path.dropLast())).map(AIQueryScope.space) ?? .global
     default: return .global
     }
   }

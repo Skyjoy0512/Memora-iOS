@@ -1,6 +1,6 @@
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { launchMemora, openSidebarSearch, tapControl, tapTab } from './ui-helpers';
+import { launchMemora, openSidebarSearch, selectLibrarySection, tapControl, tapTab } from './ui-helpers';
 
 /// Wait for the shared native-frame readiness gate before touching a control.
 async function tapStable(locator: any) {
@@ -38,18 +38,17 @@ async function createProject(screen: any, device: any) {
   await tapTab(screen, 'ライブラリ');
   const back = screen.getByTestId('BackButton');
   if (await back.isVisible()) await tapControl(screen, back);
-  await tapControl(screen, screen.getByRole('button', { name: 'プロジェクト', exact: true }));
+  await selectLibrarySection(screen, 'プロジェクト');
   await tapStable(screen.getByRole('button', { name: 'プロジェクトを作成' }).first());
   await screen.getByPlaceholder('例：新規アプリ').fill('E2E Workspace');
   await tapStable(screen.getByRole('button', { name: '作成' }));
-  await expect(screen.getByLabel(/表示切り替え$/).first()).toBeVisible();
+  await expect(screen.getByRole('button', { name: '記録', exact: true, selected: true })).toBeVisible();
 }
 
-/// The workspace switcher is a native menu, not inline tabs.
+/// Standard text size uses the workspace's content tabs.
 async function selectWorkspaceTab(screen: any, title: string) {
-  await tapControl(screen, screen.getByLabel(/表示切り替え$/).first());
-  await tapControl(screen, screen.getByRole('button', { name: title, exact: true }).last());
-  await expect(screen.getByLabel(new RegExp(title + '、表示切り替え$'))).toBeVisible();
+  await tapControl(screen, screen.getByRole('button', { name: title, exact: true }));
+  await expect(screen.getByRole('button', { name: title, exact: true, selected: true })).toBeVisible();
 }
 
 /// Searches both scroll directions so large text and restored offsets work.
@@ -77,7 +76,7 @@ test('the workspace tabs switch between chat, records and references', async ({ 
   await launchMemora(app, device, screen);
   await createProject(screen, device);
 
-  await expect(screen.getByText('チャットを始める', { exact: true })).toBeVisible();
+  await expect(screen.getByRole('button', { name: '記録', exact: true, selected: true })).toBeVisible();
   await selectWorkspaceTab(screen, '記録');
   await expect(screen.getByRole('button', { name: '録音を追加', exact: true }).first()).toBeVisible();
   await app.screenshot('workspace-empty-files');
@@ -105,7 +104,10 @@ test('the week strip selects a day and updates the timeline', async ({ app, devi
 
   const today = new Date();
   const todayName = `^${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}[日月火水木金土]曜日、`;
-  await tapStable(screen.getByRole('button', { name: new RegExp(todayName) }));
+  const returnToday = screen.getByRole('button', { name: '今日に戻る', exact: true });
+  await tapStable(returnToday);
+  await expect(screen.getByRole('button', { name: new RegExp(todayName), selected: true })).toBeVisible();
+  await expect(returnToday).not.toBeVisible();
   const record = screen.getByText(title).first();
   await scrollTo(screen, record);
   await expect(record).toBeVisible();
@@ -362,5 +364,5 @@ test('the records tab offers recording and moving existing files', async ({ app,
   await tapControl(screen, screen.getByRole('button', { name: '既存記録を移動', exact: true }));
   await expect(screen.getByText('既存ファイルを移動', { exact: true }).first()).toBeVisible();
   await tapControl(screen, screen.getByRole('button', { name: 'キャンセル', exact: true }));
-  await expect(screen.getByLabel(/記録、表示切り替え$/).first()).toBeVisible();
+  await expect(screen.getByRole('button', { name: '記録', exact: true, selected: true })).toBeVisible();
 });

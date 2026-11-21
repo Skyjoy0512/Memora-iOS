@@ -28,21 +28,23 @@ test('agent entry: suggestions stage an editable request without sending', async
   await expect(screen.getByLabel('新しいチャット')).toBeDisabled();
 });
 
-test('agent entry: native attachment menu preserves draft and all existing routes', async ({ app, device, screen }) => {
+test('agent entry: chat attachment sheet preserves the draft, keyboard and attachment routes', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await tapTab(screen, 'Ask AI');
   const input = await focusComposer(screen);
   await input.fill('添付メニューを開いても残す下書き');
-  await tapControl(screen, screen.getByLabel('添付を追加'));
-  for (const name of ['写真を選択…', '音声を選択…', 'ファイルを選択…', 'プラグイン・スキル・ソース', '連携サービス…']) {
-    await expect(screen.getByText(name, { exact: true })).toBeVisible();
+  await tapControl(screen, screen.getByTestId('ai.composer.add'));
+  for (const name of ['カメラ', '写真', 'ファイル', '最近の写真を表示']) {
+    await expect(screen.getByRole('button', { name, exact: true })).toBeVisible();
   }
+  await expect(screen.getByRole('switch', { name: 'Webで検索', exact: true })).toBeVisible();
   await app.screenshot('agent-native-attachment-menu');
-  await tapControl(screen, screen.getByText('連携サービス…', { exact: true }));
-  await expect(screen.getByText('連携', { exact: true }).first()).toBeVisible();
   await tapControl(screen, screen.getByRole('button', { name: '閉じる', exact: true }).last());
+  await expect(input).toBeFocused();
   await expect(input).toHaveValue('添付メニューを開いても残す下書き');
   await expect(screen.getByLabel('新しいチャット')).toBeDisabled();
+  await input.pressSequentially(' @');
+  await expect(screen.getByLabel('候補を閉じる')).toBeVisible();
 });
 
 test('agent entry: recorder hub exposes direct pairing and honest generic import', async ({ app, device, screen }) => {

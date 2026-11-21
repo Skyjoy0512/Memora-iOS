@@ -2,21 +2,16 @@ import SwiftUI
 
 struct ProjectWorkspaceRow: View {
   var item: ProjectWorkspaceItem
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @Namespace private var zoom
+  var zoomNamespace: Namespace.ID?
   @State private var movingMeeting: Meeting?
 
   var body: some View {
-    NavigationLink {
-      if reduceMotion {
-        LibraryDestinationView(route: item.route)
+    NavigationLink(value: item.route) {
+      if let zoomNamespace, let transitionID {
+        rowContent.matchedTransitionSource(id: transitionID, in: zoomNamespace)
       } else {
-        LibraryDestinationView(route: item.route)
-          .navigationTransition(.zoom(sourceID: item.id, in: zoom))
+        rowContent
       }
-    } label: {
-      rowContent
-        .matchedTransitionSource(id: item.id, in: zoom)
     }
     .buttonStyle(.plain)
     .contextMenu {
@@ -26,6 +21,14 @@ struct ProjectWorkspaceRow: View {
     }
     .sheet(item: $movingMeeting) { meeting in
       BulkSpacePickerSheet(meetingIDs: [meeting.id], onMove: {})
+    }
+  }
+
+  private var transitionID: UUID? {
+    switch item {
+    case .source(let value): value.id
+    case .recording(let value): value.id
+    case .document: nil
     }
   }
 

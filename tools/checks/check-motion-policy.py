@@ -16,8 +16,8 @@ assert ".id(selectedSection)" not in detail
 assert "sectionTransition" not in detail
 root = (app / "RootTabView.swift").read_text()
 assert 'Tab(value: tab)' in root
-assert 'tabBarMinimizeBehavior(.never)' in root
-assert 'toolbar(showsPrimaryTabs ? .visible : .hidden, for: .tabBar)' in root
+assert 'RootTabBar(selection:' in root
+assert 'toolbar(.hidden, for: .tabBar)' in root
 assert 'onCloseAnimationCompleted: completeSidebarAction' in root
 assert 'model.composerDismissRequests += 1' in root
 capture = (app / "CaptureFloatingButtons.swift").read_text()
@@ -49,4 +49,4 @@ for path in sorted(app.glob("*.swift")):
 assert not findings, findings
 assert "repeatForever" not in "".join(path.read_text() for path in app.glob("*.swift"))
 
-print("Motion policy passed: bounded screen/text entrances, native capture menus and tabs, journal Hero, and Reduce Motion")
+print("Motion policy passed: bounded entries, native capture menus, bottom icon tabs, journal Hero, and Reduce Motion")

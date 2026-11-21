@@ -3,6 +3,7 @@ import SwiftUI
 /// One calendar event in the journal's day timeline. A recording tied to the
 /// event opens the record; other events open their own detail.
 struct JournalCalendarEventRow: View {
+  @Environment(\.dynamicTypeSize) private var typeSize
   /// The day being shown, so an event that began the night before reads as a
   /// continuation.
   var day: Date
@@ -36,31 +37,34 @@ struct JournalCalendarEventRow: View {
       date: max(event.start, Calendar.current.startOfDay(for: day)),
       icon: event.meetingID == nil ? .calendar : .waveform,
       connectsToNext: connectsToNext, nextDate: nextDate) {
-      VStack(alignment: .leading, spacing: 8) {
-      Text(timeText)
-        .font(.caption.monospacedDigit())
-
-      VStack(alignment: .leading, spacing: 2) {
+      VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
+        Text(timeText)
+          .font(MemoraTypography.metadata.monospacedDigit())
+          .foregroundStyle(.secondary)
         Text(event.title)
-          .font(.headline)
-        HStack(spacing: 4) {
+          .font(MemoraTypography.body.weight(.medium))
+          .fixedSize(horizontal: false, vertical: true)
+        let details = typeSize.isAccessibilitySize
+          ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.xs))
+          : AnyLayout(HStackLayout(spacing: MemoraSpacing.sm))
+        details {
           Text(event.meetingID == nil ? "予定" : "録音あり")
-            .font(.caption.weight(.medium))
-            .foregroundStyle(.secondary)
-          if let color = event.calendarColor {
-            Circle()
-              .fill(color)
-              .frame(width: 8, height: 8)
+            .fontWeight(.medium)
+          HStack(spacing: MemoraSpacing.xs) {
+            if let color = event.calendarColor {
+              Circle().fill(color).frame(width: 8, height: 8)
+            }
+            Text(event.calendarTitle).fixedSize(horizontal: false, vertical: true)
           }
-          Text(event.calendarTitle)
-            .font(.caption)
-            .foregroundStyle(.secondary)
         }
-      }
-
-      if let location = event.location, !location.isEmpty {
-        Label(location, icon: .location).font(MemoraTypography.secondary).foregroundStyle(.secondary)
-      }
+        .font(MemoraTypography.metadata)
+        .foregroundStyle(.secondary)
+        if let location = event.location, !location.isEmpty {
+          Label(location, icon: .location)
+            .font(MemoraTypography.secondary)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)

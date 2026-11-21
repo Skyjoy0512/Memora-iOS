@@ -3,6 +3,7 @@ import SwiftUI
 struct ProjectSourcesView: View {
   @Environment(MemoraModel.self) private var model
   var projectID: UUID?
+  var zoomNamespace: Namespace.ID?
   @State private var query = ""
   @State private var isSearching = false
   @State private var matchingSourceIDs: Set<UUID> = []
@@ -21,13 +22,14 @@ struct ProjectSourcesView: View {
     }
     List {
       ForEach(items) { item in
-        ProjectWorkspaceRow(item: item)
+        ProjectWorkspaceRow(item: item, zoomNamespace: zoomNamespace)
           .listRowBackground(Color.clear)
           .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset,
             bottom: 8, trailing: ProjectLayout.horizontalInset))
       }
     }
     .listStyle(.plain).scrollContentBackground(.hidden)
+    .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
     .background(MemoraPalette.background)
     .navigationTitle("参考資料").navigationBarTitleDisplayMode(.inline)
     .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "参考資料を検索")

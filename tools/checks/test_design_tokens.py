@@ -51,10 +51,14 @@ class DesignTokenChecks(unittest.TestCase):
         self.assertEqual(config["packages"]["LucideSwift"]["exactVersion"], "0.9.11")
         self.assertIn('Image(icon:', (APP / "MemoraInterfaceIcon.swift").read_text())
 
-    def test_navigation_and_capture_contracts_remain_native(self):
+    def test_root_navigation_and_native_capture_contracts(self):
         root = (APP / "RootTabView.swift").read_text()
-        for contract in ('rootTab(.library)', 'rootTab(.home)', 'rootTab(.askAI)', '.accessibilityLabel(tab.title)'):
+        for contract in ('rootTab(.library)', 'rootTab(.home)', 'rootTab(.askAI)', 'RootTabBar(selection:'):
             self.assertIn(contract, root)
+        tab_bar = (APP / "RootTabBar.swift").read_text()
+        self.assertIn('isSelected ? .filled : .stroked', tab_bar)
+        self.assertIn('.accessibilityLabel(tab.title)', tab_bar)
+        self.assertNotIn('.glassEffect(', tab_bar)
         sidebar = (APP / "FileSidebarView.swift").read_text()
         for title in ("マーケットプレイス", "タスク", "資料", "人物"):
             self.assertIn(f'SidebarRow(title: "{title}"', sidebar)

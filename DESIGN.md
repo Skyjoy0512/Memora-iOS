@@ -19,9 +19,11 @@ Brand assets follow the supplied canonical artwork in docs/BRANDING.md. Floating
 
 ## Everyday interactions
 
-- The native bottom tab bar contains Library, Journal and Ask AI in that order.
-  Images provide the visible labels, and `TabContent` provides the spoken names
-  and identifiers. Each tab retains its navigation stack. The sidebar keeps the
+- The bottom row contains three equally spaced icons for Library, Journal, and
+  Ask AI. The selected Lucide glyph is filled. The row sits on the canvas with
+  no glass, border, shadow or selection capsule. The buttons carry spoken
+  names, identifiers and selection. `TabView` retains each navigation stack.
+  The sidebar keeps the
   static wordmark, scoped search, Marketplace, Tasks, Documents, People and
   Settings. Secondary collections and detail screens use native back navigation.
 
@@ -245,7 +247,7 @@ Do not reintroduce per-item artwork, scale multipliers or oversized search icons
 | SettingsCategory / SettingsCategoryView | typed topic navigation; original leaf bindings and permission confirmations |
 | AIComposerBar / QuickAIComposer | native input, attachments, speech, submit/stop, scoped selection |
 | MemoraTextTabBar / MemoraSectionPicker | flat scrollable content tabs and selection traits |
-| RootTabView / RootNavigation | native icon-only tab bar, contextual footer and per-tab routing |
+| RootTabView / RootTabBar / RootNavigation | outline-to-solid bottom icons, contextual footer and per-tab routing |
 | ProjectRecordRow / ProjectSourceRow / ProjectDocumentRow | common Library/workspace title and metadata hierarchy |
 | MemoraSectionHeading | shared section title and supporting context; stacked at accessibility sizes |
 | MemoraActionLabel / MemoraMenuButtonStyle | explanatory action rows, common glyph and pressed feedback |
@@ -286,6 +288,9 @@ is an outline glyph; send, stop and active voice states earn the inverse circle.
 Active focus/listening belongs to the composer; a saved draft alone neither focuses
 the field nor opens the keyboard. After dismissing the keyboard, a draft can remain
 while the side menu becomes available.
+While following the latest response, streaming advances by visible lines.
+Manual reading stays in place as the answer grows. A single accessible action
+returns to the latest answer, and keyboard or footer resizing preserves intent.
 Response controls share the 20pt interface glyph; source disclosure has a 44pt
 target and moves below the actions at accessibility sizes.
 New chats show three flat agent-action suggestions: tasks, follow-up mail and
@@ -301,19 +306,23 @@ hairlines. Neutral recap; expanded summary follows appearance and uses sections,
 not nested translucent cards. The selected scenic image remains a small header
 and the background-change action remains. Dates, health privacy, source links
 and event editing keep their behavior.
-The month/year and a real “今日に戻る” action establish date context. Tasks, recent
-projects and the empty day are flat sections; the daily recap alone earns a
-content group and explicitly says it opens the daily summary.
+The month/year establishes date context. “今日に戻る” appears when viewing
+another day. Titles and event metadata wrap at accessibility text sizes. The
+daily recap follows the timeline and opens the daily summary.
 
 Library is the opening screen. Files/Projects, sort/filter, selection/share/move/delete and gallery mode
 remain. Titles lead, then kind/date/status and optional preview. Gallery groups
-use 16pt neutral contours. Search and selection own the bottom edge when active.
+use 16pt neutral contours. Search and list options sit beside Files/Projects.
+At accessibility sizes the list options also include search. Search and
+selection own the bottom edge when active.
 Empty-query search shows its scope instead of the list behind it. Search counts
 include matching saved sources as well as records. Retry actions clear the same
 query binding, not a display-only copy.
 
-Workspace: Chat / Files / Sources in that order, shared flat tabs, rows, empty
-states and toolbar actions. Scoped Ask AI reads active-project evidence only;
+Workspace: Records / Chat / Reference Sources, with Records selected on entry.
+The project name appears in navigation. Flat rows use spacing for separation.
+Deep links and row taps use the same navigation routes and contextual footer.
+Scoped Ask AI reads active-project evidence only;
 privacy and membership are checked at execution and completion.
 Source status describes extraction, not permission: 本文解析済み / 一部解析済み /
 本文抽出済み · 解析範囲未確認. YouTube title-only results say メタデータのみ;
