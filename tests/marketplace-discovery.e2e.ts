@@ -11,6 +11,10 @@ test('purpose catalogs preserve search and stage a learning skill without sendin
   await tapControl(screen.getByRole('button', { name: 'コネクタ', exact: true }));
   await expect(query).toHaveValue('復習クイズ');
   await expect(screen.getByTestId('marketplace.catalog.skill:study-quiz').first()).not.toBeVisible();
+  await expect(screen.getByText('検索範囲：コネクタ', { exact: true })).toBeVisible();
+  await tapControl(screen.getByRole('button', { name: 'すべてのカテゴリで検索', exact: true }));
+  await expect(query).toHaveValue('復習クイズ');
+  await expect(screen.getByTestId('marketplace.catalog.skill:study-quiz').first()).toBeVisible();
   await tapControl(screen.getByRole('button', { name: 'スキル', exact: true }));
   await expect(query).toHaveValue('復習クイズ');
   await tapControl(screen.getByTestId('marketplace.catalog.skill:study-quiz').first());

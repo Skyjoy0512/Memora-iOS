@@ -14,8 +14,8 @@ struct IntegrationDetailView: View {
         MarketplaceDetailHero(item: .service(service), subtitle: "コネクタ") { EmptyView() }
         MarketplaceDescription(text: service.summary)
         MarketplaceDetailFacts(fields: [
-          ("接続", service.isImplemented ? (connected ? "接続済み" : state.label) : "準備中"),
-          ("Ask AI", state.isReady ? "利用可能" : "利用できません"),
+          ("接続", service.connectionLabel(isConnected: connected)),
+          ("Ask AI", askAILabel(state)),
           ("アクセス", accessLabel)
         ])
 
@@ -79,6 +79,16 @@ struct IntegrationDetailView: View {
     .alert("アクセスを許可できませんでした", isPresented: $permissionFailure) {
       Button("閉じる", role: .cancel) {}
     } message: { Text("設定アプリでカレンダーへのアクセスを確認してください。") }
+  }
+
+  private func askAILabel(_ state: AIPlugin.Connection) -> String {
+    guard service.isImplemented else { return "利用できません" }
+    guard model.integrationIsEnabled(service.id) else { return "オフ" }
+    switch state {
+    case .ready: return "利用可能"
+    case .setup: return "設定が必要"
+    case .unavailable: return "利用できません"
+    }
   }
 
   @ViewBuilder private func connectionAction(ready: Bool) -> some View {

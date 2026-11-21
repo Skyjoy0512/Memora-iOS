@@ -3,6 +3,7 @@ import SwiftUI
 struct ToolsTemplatesList: View {
   @Environment(MemoraModel.self) private var model
   @Binding var query: String
+  var broadenSearch: (() -> Void)?
 
   var body: some View {
     let market = SummaryTemplateCatalog.market.filter(matches)
@@ -27,7 +28,7 @@ struct ToolsTemplatesList: View {
         }
       }
       if custom.isEmpty && installed.isEmpty && categories.isEmpty {
-        ToolsSearchEmptyState { query = "" }
+        ToolsSearchEmptyState(scopeName: ToolsSection.templates.title, broadenSearch: broadenSearch) { query = "" }
       }
     }
   }

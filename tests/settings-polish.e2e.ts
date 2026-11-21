@@ -143,6 +143,8 @@ test('settings polish: relocated AI, recording, plan and connection controls rem
   await expect(screen.getByText('スキル', { exact: true })).not.toBeVisible();
   await app.screenshot('integrations-topic');
   await tapControl(screen, screen.getByText('Gmail', { exact: true }));
+  await expect(screen.getByText('未接続', { exact: true })).toBeVisible();
+  await expect(screen.getByText('利用できません', { exact: true })).toBeVisible();
   await expect(screen.getByTestId('connector.requirement')).toBeVisible();
   await tapControl(screen, screen.getByRole('button', { name: '接続', exact: true }));
   await expect(screen.getByText(/Google OAuth|クライアントID|接続されていません|Gmailを接続/).first()).toBeVisible();

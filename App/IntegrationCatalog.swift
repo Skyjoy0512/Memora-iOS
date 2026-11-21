@@ -7,6 +7,11 @@ struct IntegrationCatalog: Identifiable {
   var permissions: String
   var isImplemented: Bool
 
+  func connectionLabel(isConnected: Bool) -> String {
+    guard isImplemented else { return "準備中" }
+    return isConnected ? "接続済み" : "未接続"
+  }
+
   var capabilities: [String] {
     switch id {
     case "gmail": ["必要なメールを検索する", "メールの本文を読んで回答に使う"]

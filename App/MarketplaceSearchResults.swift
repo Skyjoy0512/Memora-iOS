@@ -2,7 +2,7 @@ import SwiftUI
 
 struct MarketplaceSearchResults: View {
   @Environment(MemoraModel.self) private var model
-  var query: String
+  @Binding var query: String
 
   var body: some View {
     let skills = model.skillCatalog.filter {
@@ -15,14 +15,11 @@ struct MarketplaceSearchResults: View {
     let services = IntegrationCatalog.services.filter {
       ToolsCatalogSearch.matches(query, fields: [$0.name, $0.summary] + $0.aliases)
     }.map(MarketplaceItem.service)
-    let groups = [("スキル", skills), ("要約テンプレート", templates), ("連携", services)]
+    let groups = [(ToolsSection.skills.title, skills), (ToolsSection.templates.title, templates), (ToolsSection.connectors.title, services)]
 
     Group {
-      if !CollectionSearch.hasQuery(query) {
-        CollectionSearchState(title: "マーケットプレイスを検索", message: "名前や用途で検索")
-          .accessibilityIdentifier("tools.search.prompt")
-      } else if groups.allSatisfy({ $0.1.isEmpty }) {
-        ContentUnavailableView.search(text: query)
+      if groups.allSatisfy({ $0.1.isEmpty }) {
+        ToolsSearchEmptyState(scopeName: "すべてのカテゴリ") { query = "" }
       } else {
         MarketplaceCatalogColumn {
           ForEach(groups, id: \.0) { title, items in

@@ -22,9 +22,16 @@ struct MarketplaceListRow: View {
             Text(item.title).font(.body)
               .foregroundStyle(MemoraPalette.textPrimary)
               .fixedSize(horizontal: false, vertical: true)
-            Text(badge ?? item.summary).font(.subheadline)
-              .foregroundStyle(MemoraPalette.textSecondary)
-              .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
+            if case .service(let service) = item {
+              Text(service.connectionLabel(isConnected: isConnected))
+                .font(MemoraTypography.metadata)
+                .foregroundStyle(MemoraPalette.textSecondary)
+            }
+            if !isUnimplementedConnector {
+              Text(badge ?? item.summary).font(.subheadline)
+                .foregroundStyle(MemoraPalette.textSecondary)
+                .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
+            }
           }
           .fixedSize(horizontal: false, vertical: true)
           .frame(maxWidth: .infinity, alignment: .leading)
@@ -53,10 +60,7 @@ struct MarketplaceListRow: View {
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())
         }
-      } else if case .service(let service) = item, !service.isImplemented {
-        Text("準備中").font(.caption).foregroundStyle(MemoraPalette.textSecondary)
-          .fixedSize(horizontal: false, vertical: true)
-      } else {
+      } else if !isUnimplementedConnector {
         Button {
           switch item {
           case .template(let template): model.installTemplate(template.id)
@@ -81,6 +85,11 @@ struct MarketplaceListRow: View {
     .onChange(of: scenePhase) { _, phase in
       if phase == .active { updateConnection() }
     }
+  }
+
+  private var isUnimplementedConnector: Bool {
+    if case .service(let service) = item { return !service.isImplemented }
+    return false
   }
 
   private var isInUse: Bool {

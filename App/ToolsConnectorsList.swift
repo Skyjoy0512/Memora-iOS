@@ -4,6 +4,7 @@ struct ToolsConnectorsList: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.scenePhase) private var scenePhase
   @Binding var query: String
+  var broadenSearch: (() -> Void)?
   @State private var connectedIDs: Set<String> = []
 
   var body: some View {
@@ -12,7 +13,7 @@ struct ToolsConnectorsList: View {
     }
     let groups: [(String, [IntegrationCatalog])] = [
       ("接続済み", services.filter { connectedIDs.contains($0.id) }),
-      ("おすすめ", services.filter { $0.isImplemented && !connectedIDs.contains($0.id) }),
+      ("未接続", services.filter { $0.isImplemented && !connectedIDs.contains($0.id) }),
       ("準備中", services.filter { !$0.isImplemented })
     ]
     MarketplaceCatalogColumn {
@@ -22,7 +23,9 @@ struct ToolsConnectorsList: View {
             onConnectorDismiss: refreshConnections)
         }
       }
-      if services.isEmpty { ToolsSearchEmptyState { query = "" } }
+      if services.isEmpty {
+        ToolsSearchEmptyState(scopeName: ToolsSection.connectors.title, broadenSearch: broadenSearch) { query = "" }
+      }
       if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
         NavigationLink { MCPServersView() } label: {
           Label("カスタムコネクタを追加", icon: .plus)

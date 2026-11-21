@@ -34,11 +34,11 @@ struct PersonSupplementarySections: View {
     }
     if !memory.nameMatchedTasks.isEmpty {
       Section {
-        DisclosureGroup("担当名のみ一致・本人未確認") {
+        DisclosureGroup("担当名が一致するタスク（本人未確認）") {
           ForEach(memory.nameMatchedTasks) { task in
             TaskRow(task: task, showsSource: true) { editTask(task) }
           }
-          Text("タスクの編集で人物を選ぶと、この人の担当として関連付けられます。")
+          Text("関連付けるには、タスクの編集で担当者を選んでください。")
             .font(MemoraTypography.metadata).foregroundStyle(.secondary)
         }
       }
@@ -81,14 +81,14 @@ struct PersonSupplementarySections: View {
     }
     if !memory.nameMatchedJournalEntries.isEmpty {
       Section {
-        DisclosureGroup("名前の言及のみ・本人未確認") {
+        DisclosureGroup("名前が出てくるジャーナル（本人未確認）") {
           ForEach(memory.nameMatchedJournalEntries) { entry in
             Button { openJournal(entry) } label: { LifeLogRow(entry: entry) }
               .buttonStyle(.plain)
               .accessibilityElement(children: .combine)
               .accessibilityHint("本人未確認の元の記録を開きます")
           }
-          Text("記録の編集で人物を選ぶと、この人に関連付けられます。名前の一致だけでは本人と断定しません。")
+          Text("関連付けるには、ジャーナルの編集で人物を選んでください。")
             .font(MemoraTypography.metadata).foregroundStyle(.secondary)
         }
       }

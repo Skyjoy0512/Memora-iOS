@@ -3,6 +3,7 @@ import SwiftUI
 struct ToolsSkillsList: View {
   @Environment(MemoraModel.self) private var model
   @Binding var query: String
+  var broadenSearch: (() -> Void)?
   @State private var category: MemoraSkill.Category?
 
   var body: some View {
@@ -33,7 +34,7 @@ struct ToolsSkillsList: View {
         }
       }
       if groups.allSatisfy({ $0.1.isEmpty }) {
-        ToolsSearchEmptyState { query = "" }
+        ToolsSearchEmptyState(scopeName: category?.title ?? ToolsSection.skills.title, broadenSearch: broadenSearch) { query = "" }
       }
     }
   }

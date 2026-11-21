@@ -15,12 +15,12 @@ struct ToolsView: View {
           .accessibilityIdentifier("tools.search.prompt")
       } else if let section {
         switch section {
-        case .skills: ToolsSkillsList(query: $query)
-        case .templates: ToolsTemplatesList(query: $query)
-        case .connectors: ToolsConnectorsList(query: $query)
+        case .skills: ToolsSkillsList(query: $query, broadenSearch: broadenSearch)
+        case .templates: ToolsTemplatesList(query: $query, broadenSearch: broadenSearch)
+        case .connectors: ToolsConnectorsList(query: $query, broadenSearch: broadenSearch)
         }
       } else if isSearching {
-        MarketplaceSearchResults(query: query)
+        MarketplaceSearchResults(query: $query)
       } else {
         MarketplaceHomeView()
       }
@@ -56,4 +56,6 @@ struct ToolsView: View {
     }
     .onDisappear { model.isSearchActive = false }
   }
+
+  private func broadenSearch() { scope = .all }
 }

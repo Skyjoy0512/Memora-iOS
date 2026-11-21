@@ -37,7 +37,7 @@ struct PersonDetailView: View {
       }
       Section("関連する記録") {
         if memory.meetings.isEmpty {
-          Text("会議の参加者に追加すると、関連する記録がここに並びます。")
+          Text("関連する記録はありません。記録を開いて参加者に追加できます。")
             .font(MemoraTypography.secondary)
             .foregroundStyle(MemoraPalette.textSecondary)
         } else {
@@ -92,19 +92,16 @@ struct PersonDetailView: View {
             .font(.subheadline)
             .foregroundStyle(.secondary)
         }
-        Text(summary(memory))
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
+        if let date = memory.lastMet {
+          Text("記録\(memory.meetings.count)件、最新 \(MemoraFormat.documentDate(date))")
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+        }
       }
       .fixedSize(horizontal: false, vertical: true)
       .frame(maxWidth: .infinity, alignment: .leading)
     }
     .accessibilityElement(children: .combine)
-  }
-
-  private func summary(_ memory: PersonMemory) -> String {
-    guard let date = memory.lastMet else { return "関連する記録はまだありません" }
-    return "記録\(memory.meetings.count)件 · 最新 \(MemoraFormat.documentDate(date))"
   }
 
   /// Hands the question to the agent, which can read the person's records.

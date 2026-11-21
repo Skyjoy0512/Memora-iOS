@@ -16,6 +16,8 @@ struct PeopleManagerSheet: View {
   @State private var isPhotoLoading = false
   @State private var editingPhoto: PhotoEditRequest?
   @State private var editingPerson: Person?
+  @State private var deletingPerson: Person?
+  @State private var deleteFailed = false
 
   private enum PhotoTarget: Equatable {
     case new
@@ -23,6 +25,7 @@ struct PeopleManagerSheet: View {
   }
 
   var body: some View {
+    let canDeletePerson = model.currentTeamID == nil && !model.isRestoring && !model.isStoreProtected
     NavigationStack {
       MemoraList {
         Section("新規作成") {
@@ -55,21 +58,29 @@ struct PeopleManagerSheet: View {
               HStack(spacing: 12) {
                 PersonAvatar(name: person.name, size: 44, photoData: person.photoData)
 
-                VStack(alignment: .leading, spacing: 2) {
-                  Text(person.name)
-                  if let note = person.note, !note.isEmpty {
-                    Text(note)
-                      .font(.caption)
-                      .foregroundStyle(.secondary)
-                      .lineLimit(1)
+                Button {
+                  editingPerson = person
+                } label: {
+                  VStack(alignment: .leading, spacing: MemoraSpacing.xxs) {
+                    Text(person.name)
+                    if let note = person.note, !note.isEmpty {
+                      Text(note)
+                        .font(MemoraTypography.metadata)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    }
+                  }
+                  .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget, alignment: .leading)
+                  .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(person.name)を編集")
+                .accessibilityValue(person.note ?? "")
+                .accessibilityActions {
+                  if canDeletePerson {
+                    Button("削除") { deletingPerson = person }
                   }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-                .onTapGesture { editingPerson = person }
-                .accessibilityElement(children: .combine)
-                .accessibilityAddTraits(.isButton)
-                .accessibilityLabel("\(person.name)を編集")
 
                 Button {
                   photoTarget = .person(person.id)
@@ -78,16 +89,16 @@ struct PeopleManagerSheet: View {
                   Label("\(person.name)の写真を変更", icon: .photo).labelStyle(.iconOnly)
                     .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
                 .disabled(isPhotoLoading)
                 .foregroundStyle(.secondary)
               }
-              .swipeActions(edge: .trailing) {
+              .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                if canDeletePerson {
+                  Button("削除", icon: .trash, role: .destructive) { deletingPerson = person }
+                }
                 Button("編集", icon: .pencil) { editingPerson = person }
               }
-            }
-            .onDelete { indexSet in
-              let ids = indexSet.compactMap { model.people.indices.contains($0) ? model.people[$0].id : nil }
-              for id in ids { model.deletePerson(id) }
             }
           }
         }
@@ -105,6 +116,22 @@ struct PeopleManagerSheet: View {
       }
       .sheet(item: $editingPerson) { person in
         PersonEditSheet(personID: person.id)
+      }
+      .alert("この人物を削除しますか？", isPresented: Binding(
+        get: { deletingPerson != nil }, set: { if !$0 { deletingPerson = nil } }
+      ), presenting: deletingPerson) { person in
+        Button("削除", role: .destructive) {
+          if !model.deletePerson(person.id) { deleteFailed = true }
+        }
+        Button("キャンセル", role: .cancel) {}
+      } message: { person in
+        let label = PersonSelectionOption.options(model.people).first { $0.id == person.id }?.label ?? person.name
+        Text("「\(label)」と、記録に付いた参加者の関連付けを削除します。記録・タスク・ジャーナルの内容は残ります。同じ名前で登録し直しても、関連付けは戻りません。")
+      }
+      .alert("人物を削除できませんでした", isPresented: $deleteFailed) {
+        Button("閉じる", role: .cancel) {}
+      } message: {
+        Text("保存先の状態を確認し、もう一度お試しください。")
       }
       .sheet(item: $editingPhoto) { request in
         PhotoEditorView(source: request.data) { edited in

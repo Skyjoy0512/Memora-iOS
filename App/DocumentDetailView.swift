@@ -109,7 +109,7 @@ struct DocumentDetailView: View {
       ToolbarActionItem(usesSystemBackground: true) {
         Menu {
           if document.kind == .document {
-            Button(document.companyTemplateID != nil && document.hasOutdatedArtifact ? "会社Word（編集前）で共有" : "Wordで共有", icon: .docRichtext) { share(document, as: .word) }
+            Button(document.companyTemplateID != nil && document.hasOutdatedArtifact ? "編集前のWordを共有" : "Wordで共有", icon: .docRichtext) { share(document, as: .word) }
           }
           if document.companyTemplateID == nil {
             Button("PDFで共有", icon: .docRichtext) { share(document, as: .pdf) }
@@ -118,7 +118,7 @@ struct DocumentDetailView: View {
               .disabled(true)
           }
           if document.kind == .slides {
-            Button(document.companyTemplateID != nil && document.hasOutdatedArtifact ? "会社PowerPoint（編集前）で共有" : "PowerPointで共有", icon: .rectangleOnRectangleAngled) { share(document, as: .powerPoint) }
+            Button(document.companyTemplateID != nil && document.hasOutdatedArtifact ? "編集前のPowerPointを共有" : "PowerPointで共有", icon: .rectangleOnRectangleAngled) { share(document, as: .powerPoint) }
           }
           Button("テキストで共有", icon: .textAlignleft) { share(document, as: .text) }
         } label: {
@@ -239,6 +239,8 @@ struct DocumentDetailView: View {
         shareItems = [document.plainText]
       }
       isSharing = true
+    } catch let error as CocoaError where error.code == .fileNoSuchFile && document.companyTemplateID != nil {
+      exportErrorMessage = "会社書式のファイルが見つかりません。共有メニューからテキストで共有できます。"
     } catch {
       exportErrorMessage = error.localizedDescription
     }

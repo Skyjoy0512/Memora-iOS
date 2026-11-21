@@ -1,12 +1,14 @@
 import SwiftUI
 
 struct DocumentPDFExportProgressView: View {
+  @AccessibilityFocusState private var isTitleFocused: Bool
   var progress: DocumentPDFProgress
   var cancel: () -> Void
 
   var body: some View {
     VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
       Text("PDFを書き出しています").font(.headline)
+        .accessibilityFocused($isTitleFocused)
       switch progress {
       case .preparing:
         ProgressView("ページを組んでいます…")
@@ -26,5 +28,6 @@ struct DocumentPDFExportProgressView: View {
     .accessibilityElement(children: .contain)
     .accessibilityAddTraits(.isModal)
     .accessibilityIdentifier("document.pdf.progress")
+    .onAppear { isTitleFocused = true }
   }
 }
