@@ -3,7 +3,7 @@ import { expect } from 'e2e';
 import { randomUUID } from 'node:crypto';
 import { seedSummaryFixture } from './summary-fixture-helpers';
 import { sql } from './sqlite-fixture-helpers';
-import { focusComposer, launchMemora, selectLibrarySection, tapControl, tapTab } from './ui-helpers';
+import { focusComposer, launchMemora, requireRootMenu, selectLibrarySection, tapControl, tapTab } from './ui-helpers';
 
 const destinations = [
   { name: 'ライブラリ', id: 'files' },
@@ -35,8 +35,9 @@ test('bottom tabs keep three equally spaced destinations below the composer', { 
       const [first, second, third] = frames;
       if (!field || !first || !second || !third) throw new Error('Missing tab or composer frame');
       const centers = [first, second, third].map(frame => frame.x + frame.width / 2);
-      expect(centers[1] - centers[0]).toBeGreaterThan(44);
-      expect(centers[2] - centers[1]).toBeCloseTo(centers[1] - centers[0], 0);
+      expect(centers[1] - centers[0]).toBeCloseTo(64, 0);
+      expect(centers[2] - centers[1]).toBeCloseTo(64, 0);
+      if (index === 2) expect(centers[1]).toBeCloseTo(field.x + field.width / 2, -1);
       expect(field.y + field.height).toBeLessThan(first.y);
       await app.screenshot(`root-${index}-${appearance}`);
     }
@@ -130,6 +131,7 @@ test('bottom tabs and the keyboard preserve the reading position in a long answe
   const data = Buffer.from(JSON.stringify(snapshot)).toString('hex');
   sql(database, `INSERT OR REPLACE INTO documents(key,data,updated_at) VALUES ('memora.activeAIConversation.v1.personal',X'${data}',0);`);
   await app.restart();
+  await requireRootMenu(app, screen);
   await tapTab(screen, 'Ask AI');
   const latest = screen.getByText(end, { exact: true }).first();
   await expect(latest).toBeVisible();

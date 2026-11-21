@@ -263,7 +263,7 @@ struct RootTabView: View {
         UndoToast(action: undo)
           .id(undo.id)
           .padding(.horizontal, 12)
-          .padding(.bottom, max(model.bottomControlsHeight, 24) + tabBarClearance + 8)
+          .padding(.bottom, max(model.bottomControlsHeight, 24) + 8)
           .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
       }
     }
@@ -290,23 +290,12 @@ struct RootTabView: View {
 
   private var tabSurface: some View {
     @Bindable var model = model
-    return VStack(spacing: 0) {
-      TabView(selection: $model.selectedTab) {
-        rootTab(.library) { LibraryView(onOpenSidebar: openSidebar).scrollDismissesKeyboard(.immediately) }
-        rootTab(.home) { HomeView(onOpenSidebar: openSidebar).scrollDismissesKeyboard(.immediately) }
-        rootTab(.askAI) { SearchView(isComposing: isComposing, onOpenSidebar: openSidebar) }
-      }
-      .frame(maxHeight: .infinity)
-      .overlay(alignment: .bottom) {
-        bottomControls.allowsHitTesting(shouldShowComposer || showsPlaybackBar)
-      }
-
-      if showsPrimaryTabs {
-        RootTabBar(selection: $model.selectedTab)
-          .padding(.bottom, safeAreaInsets.bottom)
-          .background(MemoraPalette.background)
-      }
+    return TabView(selection: $model.selectedTab) {
+      rootTab(.library) { LibraryView(onOpenSidebar: openSidebar).scrollDismissesKeyboard(.immediately) }
+      rootTab(.home) { HomeView(onOpenSidebar: openSidebar).scrollDismissesKeyboard(.immediately) }
+      rootTab(.askAI) { SearchView(isComposing: isComposing, onOpenSidebar: openSidebar) }
     }
+    .overlay(alignment: .bottom) { bottomFooter }
     .accessibilityHidden(model.isCaptureSourcePresented)
     .background(Color(uiColor: .systemBackground))
   }
@@ -315,14 +304,26 @@ struct RootTabView: View {
     Tab(value: tab) {
       content()
         .toolbar(.hidden, for: .tabBar)
-        .scrollEdgeEffectStyle(.hard, for: .bottom)
     } label: {
       Text(tab.title)
     }
   }
 
-  private var tabBarClearance: CGFloat {
-    showsPrimaryTabs ? RootTabBar.height + safeAreaInsets.bottom : 0
+  private var bottomFooter: some View {
+    @Bindable var model = model
+    return VStack(spacing: 0) {
+      bottomControls
+      if showsPrimaryTabs {
+        RootTabBar(selection: $model.selectedTab)
+          .padding(.bottom, safeAreaInsets.bottom)
+      }
+    }
+    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+      if abs(model.bottomControlsHeight - height) > 0.5 {
+        model.bottomControlsHeight = height
+      }
+    }
+    .allowsHitTesting(shouldShowComposer || showsPlaybackBar || showsPrimaryTabs)
   }
 
   private var showsPrimaryTabs: Bool {
@@ -383,15 +384,10 @@ struct RootTabView: View {
     // The tab row reserves the home inset whenever it is visible.
     .padding(.bottom, showsPrimaryTabs ? MemoraSpacing.xs : (isKeyboardVisible ? 14 : safeAreaInsets.bottom))
     .background {
-      if shouldShowComposer {
+      if shouldShowComposer && !showsPrimaryTabs {
         ComposerBackdrop()
           .containerRelativeFrame(.horizontal)
           .padding(.top, -32)
-      }
-    }
-    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-      if abs(model.bottomControlsHeight - height) > 0.5 {
-        model.bottomControlsHeight = height
       }
     }
     .animation(reduceMotion || model.selectedTab == .askAI ? nil : MemoraMotion.control, value: isComposing)

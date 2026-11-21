@@ -157,6 +157,11 @@ export async function launchMemora(app: any, device: any, screen: any) {
     if (!box) throw new Error('onboarding skip has no frame');
     await screen.tapAt({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
   }
+  await requireRootMenu(app, screen);
+}
+
+export async function requireRootMenu(app: any, screen: any) {
+  const menu = screen.getByLabel('メニュー').first();
   try {
     await expect(menu).toBeVisible({ timeout: 4_000 });
   } catch {

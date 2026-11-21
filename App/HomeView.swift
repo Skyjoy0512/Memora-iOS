@@ -152,7 +152,7 @@ struct HomeView: View {
         .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
         .padding(.horizontal, MemoraSpacing.screen)
         .frame(maxWidth: .infinity)
-        // The tab bar insets the scroll view. Leave extra room for the composer.
+        // The measured footer lets the last entry scroll clear of its controls.
         .padding(.bottom, model.bottomContentClearance)
       }
       .refreshable {

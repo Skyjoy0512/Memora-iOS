@@ -75,9 +75,9 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Enter and leave selection in one non-animated transaction, including
   `isFileSelectionActive`; do not defer that flag to an `onChange`. The selection
   actions use a capsule-shaped glass bar.
-- **Bottom edge**: the primary tab row takes its own layout space beneath the
-  `TabView` and its single shared composer. Scroll clearance reserves only
-  the contextual composer and playback controls.
+- **Bottom edge**: one measured footer lays out playback, the shared composer
+  and the centered transparent tab row in order. Scroll clearance reserves
+  their combined height. Keep the primary footer free of a solid backdrop.
   Keep the editor and capture importer identity across changes in tab visibility.
   Search and file selection hide the tabs, composer and capture controls; the
   results or share / move / delete bar own the bottom edge. Hide tabs during

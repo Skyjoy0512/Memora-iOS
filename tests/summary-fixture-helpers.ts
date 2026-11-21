@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { expect } from 'e2e';
-import { launchMemora, tapControl, tapTab } from './ui-helpers';
+import { launchMemora, requireRootMenu, tapControl, tapTab } from './ui-helpers';
 import { isolatedDatabase, sql } from './sqlite-fixture-helpers';
 
 // A positive UI-created UUID marker identifies only this fresh test simulator.
@@ -44,6 +44,7 @@ export async function seedSummaryFixture(app: any, device: any, screen: any,
   const bytes = Buffer.from(JSON.stringify([fixture]), 'utf8').toString('hex');
   sql(database, `INSERT OR REPLACE INTO documents (key,data,updated_at) VALUES ('memoraMeetings',X'${bytes}',${timestamp});`);
   await app.restart();
+  await requireRootMenu(app, screen);
   await tapTab(screen, 'ライブラリ');
   await tapControl(screen.getByRole('button', { name: new RegExp('^' + title) }).first());
   return { database, identity, fixture, title, summary, raw, marker };

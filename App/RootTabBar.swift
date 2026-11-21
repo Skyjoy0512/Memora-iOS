@@ -5,8 +5,7 @@ struct RootTabBar: View {
   @Binding var selection: RootTab
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-  private static let topPadding = MemoraSpacing.xs
-  static var height: CGFloat { MemoraSpacing.touchTarget + topPadding }
+  private static let itemWidth: CGFloat = 64
 
   var body: some View {
     HStack(spacing: 0) {
@@ -21,7 +20,7 @@ struct RootTabBar: View {
             .contentTransition(.opacity)
             .animation(reduceMotion ? nil : MemoraMotion.control, value: isSelected)
             .accessibilityHidden(true)
-            .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget)
+            .frame(width: Self.itemWidth, height: MemoraSpacing.touchTarget)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -30,8 +29,8 @@ struct RootTabBar: View {
         .accessibilityIdentifier("root.tab.\(tab.rawValue)")
       }
     }
-    .padding(.horizontal, MemoraSpacing.section)
-    .padding(.top, Self.topPadding)
+    .frame(maxWidth: .infinity)
+    .padding(.top, MemoraSpacing.xs)
   }
 
   private func glyph(for tab: RootTab, isSelected: Bool) -> some View {
