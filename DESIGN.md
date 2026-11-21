@@ -21,7 +21,7 @@ Brand assets follow the supplied canonical artwork in docs/BRANDING.md. Floating
 
 - The bottom row centers three icons 64pt apart for Library, Journal, and
   Ask AI. The selected Lucide glyph is filled. The row shares the footer's
-  opaque canvas color. A short blur at the footer's top softens the transition
+  opaque canvas color. A short blur behind the composer fades into that color
   as content scrolls underneath. The buttons carry spoken
   names, identifiers and selection. `TabView` retains each navigation stack.
   The sidebar keeps the
