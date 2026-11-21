@@ -9,6 +9,7 @@ struct WebResearchView: View {
   @State private var thirdQuery = ""
   @State private var summarizes = true
   @State private var confirms = false
+  @State private var hasKey = KeychainStore.has(WebResearchClient.keyName)
   @State private var failure: String?
   @State private var deletingID: UUID?
   init(initialQuery: String = "", initialMode: WebResearchReport.Mode = .search) {
@@ -27,12 +28,16 @@ struct WebResearchView: View {
           }
           Toggle("AIで比較・要約", isOn: $summarizes)
           Button("調査を開始") { confirms = true }
-            .disabled(!KeychainStore.has(WebResearchClient.keyName) || query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .disabled(!hasKey || query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         } footer: {
           Text("検索語はBraveへ送信します。Deep Researchは取得結果の不足に応じて追加検索します。要約には現在のAsk AIモデルを使います。")
         }
-        if !KeychainStore.has(WebResearchClient.keyName) {
-          Section { Text("設定 › AI整理 › Web検索でAPIキーを登録してください。キー未設定時には検索を実行しません。").foregroundStyle(.secondary) }
+        if !hasKey {
+          Section {
+            NavigationLink("Brave SearchのAPIキーを設定") { WebResearchSettingsView() }
+          } footer: {
+            Text("検索にはBrave SearchのAPIキーが必要です。")
+          }
         }
         if let failure { Text(failure).foregroundStyle(.secondary) }
         Section("調査履歴") {
@@ -56,6 +61,7 @@ struct WebResearchView: View {
           deletingID = nil
         }
       } message: { Text("プロジェクトへ保存したソースとレポートは残ります。") }
+      .onAppear { hasKey = KeychainStore.has(WebResearchClient.keyName) }
       .navigationTitle("Web検索・調査").navigationBarTitleDisplayMode(.inline)
       .toolbar { ToolbarItem(placement: .cancellationAction) { Button("閉じる") { dismiss() } } }
       .confirmationDialog("外部サービスへ送信しますか？", isPresented: $confirms, titleVisibility: .visible) {

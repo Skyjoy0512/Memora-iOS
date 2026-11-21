@@ -10,7 +10,9 @@ struct AIChatModelSheet: View {
         Section {
           modelRow("Auto", detail: "設定したAIエンジンに合わせて選択", id: nil)
           ForEach(model.registeredLLMs.models) { registered in
-            modelRow(registered.name, detail: registered.provider.label, id: registered.id)
+            let isReady = EngineAvailability.hasKey(registered.provider.keychainAccount)
+            modelRow(registered.name, detail: isReady ? registered.provider.label : "\(registered.provider.label)（APIキー未設定）",
+              id: registered.id, isReady: isReady)
           }
         } footer: {
           Text("次のメッセージから選択したモデルを使います。")
@@ -34,8 +36,12 @@ struct AIChatModelSheet: View {
     .presentationDragIndicator(.visible)
   }
 
-  private func modelRow(_ title: String, detail: String, id: UUID?) -> some View {
+  private func modelRow(_ title: String, detail: String, id: UUID?, isReady: Bool = true) -> some View {
     Button {
+      if let id {
+        guard let current = model.registeredLLMs.models.first(where: { $0.id == id }),
+              EngineAvailability.hasKey(current.provider.keychainAccount) else { return }
+      }
       model.registeredLLMs.select(id)
       dismiss()
     } label: {
@@ -50,6 +56,7 @@ struct AIChatModelSheet: View {
       }.frame(minHeight: 52).contentShape(Rectangle())
     }
     .buttonStyle(.plain)
+    .disabled(!isReady)
     .listRowBackground(MemoraPalette.elevated)
     .accessibilityAddTraits(model.registeredLLMs.selectedID == id ? .isSelected : [])
   }

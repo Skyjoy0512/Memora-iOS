@@ -50,7 +50,7 @@ struct ProjectFilePickerSheet: View {
             .accessibilityHint("タップで移動するファイルを選択・解除します")
           }
         } footer: {
-          Text("\(model.space(id: spaceID)?.name ?? "プロジェクト")へ移動します。元のプロジェクトや未分類の一覧からは非表示になります。")
+          Text("\(model.space(id: spaceID)?.name ?? "プロジェクト")へ移動します。移動後もライブラリから開けます。")
         }
       }
       .overlay {

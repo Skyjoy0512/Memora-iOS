@@ -18,15 +18,19 @@ struct ExternalRecorderSettingsView: View {
           )
         }
         .accessibilityIdentifier("recorder.omi")
+      } header: {
+        Text("直接接続")
+      }
 
+      Section {
         NavigationLink {
           RecorderAudioImportView(title: "他のレコーダー・ボイスメモ", isPlaud: false)
         } label: {
-          recorderRow(title: "他のレコーダー・ボイスメモ", detail: "PLAUD・ICレコーダーなどの音声取り込み", symbol: .squareAndArrowDown)
+          recorderRow(title: "他のレコーダー・ボイスメモ", detail: "PLAUD・ICレコーダーなどから書き出した音声", symbol: .squareAndArrowDown)
         }
         .accessibilityIdentifier("recorder.other")
       } header: {
-        Text("レコーダー")
+        Text("音声ファイルを取り込む")
       }
     }
     .navigationTitle("外部レコーダー")

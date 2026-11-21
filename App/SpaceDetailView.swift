@@ -80,6 +80,7 @@ struct SpaceDetailView: View {
             ToolbarIconButton("参考資料を追加", icon: .paperclip) {
               model.sourceAddProjectID = spaceID
             }
+            .accessibilityHint("このプロジェクトに保存します")
           }
         }
         ToolbarActionItem(usesSystemBackground: true) {

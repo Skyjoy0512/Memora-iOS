@@ -15,13 +15,17 @@ struct AIHistoryView: View {
     let scopedEntries = entries.filter { $0.episode?.workspaceID == model.currentTeamID && $0.episode?.personIDs.first == model.aiPersonScopeID }
     let filteredEntries = AIHistorySearch.matching(scopedEntries, query: query)
     let linkedIDs = Set(entries.compactMap(\.webResearchReportID))
-    let legacyReports = model.webResearchReports.filter {
-      $0.workspaceID == model.currentTeamID && !linkedIDs.contains($0.id) && (query.isEmpty || $0.query.localizedCaseInsensitiveContains(query) || $0.answer.localizedCaseInsensitiveContains(query))
+    let scopedReports = model.webResearchReports.filter {
+      $0.workspaceID == model.currentTeamID && !linkedIDs.contains($0.id)
+    }
+    let legacyReports = scopedReports.filter {
+      CollectionSearch.matches(query, fields: [$0.query, $0.answer])
     }
     NavigationStack {
       Group {
-        if entries.isEmpty && model.webResearchReports.isEmpty {
-          ContentUnavailableView("まだ履歴がありません", icon: .clockArrowCirclepath)
+        if scopedEntries.isEmpty && scopedReports.isEmpty {
+          ContentUnavailableView("まだ履歴がありません", icon: .clockArrowCirclepath,
+            description: Text("この範囲で質問すると、ここに履歴が表示されます。"))
         } else if filteredEntries.isEmpty && legacyReports.isEmpty {
           ContentUnavailableView.search(text: query)
         } else {

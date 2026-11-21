@@ -3,7 +3,7 @@ import SwiftUI
 
 struct LibraryView: View {
   @State private var matchingSourceIDs: Set<UUID> = []
-  @State private var completedSourceQuery = ""
+  @State private var completedSourceRequest: SourceSearchRequest?
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.dynamicTypeSize) private var typeSize
@@ -102,13 +102,13 @@ struct LibraryView: View {
       .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : (isSearching ? "" : "ライブラリ"))
       .navigationBarTitleDisplayMode(.inline)
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: model.librarySection.searchPrompt)
-      .task(id: SourceSearchRequest(query: query, sources: model.projectSources, workspaceGeneration: model.aiWorkspaceGeneration)) {
-        matchingSourceIDs = []
-        guard CollectionSearch.hasQuery(query) else { completedSourceQuery = query; return }
-        let value = query
-        let matches = await model.matchingSourceIDs(query: value)
-        guard !Task.isCancelled, query == value else { return }
-        matchingSourceIDs = matches; completedSourceQuery = value
+      .task(id: sourceSearchRequest) { [request = sourceSearchRequest] in
+        guard CollectionSearch.hasQuery(request.query), !request.sources.isEmpty else { return }
+        guard completedSourceRequest != request else { return }
+        let matches = await model.matchingSourceIDs(query: request.query)
+        guard !Task.isCancelled, sourceSearchRequest == request else { return }
+        matchingSourceIDs = matches
+        completedSourceRequest = request
       }
       .toolbar {
         if !isSearching {
@@ -299,6 +299,10 @@ struct LibraryView: View {
     }
   }
 
+  private var sourceSearchRequest: SourceSearchRequest {
+    SourceSearchRequest(query: query, sources: model.projectSources, workspaceGeneration: model.aiWorkspaceGeneration)
+  }
+
   private var filesPage: some View {
     // Searching replaces the list with its results; before anything is typed
     // there is nothing to match, so the files stay out of the way.
@@ -306,11 +310,14 @@ struct LibraryView: View {
     let sections = isAwaitingQuery ? [] : fileSections
     let count = sections.reduce(0) { $0 + $1.meetings.count }
     let sharedRecords = model.cloudSharing.sharedRecords
+    let hasCompletedSourceSearch = completedSourceRequest == sourceSearchRequest
     let savedSources = isAwaitingQuery || statusFilter != .all ? [] : model.projectSources.filter {
       CollectionSearch.matches(query, fields: [$0.title, $0.summary ?? ""]) ||
-        (completedSourceQuery == query && matchingSourceIDs.contains($0.id))
+        (hasCompletedSourceSearch && matchingSourceIDs.contains($0.id))
     }
     let resultCount = count + savedSources.count
+    let isSearchingSourceText = CollectionSearch.hasQuery(query)
+      && statusFilter == .all && !model.projectSources.isEmpty && !hasCompletedSourceSearch
     let hasSharedRecords = !isSearching && !isSelectionMode && statusFilter == .all && !sharedRecords.isEmpty
     let hasSavedSources = !savedSources.isEmpty && !isAwaitingQuery && !isSelectionMode
 
@@ -335,7 +342,7 @@ struct LibraryView: View {
           if isAwaitingQuery {
             CollectionSearchState(title: "ファイルを検索",
               message: "記録や参考資料のタイトル・本文から探せます。", isEmbedded: true)
-          } else if CollectionSearch.hasQuery(query), completedSourceQuery != query {
+          } else if isSearchingSourceText {
             ProgressView("参考資料の本文を検索しています…")
               .padding(.vertical, MemoraSpacing.lg)
           } else if CollectionSearch.hasQuery(query) {
@@ -405,12 +412,18 @@ struct LibraryView: View {
         }
 
         if CollectionSearch.hasQuery(query) {
-          Text("\(resultCount)件")
-            .font(MemoraTypography.secondary)
-            .foregroundStyle(.secondary)
-            .listRowSeparator(.hidden)
-            .listRowBackground(Color.clear)
-            .accessibilityLabel("\(resultCount)件の検索結果")
+          Group {
+            if isSearchingSourceText {
+              ProgressView("参考資料の本文を検索しています…")
+            } else {
+              Text("\(resultCount)件")
+                .accessibilityLabel("\(resultCount)件の検索結果")
+            }
+          }
+          .font(MemoraTypography.secondary)
+          .foregroundStyle(.secondary)
+          .listRowSeparator(.hidden)
+          .listRowBackground(Color.clear)
         }
       }
     }
@@ -720,19 +733,18 @@ struct LibraryView: View {
     if CollectionSearch.hasQuery(query) {
       result = result.filter(matchesQuery)
     }
-    switch sort {
-    case .newest: result.sort { $0.createdAt > $1.createdAt }
-    case .oldest: result.sort { $0.createdAt < $1.createdAt }
-    case .longest: result.sort { $0.duration > $1.duration }
-    }
-    return result
+    return sort.ordered(result)
   }
 
   /// The meetings grouped into date sections, in the order the sort puts them.
   private var fileSections: [FileDateSection] {
+    let meetings = matchingMeetings
+    if sort == .longest {
+      return meetings.isEmpty ? [] : [FileDateSection(id: "duration", title: "録音の長さ順", meetings: meetings)]
+    }
     let calendar = Calendar.current
     var sections: [FileDateSection] = []
-    for meeting in matchingMeetings {
+    for meeting in meetings {
       let key = sectionKey(for: meeting.createdAt, calendar: calendar)
       if let index = sections.firstIndex(where: { $0.id == key }) {
         sections[index].meetings.append(meeting)

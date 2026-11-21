@@ -24,6 +24,7 @@ struct ProjectSourceAddSheet: View {
   @State private var importedSourceIDs: [UUID] = []
   @State private var activeDraftKey: String?
   @State private var availableDraftKeys: [String] = []
+  @ScaledMetric(relativeTo: .body) private var titleFieldMinHeight: CGFloat = 24
   @FocusState private var isNoteFocused: Bool
   private var preferredDraftKey: String { "workspace.\(isMemo ? "newMemo" : "newNote").\(projectID?.uuidString ?? "library")" }
   private var draftKey: String { activeDraftKey ?? preferredDraftKey }
@@ -33,6 +34,7 @@ struct ProjectSourceAddSheet: View {
       ScrollView {
         VStack(alignment: .leading, spacing: MemoraSpacing.xxl) {
           pageHeader
+          sourceAttachments
           notesContent
           if let failure { Text(failure).font(.subheadline).foregroundStyle(MemoraPalette.danger) }
         }
@@ -117,11 +119,19 @@ struct ProjectSourceAddSheet: View {
   }
 
   private var pageHeader: some View {
-    VStack(alignment: .leading, spacing: 10) {
-      TextField("新しいノート", text: $title, axis: .vertical)
-        .font(MemoraTypography.screenTitle)
+    VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
+      Text("タイトル（任意）")
+        .font(MemoraTypography.sectionHeading)
+        .accessibilityHidden(true)
+      TextField("", text: $title, prompt: Text("例：会議メモ")
+        .foregroundStyle(MemoraPalette.textSecondary))
+        .font(MemoraTypography.body)
         .textFieldStyle(.plain)
+        .frame(minHeight: titleFieldMinHeight, alignment: .leading)
+        .submitLabel(.next)
+        .onSubmit { isNoteFocused = true }
         .accessibilityLabel("タイトル")
+        .accessibilityHint("任意項目")
       Text(projectID.flatMap { model.space(id: $0)?.name }.map { "保存先：" + $0 } ?? "ライブラリに保存します")
         .font(MemoraTypography.secondary)
         .foregroundStyle(MemoraPalette.textSecondary)
@@ -129,19 +139,23 @@ struct ProjectSourceAddSheet: View {
   }
 
   private var notesContent: some View {
-    VStack(alignment: .leading, spacing: 14) {
+    VStack(alignment: .leading, spacing: MemoraSpacing.md) {
       Text("ノート").font(MemoraTypography.sectionHeading)
-      MarkdownEditorField(markdown: $text, font: .body, minHeight: 360, isFocused: $isNoteFocused)
+      MarkdownEditorField(markdown: $text, font: .body, minHeight: 200, isFocused: $isNoteFocused)
         .accessibilityLabel("ノート本文")
         .accessibilityIdentifier("source.content")
         .overlay(alignment: .topLeading) {
           if text.isEmpty && !isNoteFocused {
-            Text("タップして入力、またはリンクを貼り付け")
-              .font(.body).foregroundStyle(.tertiary)
+            Text("メモを書くか、リンクを貼り付け")
+              .font(.body).foregroundStyle(MemoraPalette.textSecondary)
               .allowsHitTesting(false).accessibilityHidden(true)
           }
         }
-      Divider()
+    }
+  }
+
+  private var sourceAttachments: some View {
+    VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
       Menu {
         Button("ファイルを追加", icon: .doc) {
           fileContext = LocalImportContext(projectID: projectID, in: model)

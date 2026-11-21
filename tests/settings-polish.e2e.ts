@@ -66,7 +66,7 @@ test('settings polish: topic hierarchy, profile editing and shared sidebar icons
   await expect(screen.getByRole('button', { name: 'ミー文字・絵文字を選ぶ', exact: true }).first()).toBeVisible();
 });
 
-test('settings polish: workspace switching and team registration remain reachable in Settings', async ({ app, device, screen }) => {
+test('settings polish: personal workspace stays selectable and unavailable team setup is explained', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await tapControl(screen, screen.getByLabel('メニュー'));
   await expect(screen.getByRole('button', { name: 'ライブラリ', exact: true })).toBeVisible();
@@ -79,12 +79,21 @@ test('settings polish: workspace switching and team registration remain reachabl
   await expect(workspace).toBeSelected();
   await tapControl(screen, workspace);
   await expect(workspace).toBeSelected();
-  await expect(screen.getByRole('button', { name: 'チームを作成', exact: true })).toBeVisible();
-  await tapControl(screen, screen.getByRole('button', { name: 'チームに参加', exact: true }));
-  await expect(screen.getByPlaceholder('招待コード')).toBeVisible();
-  await app.screenshot('workspace-team-join');
-  await tapControl(screen, screen.getByRole('button', { name: '閉じる', exact: true }).last());
-  await expect(workspace).toBeVisible();
+  await expect(screen.getByText('チームの作成と参加は、サービス接続後に利用できます。')).toBeVisible();
+  await expect(screen.getByRole('button', { name: 'チームに参加', exact: true })).not.toBeVisible();
+  await app.screenshot('workspace-team-unavailable');
+});
+
+test('settings polish: demo replacement needs explicit destructive confirmation', async ({ app, device, screen }) => {
+  await launchMemora(app, device, screen);
+  await openSettings(screen);
+  await category(screen, 'diagnostics');
+  const replace = screen.getByRole('button', { name: 'デモデータに置き換える', exact: true });
+  await scrollToControl(screen, replace);
+  await tapControl(replace);
+  await expect(screen.getByText('既存の内容をデモデータに置き換えますか？', { exact: true })).toBeVisible();
+  await tapControl(screen.getByRole('button', { name: 'キャンセル', exact: true }));
+  await expect(replace).toBeVisible();
 });
 
 test('settings polish: appearance preferences survive restart without changing records', async ({ app, device, screen }) => {
@@ -134,10 +143,11 @@ test('settings polish: relocated AI, recording, plan and connection controls rem
   await expect(screen.getByText('スキル', { exact: true })).not.toBeVisible();
   await app.screenshot('integrations-topic');
   await tapControl(screen, screen.getByText('Gmail', { exact: true }));
-  await tapControl(screen, screen.getByText('接続・認証設定', { exact: true }));
+  await expect(screen.getByTestId('connector.requirement')).toBeVisible();
+  await tapControl(screen, screen.getByRole('button', { name: '接続', exact: true }));
   await expect(screen.getByText(/Google OAuth|クライアントID|接続されていません|Gmailを接続/).first()).toBeVisible();
   await back(screen);
   await back(screen);
   await tapControl(screen, screen.getByText('Google Drive', { exact: true }));
-  await expect(screen.getByText('現在は接続できません。')).toBeVisible();
+  await expect(screen.getByText('このサービスとの連携は準備中です。')).toBeVisible();
 });

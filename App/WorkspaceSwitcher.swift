@@ -20,8 +20,14 @@ struct WorkspaceSwitcher: View {
     }
 
     Section {
-      Button("チームを作成", icon: .plus, action: onCreateTeam)
-      Button("チームに参加", icon: .personBadgePlus, action: onJoinTeam)
+      if model.teamBackend is UnconfiguredTeamBackend {
+        SettingsValue(title: "チームワークスペース", value: "未接続", icon: .person2)
+        Text("チームの作成と参加は、サービス接続後に利用できます。")
+          .font(.footnote).foregroundStyle(.secondary)
+      } else {
+        Button("チームを作成", icon: .plus, action: onCreateTeam)
+        Button("チームに参加", icon: .personBadgePlus, action: onJoinTeam)
+      }
     }
     .task { await model.refreshTeams() }
   }

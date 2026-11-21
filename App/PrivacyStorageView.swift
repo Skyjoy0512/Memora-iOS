@@ -34,7 +34,6 @@ struct PrivacyStorageView: View {
 
       Section {
         SettingsValue(title: "クラウドAI（BYOK）", value: "設定したサービス", icon: .sparkles)
-        SettingsValue(title: "クラウド保管", value: model.cloudStorageStatus, icon: .cloud)
       } header: {
         Text("外部へ送られる可能性があるもの")
       } footer: {

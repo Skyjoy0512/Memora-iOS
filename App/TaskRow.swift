@@ -50,6 +50,7 @@ struct TaskRow: View {
   private var taskContent: some View {
     let context = showsMetadata ? TaskContextLine.text(progress: task.progress,
       workDate: task.workDate, isCompleted: task.isCompleted) : nil
+    let assignee = showsMetadata ? task.assignee?.trimmingCharacters(in: .whitespacesAndNewlines) : nil
     let dateLayout = typeSize.isAccessibilitySize
       ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.xs))
       : AnyLayout(HStackLayout(spacing: MemoraSpacing.sm))
@@ -66,6 +67,13 @@ struct TaskRow: View {
           .foregroundStyle(MemoraPalette.textSecondary)
           .fixedSize(horizontal: false, vertical: true)
           .accessibilityIdentifier("task.context.\(task.id)")
+      }
+
+      if let assignee, !assignee.isEmpty {
+        Text("担当：\(assignee)")
+          .font(MemoraTypography.metadata)
+          .foregroundStyle(MemoraPalette.textSecondary)
+          .fixedSize(horizontal: false, vertical: true)
       }
 
       if showsMetadata, !task.isCompleted, let dueDate = task.dueDate {

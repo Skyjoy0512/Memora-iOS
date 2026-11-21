@@ -4,7 +4,6 @@ import SwiftUI
 /// explains that rather than pretending to create an account.
 struct AuthView: View {
   @Environment(\.dismiss) private var dismiss
-  @State private var isUnavailableNoticePresented = false
 
   var body: some View {
     NavigationStack {
@@ -20,19 +19,19 @@ struct AuthView: View {
             .lineSpacing(4)
             .padding(.top, MemoraSpacing.md)
 
-          VStack(spacing: 10) {
-            AuthProviderButton(provider: .apple) { showUnavailable() }
-            AuthProviderButton(provider: .google) { showUnavailable() }
-            AuthProviderButton(provider: .email) { showUnavailable() }
-          }
-          .padding(.top, MemoraSpacing.section)
-
           Button { dismiss() } label: {
-            Text("ログインせず利用").frame(maxWidth: .infinity)
+            Text("このiPhoneで続ける").frame(maxWidth: .infinity)
           }
             .buttonStyle(MemoraButtonStyle())
             .padding(.top, MemoraSpacing.section)
             .accessibilityIdentifier("auth.continueLocal")
+
+          VStack(spacing: MemoraSpacing.sm) {
+            AuthProviderButton(provider: .apple)
+            AuthProviderButton(provider: .google)
+            AuthProviderButton(provider: .email)
+          }
+          .padding(.top, MemoraSpacing.section)
 
           Text("録音はこのiPhoneに保存されます。クラウドAIを設定した場合は、許可した内容を送信します。")
             .font(.footnote)
@@ -53,15 +52,7 @@ struct AuthView: View {
           ToolbarIconButton("あとで", icon: .xmark) { dismiss() }
         }
       }
-      .alert("サインインは準備中です", isPresented: $isUnavailableNoticePresented) {
-        Button("閉じる", role: .cancel) {}
-      } message: {
-        Text("認証サービスは未接続です。アカウントは作成されません。ログインせず利用できます。")
-      }
     }
   }
 
-  private func showUnavailable() {
-    isUnavailableNoticePresented = true
-  }
 }

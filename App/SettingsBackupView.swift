@@ -12,6 +12,7 @@ struct SettingsBackupView: View {
   @State private var temporaryBackupURL: URL?
   @State private var errorMessage: String?
   @State private var statusMessage: String?
+  @AccessibilityFocusState private var isProgressFocused: Bool
 
   private enum BackupWork {
     case exporting
@@ -67,6 +68,7 @@ struct SettingsBackupView: View {
     }
     .navigationTitle("バックアップ")
     .memoraBackButton()
+    .accessibilityHidden(isWorking)
     .overlay {
       if let activeWork {
         workingOverlay(activeWork.label)
@@ -102,6 +104,11 @@ struct SettingsBackupView: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(.ultraThinMaterial)
     .allowsHitTesting(true)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(label)
+    .accessibilityAddTraits(.isModal)
+    .accessibilityFocused($isProgressFocused)
+    .onAppear { isProgressFocused = true }
   }
 
   private func export() {

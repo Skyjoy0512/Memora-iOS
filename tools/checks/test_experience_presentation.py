@@ -34,9 +34,10 @@ class ExperiencePresentationChecks(unittest.TestCase):
         provider = (APP / "AuthProviderButton.swift").read_text()
         for option in (".apple", ".google", ".email"):
             self.assertIn(f"AuthProviderButton(provider: {option})", auth)
-        self.assertIn('Text("ログインせず利用").frame(maxWidth: .infinity)', auth)
+        self.assertIn('Text("このiPhoneで続ける").frame(maxWidth: .infinity)', auth)
+        self.assertLess(auth.index('"auth.continueLocal"'), auth.index("AuthProviderButton("))
         self.assertIn('Text("準備中")', provider)
-        self.assertIn("認証は未接続です", provider)
+        self.assertIn(".disabled(action == nil)", provider)
         self.assertIn("許可した内容を送信します", auth)
         self.assertNotIn("model.signIn", auth)
         self.assertNotIn("SecureField", auth)

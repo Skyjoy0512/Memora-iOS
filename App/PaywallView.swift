@@ -6,6 +6,7 @@ struct PaywallView: View {
   @State private var selectedPlan: MemoraPlan = .pro
   @State private var isUnavailableNoticePresented = false
   @State private var isLicensePresented = false
+  @State private var savedLocalPlan: MemoraPlan?
 
   var body: some View {
     NavigationStack {
@@ -20,7 +21,7 @@ struct PaywallView: View {
         Section {
           Picker("プラン", selection: $selectedPlan) {
             ForEach(MemoraPlan.allCases) { plan in
-              Text("\(plan.label) · \(plan.priceLabel)").tag(plan)
+              Text(plan.label).tag(plan)
             }
           }
           .pickerStyle(.menu)
@@ -59,11 +60,17 @@ struct PaywallView: View {
           }
           Button(model.plan == selectedPlan ? "この端末で選択済み" : "\(selectedPlan.label)を端末の設定として選ぶ") {
             model.choosePlan(selectedPlan)
-            isUnavailableNoticePresented = true
+            savedLocalPlan = selectedPlan
+            model.announce("この端末の設定を更新しました。")
           }
           .disabled(model.plan == selectedPlan)
           .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget)
           .accessibilityIdentifier("plan.chooseLocal")
+          if savedLocalPlan == selectedPlan, model.plan == selectedPlan {
+            Text("この端末の設定を更新しました。")
+              .font(.footnote)
+              .foregroundStyle(MemoraPalette.textSecondary)
+          }
         } footer: {
           Text("ローカルな設定です。有効な購入やサブスクリプションを示すものではありません。")
         }

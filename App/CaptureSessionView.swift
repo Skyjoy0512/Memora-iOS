@@ -138,7 +138,7 @@ struct CaptureSessionView: View {
           ScrollView {
             if model.recordingMarkers.isEmpty {
               ContentUnavailableView("重要マークはありません", icon: .flag,
-                description: Text("大事だと思った瞬間に上の旗をタップすると、録音の位置を残せます。"))
+                description: Text("旗のボタンで、あとから聞き返す位置を記録できます。"))
             } else {
               RecordingMarkersView(markers: model.recordingMarkers, onDelete: model.removeRecordingMarker)
             }
@@ -151,16 +151,19 @@ struct CaptureSessionView: View {
       .transition(.opacity)
       .animation(reduceMotion ? nil : MemoraMotion.control, value: section)
 
-      MemoraGlassContainer(spacing: 12) {
-        HStack(spacing: 12) {
+      let controlsLayout = dynamicTypeSize.isAccessibilitySize
+        ? AnyLayout(VStackLayout(spacing: MemoraSpacing.sm))
+        : AnyLayout(HStackLayout(spacing: MemoraSpacing.md))
+      MemoraGlassContainer(spacing: MemoraSpacing.md) {
+        controlsLayout {
           Button(model.isRecordingPaused ? "再開" : "一時停止", icon: model.isRecordingPaused ? .playFill : .pauseFill) {
             model.toggleCapturePause()
             InteractionFeedback.shared.send(.selection)
           }
           .labelStyle(.titleOnly)
           .font(.headline)
-          .lineLimit(1)
-          .minimumScaleFactor(0.85)
+          .multilineTextAlignment(.center)
+          .padding(.vertical, MemoraSpacing.xs)
           .frame(maxWidth: .infinity, minHeight: 56)
           .memoraGlass(in: Capsule(), interactive: true)
           .disabled(model.isSavingCapture || !model.isRecording)
@@ -175,8 +178,8 @@ struct CaptureSessionView: View {
           .disabled(model.isSavingCapture)
           .labelStyle(.titleOnly)
           .font(.headline)
-          .lineLimit(1)
-          .minimumScaleFactor(0.85)
+          .multilineTextAlignment(.center)
+          .padding(.vertical, MemoraSpacing.xs)
           .foregroundStyle(MemoraPalette.actionLabel)
           .frame(maxWidth: .infinity, minHeight: 56)
           .memoraGlass(in: Capsule(), tint: MemoraPalette.action, interactive: true)

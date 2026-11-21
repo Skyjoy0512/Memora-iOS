@@ -23,33 +23,49 @@ struct CalendarSelectionView: View {
           Text("カレンダーが見つかりません。")
             .foregroundStyle(.secondary)
         } else {
+          Button {
+            selectedIDsValue = ""
+          } label: {
+            selectionRow("すべてのカレンダー", isSelected: selectedIDs.isEmpty)
+          }
+          .buttonStyle(.plain)
+          .accessibilityAddTraits(selectedIDs.isEmpty ? .isSelected : [])
+
           ForEach(calendars) { calendar in
+            let isSelected = selectedIDs.contains(calendar.id)
             Button {
               toggle(calendar.id)
             } label: {
-              HStack {
-                Text(calendar.title)
-                  .foregroundStyle(.primary)
-                Spacer()
-                if selectedIDs.contains(calendar.id) {
-                  Image(icon: .checkmark)
-                    .foregroundStyle(.primary)
-                }
-              }
-              .contentShape(Rectangle())
+              selectionRow(calendar.title, isSelected: isSelected)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(calendar.title)
-            .accessibilityValue(selectedIDs.contains(calendar.id) ? "表示" : "非表示")
+            .accessibilityValue(selectedIDs.isEmpty || isSelected ? "表示" : "非表示")
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
+            .accessibilityHint(selectedIDs.isEmpty ? "このカレンダーだけを表示します" : "")
           }
         }
       } footer: {
-        Text("選んだカレンダーの予定だけを表示します。未選択ならすべて表示します。")
+        Text("個別のカレンダーを選ぶと、表示する予定を絞り込めます。")
       }
     }
     .navigationTitle("表示するカレンダー")
     .navigationBarTitleDisplayMode(.inline)
     .task { await loadCalendars() }
+  }
+
+  private func selectionRow(_ title: String, isSelected: Bool) -> some View {
+    HStack {
+      Text(title).foregroundStyle(.primary)
+      Spacer()
+      if isSelected {
+        Image(icon: .checkmark)
+          .foregroundStyle(.primary)
+          .accessibilityHidden(true)
+      }
+    }
+    .frame(minHeight: MemoraSpacing.touchTarget)
+    .contentShape(Rectangle())
   }
 
   private func toggle(_ id: String) {

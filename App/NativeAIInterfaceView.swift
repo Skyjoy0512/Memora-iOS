@@ -112,21 +112,7 @@ struct NativeAIInterfaceView: View {
         AIInterfaceMetricView(item: item)
       }
     case .chart:
-      Chart(component.items) { item in
-        BarMark(x: .value("値", item.value ?? 0), y: .value("項目", item.title ?? ""))
-          .foregroundStyle(MemoraPalette.textPrimary)
-          .accessibilityLabel(item.title ?? "").accessibilityValue((item.value ?? 0).formatted())
-      }
-      .chartXAxis {
-        AxisMarks(values: .automatic(desiredCount: dynamicTypeSize.isAccessibilitySize ? 3 : 5)) {
-          AxisValueLabel().foregroundStyle(MemoraPalette.textSecondary)
-        }
-      }
-      .chartYAxis { AxisMarks { AxisValueLabel().foregroundStyle(MemoraPalette.textSecondary) } }
-      .frame(height: CGFloat(max(160, component.items.count * 36)))
-      ForEach(component.items) { item in
-        LabeledContent(item.title ?? "", value: (item.value ?? 0).formatted()).font(.caption)
-      }
+      NativeAIChart(items: component.items)
     case .taskProgress:
       let references = component.items.compactMap(\.referenceID)
       let tasks = references.compactMap { model.task(id: $0) }
@@ -200,6 +186,38 @@ struct AIInterfaceReferenceDestination: View {
     } else {
       Text("この項目は現在参照できません。必要な情報を改めて依頼してください。")
         .font(.footnote).foregroundStyle(.secondary)
+    }
+  }
+}
+
+private struct NativeAIChart: View {
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+  @State private var showsValues = false
+  var items: [NativeAIInterface.Item]
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: MemoraSpacing.md) {
+      Chart(items) { item in
+        BarMark(x: .value("値", item.value ?? 0), y: .value("項目", item.title ?? ""))
+          .foregroundStyle(MemoraPalette.textPrimary)
+          .accessibilityLabel(item.title ?? "")
+          .accessibilityValue((item.value ?? 0).formatted())
+      }
+      .chartXAxis {
+        AxisMarks(values: .automatic(desiredCount: dynamicTypeSize.isAccessibilitySize ? 3 : 5)) {
+          AxisValueLabel().foregroundStyle(MemoraPalette.textSecondary)
+        }
+      }
+      .chartYAxis { AxisMarks { AxisValueLabel().foregroundStyle(MemoraPalette.textSecondary) } }
+      .frame(height: CGFloat(max(160, items.count * 36)))
+      .accessibilityHidden(showsValues)
+
+      DisclosureGroup("数値一覧", isExpanded: $showsValues) {
+        ForEach(items) { item in
+          LabeledContent(item.title ?? "", value: (item.value ?? 0).formatted())
+            .font(MemoraTypography.secondary)
+        }
+      }
     }
   }
 }

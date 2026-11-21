@@ -15,6 +15,7 @@ struct SettingsCategoryView: View {
   @State private var appLockError: String?
   @State private var excludedPlaceCount = AutoLocationLogger.excludedPlaces.count
   @State private var isDeleteConfirmationPresented = false
+  @State private var confirmsDemoReplacement = false
   @Environment(\.openURL) private var openURL
   @State private var isSignOutConfirmationPresented = false
   @State private var isAccountDeletionPresented = false
@@ -81,6 +82,15 @@ struct SettingsCategoryView: View {
       } message: {
         Text("アカウントと同期データを削除します。取り消せません。")
       }
+      .alert("既存の内容をデモデータに置き換えますか？", isPresented: $confirmsDemoReplacement) {
+        Button("置き換える", role: .destructive) {
+          guard model.currentTeamID == nil, model.isStoreWritable() else { return }
+          model.loadSampleContent()
+        }
+        Button("キャンセル", role: .cancel) {}
+      } message: {
+        Text("この端末の記録\(model.meetings.count)件、プロジェクト\(model.spaces.count)件に加え、ジャーナル・タスク・人物・質問履歴を置き換えます。")
+      }
       .confirmationDialog("サンプルを空にしますか？", isPresented: $isDeleteConfirmationPresented, titleVisibility: .visible) {
         Button("空にする", role: .destructive) {
           model.deleteSampleContent()
@@ -88,7 +98,7 @@ struct SettingsCategoryView: View {
         }
         Button("キャンセル", role: .cancel) {}
       } message: {
-        Text("録音データではなく、このプロトタイプ内の表示用サンプルだけを消します。")
+        Text("表示確認用のサンプルを削除します。作成した記録は残ります。")
       }
       .alert("アプリロックを設定できません", isPresented: Binding(
         get: { appLockError != nil }, set: { if !$0 { appLockError = nil } }
@@ -264,7 +274,13 @@ struct SettingsCategoryView: View {
     Group {
         Section("文字起こし") {
           NavigationLink { SpeechRecognitionSettingsView() } label: {
-            SettingsValue(title: "文字起こし", value: "\(transcriptionEngine.label) · \(transcriptionLanguage.label)", icon: .waveform)
+            VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
+              SettingsLabel("文字起こしの設定", icon: .waveform)
+              Text("方式：\(transcriptionEngine.label)")
+              Text("言語：\(transcriptionLanguage.label)")
+            }
+            .font(MemoraTypography.secondary)
+            .foregroundStyle(MemoraPalette.textSecondary)
           }
         }
         Section("音声") {
@@ -418,7 +434,8 @@ struct SettingsCategoryView: View {
             RecentlyDeletedView()
           } label: {
             LabeledContent {
-              Text(model.trashedRecords.isEmpty ? "なし" : "\(model.trashedRecords.count)件")
+              let count = model.trashedRecords.count + model.trashedLifeLogEntries.count
+              Text(count == 0 ? "なし" : "\(count)件")
             } label: {
               SettingsLabel("最近削除した項目", icon: .trashFill)
             }
@@ -437,17 +454,12 @@ struct SettingsCategoryView: View {
           NavigationLink {
             SettingsNotesView()
           } label: {
-            SettingsLabel("設定について", icon: .infoCircleFill)
-          }
-          LabeledContent {
-            Text("準備中")
-          } label: {
             SettingsLabel("ヘルプ", icon: .questionmarkCircleFill)
           }
-          LabeledContent {
-            Text("準備中")
+          NavigationLink {
+            PrivacyStorageView()
           } label: {
-            SettingsLabel("プライバシーポリシー", icon: .handRaisedFill)
+            SettingsLabel("データの保存先と外部送信", icon: .handRaisedFill)
           }
           LabeledContent {
             Text(Bundle.main.appVersion)
@@ -513,24 +525,25 @@ struct SettingsCategoryView: View {
             SettingsLabel("計測と自己チェック（ビルド比較用）", icon: .stopwatchFill)
           }
 
-          // Destructive resets only exist for development; a shipped build must
-          // never offer to replace or empty someone's records.
           Button("初回体験をもう一度見る", icon: .arrowCounterclockwise) {
             model.replayOnboarding()
             closeSettings()
           }
 
-          Button("デモデータを入れ直す（今の内容を置き換えます）", icon: .arrowClockwise) {
-            model.loadSampleContent()
-          }
-
-          Button("すべて空にしてEmptyを確認", icon: .tray, role: .destructive) {
-            isDeleteConfirmationPresented = true
-          }
           #endif
         }
+        #if DEBUG
+        Section("開発用のデータ操作") {
+          Button("デモデータに置き換える", icon: .arrowClockwise, role: .destructive) {
+            confirmsDemoReplacement = true
+          }
+          .disabled(model.currentTeamID != nil || model.isRestoring || model.isStoreProtected)
 
-
+          Button("表示用サンプルを削除", icon: .tray, role: .destructive) {
+            isDeleteConfirmationPresented = true
+          }
+        }
+        #endif
     }
   }
 

@@ -26,7 +26,7 @@ struct SpacePickerSheet: View {
             }
           }
         } footer: {
-          Text("移動したファイルは移動先だけに表示されます。未分類を選ぶと、通常のファイル一覧に戻ります。")
+          Text("所属プロジェクトを変更します。移動後もライブラリから開けます。")
         }
       }
       .navigationTitle("プロジェクト")

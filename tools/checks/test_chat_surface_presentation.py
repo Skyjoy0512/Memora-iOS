@@ -8,7 +8,8 @@ APP = Path(__file__).resolve().parents[2] / "App"
 class ChatSurfacePresentationChecks(unittest.TestCase):
     def test_native_field_keeps_identity_and_navigation_follows_interaction(self):
         bar = (APP / "AIComposerBar.swift").read_text()
-        self.assertEqual(bar.count("TextField(placeholder"), 1)
+        self.assertEqual(bar.count("TextField("), 1)
+        self.assertIn("prompt: Text(placeholder)", bar)
         self.assertIn("selection: $textSelection", bar)
         self.assertIn("private var usesStackedLayout: Bool { isExpanded }", bar)
         self.assertIn("isFieldFocused || speechInput.isListening", bar)

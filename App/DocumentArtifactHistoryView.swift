@@ -32,7 +32,7 @@ struct DocumentArtifactHistoryView: View {
   }
 
   @ViewBuilder private func actions(_ revision: DocumentArtifactRevision) -> some View {
-    Button("確認") { preview(revision) }
+    Button("プレビューを開く") { preview(revision) }
       .frame(minHeight: MemoraSpacing.touchTarget)
       .accessibilityLabel("以前の\(revision.format.rawValue)を確認、本文 v\(revision.contentRevision)")
     Button("保存・共有") { share(revision) }

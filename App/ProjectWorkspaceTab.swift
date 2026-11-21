@@ -20,7 +20,7 @@ enum ProjectWorkspaceTab: String, CaseIterable, Identifiable {
     switch self {
     case .chat: "チャットを始める"
     case .files: "記録を追加"
-    case .sources: "参考資料を追加"
+    case .sources: "参考資料はまだありません"
     }
   }
 

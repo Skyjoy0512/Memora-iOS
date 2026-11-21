@@ -71,7 +71,7 @@ class DesignTokenChecks(unittest.TestCase):
         self.assertIn("ComposerMentionToken.parse", source)
         self.assertIn("!snapshot.hasMarkedText", source)
         bar = (APP / "AIComposerBar.swift").read_text()
-        self.assertIn("TextField(placeholder", bar)
+        self.assertIn("prompt: Text(placeholder)", bar)
         self.assertIn("selection: $textSelection", bar)
 
 
