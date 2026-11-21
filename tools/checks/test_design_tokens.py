@@ -53,9 +53,10 @@ class DesignTokenChecks(unittest.TestCase):
 
     def test_navigation_and_capture_contracts_remain_native(self):
         root = (APP / "RootTabView.swift").read_text()
-        self.assertIn('toolbar(.hidden, for: .tabBar)', root)
+        for contract in ('rootTab(.library)', 'rootTab(.home)', 'rootTab(.askAI)', '.accessibilityLabel(tab.title)'):
+            self.assertIn(contract, root)
         sidebar = (APP / "FileSidebarView.swift").read_text()
-        for title in ("ライブラリ", "ジャーナル", "Ask AI", "マーケットプレイス"):
+        for title in ("マーケットプレイス", "タスク", "資料", "人物"):
             self.assertIn(f'SidebarRow(title: "{title}"', sidebar)
         capture = (APP / "CaptureFloatingButtons.swift").read_text()
         for contract in ("Button(action: onOpenCaptureMenu)", ".fileImporter(", "menus.transition(.identity)", ".memoraGlass(in: Circle()"):

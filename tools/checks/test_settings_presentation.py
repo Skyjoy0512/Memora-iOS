@@ -63,7 +63,7 @@ class SettingsPresentationChecks(unittest.TestCase):
         self.assertNotIn("WorkspaceSwitcher(", sidebar)
         self.assertIn("WorkspaceSettingsView()", (APP / "SettingsCategoryView.swift").read_text())
         self.assertIn("WorkspaceSwitcher(", (APP / "WorkspaceSettingsView.swift").read_text())
-        self.assertLess(sidebar.index("SidebarHeaderView("), sidebar.index('SidebarRow(title: "ライブラリ"'))
+        self.assertLess(sidebar.index("SidebarHeaderView("), sidebar.index('SidebarRow(title: "マーケットプレイス"'))
         self.assertIn("SidebarAccountFooter {", sidebar)
         footer = (APP / "SidebarAccountFooter.swift").read_text()
         self.assertIn('accessibilityIdentifier("sidebar.settings")', footer)

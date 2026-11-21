@@ -7,7 +7,6 @@ struct FileSidebarView: View {
   var onOpenDocuments: () -> Void
   var onOpenPeople: () -> Void
   var onOpenTasks: () -> Void
-  var onSelectTab: (RootTab) -> Void
   var onOpenTools: () -> Void
   var onOpenSettings: () -> Void
 
@@ -20,22 +19,8 @@ struct FileSidebarView: View {
 
       ScrollView {
         VStack(spacing: MemoraSpacing.lg) {
-          VStack(spacing: 0) {
-            SidebarRow(title: "ライブラリ", symbol: .folder,
-              isSelected: isSelected(.library)) {
-              onSelectTab(.library)
-            }
-            SidebarRow(title: "ジャーナル", symbol: .calendar,
-              isSelected: isSelected(.home)) {
-              onSelectTab(.home)
-            }
-            SidebarRow(title: "Ask AI", symbol: .sparkles,
-              isSelected: !model.isToolsPresented && model.selectedTab == .askAI) {
-              onSelectTab(.askAI)
-            }
-            SidebarRow(title: "マーケットプレイス", symbol: .bag, isSelected: model.isToolsPresented) {
-              onOpenTools()
-            }
+          SidebarRow(title: "マーケットプレイス", symbol: .bag, isSelected: model.isToolsPresented) {
+            onOpenTools()
           }
           VStack(spacing: 0) {
             SidebarRow(title: "タスク", symbol: .checkmarkSquare,
@@ -72,11 +57,8 @@ struct FileSidebarView: View {
     return model.selectedTab.title
   }
 
-  private func isSelected(_ tab: RootTab, route: LibraryRoute? = nil) -> Bool {
-    guard !model.isToolsPresented, model.selectedTab == tab else { return false }
-    let path = model.activeNavigationPath
-    if let route { return path.contains(route) }
-    return !path.contains(.documents) && !path.contains(.people) && !path.contains(.tasks)
+  private func isSelected(_ tab: RootTab, route: LibraryRoute) -> Bool {
+    !model.isToolsPresented && model.selectedTab == tab && model.activeNavigationPath.contains(route)
   }
 }
 

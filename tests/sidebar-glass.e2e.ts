@@ -6,17 +6,17 @@ afterEach(async ({ device }) => {
   await device.setAppearance('light');
 });
 
-test('sidebar glass: supplied logo sits above Library in both appearances', async ({ app, device, screen }) => {
+test('sidebar glass: supplied logo sits above auxiliary destinations in both appearances', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   for (const appearance of ['light', 'dark'] as const) {
     await device.setAppearance(appearance);
     await tap(screen, screen.getByLabel('メニュー').first());
     const logo = screen.getByTestId('sidebar.logo');
-    const library = screen.getByRole('button', { name: 'ライブラリ', exact: true });
+    const marketplace = screen.getByRole('button', { name: 'マーケットプレイス', exact: true });
     await expect(logo).toBeVisible();
-    await expect(library).toBeVisible();
+    await expect(marketplace).toBeVisible();
     const mark = await logo.boundingBox();
-    const row = await library.boundingBox();
+    const row = await marketplace.boundingBox();
     expect(mark).not.toBeNull();
     expect(row).not.toBeNull();
     expect(mark!.width).toBeCloseTo(120, 0);
@@ -29,8 +29,9 @@ test('sidebar glass: supplied logo sits above Library in both appearances', asyn
     expect(scope!.y + scope!.height).toBeLessThanOrEqual(row!.y);
     await expect(screen.getByTestId('sidebar.settings')).toBeVisible();
     await app.screenshot(`sidebar-logo-${appearance}`);
-    await tap(screen, library);
-    await expect(screen.getByLabel('メニュー').first()).toBeVisible();
+    await tap(screen, marketplace);
+    await tap(screen, screen.getByTestId('marketplace.close'));
+    await expect(screen.getByRole('tab', { name: 'ライブラリ', selected: true })).toBeVisible();
   }
 });
 

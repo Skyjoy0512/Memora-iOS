@@ -19,12 +19,11 @@ Brand assets follow the supplied canonical artwork in docs/BRANDING.md. Floating
 
 ## Everyday interactions
 
-- The sidebar has a static canonical wordmark and search, four primary
-  destinations, then visible Tasks / Documents / People links. A quiet selection
-  fill and accessibility traits track the actual route. Settings stays at the
-  bottom right; account, plans and recorder setup remain in Settings.
-  Explicit Library / Journal selections return to their root. Secondary
-  collections and detail screens use the native back button.
+- The native bottom tab bar contains Library, Journal and Ask AI in that order.
+  Images provide the visible labels, and `TabContent` provides the spoken names
+  and identifiers. Each tab retains its navigation stack. The sidebar keeps the
+  static wordmark, scoped search, Marketplace, Tasks, Documents, People and
+  Settings. Secondary collections and detail screens use native back navigation.
 
 - Library, Journal and project workspaces hold Ask AI and one capture plus in
   native Liquid Glass. Ask AI, record/document/source details, Documents, People
@@ -246,7 +245,7 @@ Do not reintroduce per-item artwork, scale multipliers or oversized search icons
 | SettingsCategory / SettingsCategoryView | typed topic navigation; original leaf bindings and permission confirmations |
 | AIComposerBar / QuickAIComposer | native input, attachments, speech, submit/stop, scoped selection |
 | MemoraTextTabBar / MemoraSectionPicker | flat scrollable content tabs and selection traits |
-| ProminentTabBar | protected UISegmentedControl navigation and system selection morph |
+| RootTabView / RootNavigation | native icon-only tab bar, contextual footer and per-tab routing |
 | ProjectRecordRow / ProjectSourceRow / ProjectDocumentRow | common Library/workspace title and metadata hierarchy |
 | MemoraSectionHeading | shared section title and supporting context; stacked at accessibility sizes |
 | MemoraActionLabel / MemoraMenuButtonStyle | explanatory action rows, common glyph and pressed feedback |
@@ -448,8 +447,8 @@ align with the 20pt content margin and reading-width limit.
 The capture menu shows action names and icons in 44pt rows with a 260pt width
 that grows with Dynamic Type up to 320pt; explanations remain VoiceOver hints.
 
-Sidebar: Library / Journal / Ask AI / Marketplace lead, then Tasks / Documents /
-People. Projects live in Library's Projects segment. A static wordmark and search
+Sidebar: Marketplace leads, then Tasks / Documents / People. Projects live in
+Library's Projects segment. A static wordmark and scoped search
 sit above the scrolling rows; the only footer action is Settings. Recorder setup,
 account, plan and workspace options remain in Settings. Selected route state uses
 a subtle fill and accessibility traits. Rows retain a 28pt icon slot and 52pt
@@ -464,7 +463,10 @@ competing for a narrow horizontal column.
 ## Interaction and accessibility
 
 Liquid Glass belongs to navigation, the side menu, the floating capture controls
-and the composer. There are no bottom tabs. Keep the shared row on the bottom edge.
+and the composer. The native tab bar stays expanded during scrolling. Anchor
+the shared control row to the active tab content's bottom safe area, above the
+tab bar when visible and above the keyboard or home indicator otherwise.
+Keep one composer and one capture importer mounted across tab visibility changes.
 Create-menu actions show a stable action name; input explanations are spoken hints.
 The create and composer attachment controls delegate presentation to native Menu,
 without custom zoom transitions, measured popovers or timed dispatch delays.

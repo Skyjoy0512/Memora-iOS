@@ -1,6 +1,18 @@
 import Foundation
 
 enum RootNavigation {
+  /// Collections and project workspaces can switch tabs in place. Reading and
+  /// editing routes give the bottom edge to their contextual controls.
+  static func showsPrimaryTabs(in path: [LibraryRoute]) -> Bool {
+    switch path.last {
+    case nil, .space, .sharedProject, .tasks, .documents, .people, .allMeetings,
+      .projectTasks, .projectSources, .projectChats:
+      return true
+    default:
+      return false
+    }
+  }
+
   static func offersCapture(tab: RootTab, path: [LibraryRoute]) -> Bool {
     guard tab != .askAI else { return false }
     switch path.last {

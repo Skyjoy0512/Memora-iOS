@@ -36,12 +36,13 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 
 ## Known regressions to avoid
 
-- **Navigation**: there is no bottom tab bar. The app opens on Library, and the
-  destinations (Journal, Library, Ask AI, Marketplace) live at the top of the side menu
-  (`FileSidebarView`). Tasks, Documents and People have visible secondary rows;
-  the wordmark is static. Library/Journal selections reset their navigation stack.
-  Secondary collections use native back navigation. `RootTab` still names
-  the destination and keeps the old saved identifiers, but nothing draws tabs.
+- **Navigation**: the app opens on Library. The native `TabView` shows three
+  icon-only tabs in this order: Library, Journal, Ask AI. Set each tab's spoken
+  label and stable ID through `TabContent`. Switching tabs preserves their
+  navigation stacks and the active Ask AI conversation. Keep `RootTab` raw
+  values, restoration aliases and deep links compatible. The side menu holds
+  Marketplace, Tasks, Documents, People, scoped search and Settings. Keep the
+  wordmark static and secondary routes reachable with native back navigation.
 - **Create controls**: Library, Journal and project workspaces have Ask AI / plus.
   Other reading/management screens have only Ask AI; Marketplace has search.
   Attachments use a paperclip, capture/creation uses the separate plus.
@@ -72,9 +73,13 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Enter and leave selection in one non-animated transaction, including
   `isFileSelectionActive`; do not defer that flag to an `onChange`. The selection
   actions use a capsule-shaped glass bar.
-- **Bottom edge**: Ask AI and the capture controls stay at the bottom; scrolling moves no
-  navigation bar because there is none. Search and file selection still hide
-  the composer and capture controls so results or the share / move / delete bar own the bottom edge.
+- **Bottom edge**: the active `TabView` content safe area positions the single
+  shared composer and its capture controls above the native tab bar. Scroll
+  clearance reserves only the shared controls; SwiftUI reserves the tab bar.
+  Keep the editor and capture importer identity across changes in tab visibility.
+  Search and file selection hide the tabs, composer and capture controls; the
+  results or share / move / delete bar own the bottom edge. Hide tabs during
+  keyboard interaction and on reading/editing detail routes.
   Record/transcript, source/PDF and document detail pages show only Ask AI at
   full width; keep the capture importer mounted while hiding its visual plus.
   The Ask AI page also hides the capture FAB and gives its composer full width.

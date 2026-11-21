@@ -74,17 +74,23 @@ async function stableBounds(control: any) {
 }
 
 export async function tapTab(screen: any, name: string) {
-  // Navigation lives in the side menu; the old bottom tab names still work so
-  // older scenarios stay readable.
-  const destinations: Record<string, string> = {
-    'ジャーナル': 'ジャーナル',
-    'ホーム': 'ジャーナル',
-    'ライブラリ': 'ライブラリ',
-  };
-  const destination = destinations[name] ?? name;
+  const destination = name === 'ホーム' ? 'ジャーナル' : name;
+  if (['ライブラリ', 'ジャーナル', 'Ask AI'].includes(destination)) {
+    const tab = screen.getByRole('tab', { name: destination, exact: true });
+    const closeMarketplace = screen.getByTestId('marketplace.close');
+    if (await closeMarketplace.isVisible()) await tapControl(closeMarketplace);
+    const back = screen.getByTestId('BackButton').first();
+    for (let depth = 0; depth < 4 && !await tab.isVisible() && await back.isVisible(); depth++) {
+      await tapControl(back);
+    }
+    const selected = screen.getByRole('tab', { name: destination, exact: true, selected: true });
+    if (!await selected.isVisible()) await tapControl(tab);
+    await expect(tab).toBeSelected();
+    return;
+  }
   await tapControl(screen, screen.getByLabel('メニュー').first());
-  await tapControl(screen, screen.getByRole('button', { name: destination, exact: true }));
-  await expect(screen.getByLabel('メニュー').first()).toBeVisible();
+  const auxiliary = destination === 'ツール' ? 'マーケットプレイス' : destination;
+  await tapControl(screen, screen.getByRole('button', { name: auxiliary, exact: true }));
 }
 
 // At accessibility text sizes the Library's segmented control collapses into

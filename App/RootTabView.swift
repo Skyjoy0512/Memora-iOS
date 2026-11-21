@@ -30,6 +30,8 @@ struct RootTabView: View {
   /// The full-bleed drawer hides the safe area from SwiftUI, so the floating
   /// controls re-add the home indicator inset themselves.
   @State private var safeAreaInsets = EdgeInsets()
+  @State private var activeTabContentBottom: CGFloat?
+  @State private var tabBarClearance: CGFloat = 0
 
   var body: some View {
     @Bindable var model = model
@@ -41,19 +43,6 @@ struct RootTabView: View {
         onOpenDocuments: openDocuments,
         onOpenPeople: openPeople,
         onOpenTasks: openTasks,
-        onSelectTab: { tab in
-          selectFromSidebar {
-            model.isToolsPresented = false
-            model.selectedTab = tab
-            model.isSearchActive = false
-            model.composerDismissRequests += 1
-            switch tab {
-            case .library: model.libraryPath = []
-            case .home: model.homePath = []
-            case .askAI: break
-            }
-          }
-        },
         onOpenTools: {
           selectFromSidebar { model.isToolsPresented = true }
         },
@@ -70,7 +59,9 @@ struct RootTabView: View {
             .allowsHitTesting(!model.isToolsPresented)
             .accessibilityHidden(model.isToolsPresented)
           if model.isToolsPresented {
-            NavigationStack { ToolsView(onOpenSidebar: openSidebar) }
+            NavigationStack {
+              ToolsView(onOpenSidebar: openSidebar, onClose: { model.isToolsPresented = false })
+            }
               .transition(.identity)
               .zIndex(1)
           }
@@ -274,7 +265,7 @@ struct RootTabView: View {
         UndoToast(action: undo)
           .id(undo.id)
           .padding(.horizontal, 12)
-          .padding(.bottom, max(model.bottomControlsHeight, 24) + 8)
+          .padding(.bottom, max(model.bottomControlsHeight, 24) + tabBarClearance + 8)
           .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
       }
     }
@@ -301,30 +292,49 @@ struct RootTabView: View {
 
   private var tabSurface: some View {
     @Bindable var model = model
-
     return TabView(selection: $model.selectedTab) {
-      LibraryView(onOpenSidebar: openSidebar)
-        .accessibilityHidden(model.isToolsPresented || isSidebarOpen)
-        .hidesSystemTabBar()
-        .scrollDismissesKeyboard(.immediately)
-        .tag(RootTab.library)
-
-      HomeView(onOpenSidebar: openSidebar)
-        .accessibilityHidden(model.isToolsPresented || isSidebarOpen)
-        .hidesSystemTabBar()
-        .scrollDismissesKeyboard(.immediately)
-        .tag(RootTab.home)
-
-      SearchView(isComposing: isComposing, onOpenSidebar: openSidebar)
-        .accessibilityHidden(model.isToolsPresented || isSidebarOpen)
-        .hidesSystemTabBar()
-        .tag(RootTab.askAI)
+      rootTab(.library) { LibraryView(onOpenSidebar: openSidebar).scrollDismissesKeyboard(.immediately) }
+      rootTab(.home) { HomeView(onOpenSidebar: openSidebar).scrollDismissesKeyboard(.immediately) }
+      rootTab(.askAI) { SearchView(isComposing: isComposing, onOpenSidebar: openSidebar) }
     }
-    .safeAreaInset(edge: .bottom, spacing: 8) {
-      bottomControls
+    .tabBarMinimizeBehavior(.never)
+    .tint(MemoraPalette.textPrimary)
+    .overlay {
+      GeometryReader { geometry in
+        let bottom = geometry.frame(in: .global).maxY
+        let clearance = showsPrimaryTabs ? max(0, bottom - (activeTabContentBottom ?? bottom)) : 0
+        bottomControls
+          .padding(.bottom, clearance)
+          .frame(maxHeight: .infinity, alignment: .bottom)
+          .onChange(of: clearance, initial: true) { _, value in tabBarClearance = value }
+      }
+      .allowsHitTesting(shouldShowComposer || showsPlaybackBar)
     }
     .accessibilityHidden(model.isCaptureSourcePresented)
     .background(Color(uiColor: .systemBackground))
+  }
+
+  private func rootTab<Content: View>(_ tab: RootTab, @ViewBuilder content: () -> Content) -> some TabContent<RootTab> {
+    Tab(value: tab) {
+      content()
+        .toolbar(showsPrimaryTabs ? .visible : .hidden, for: .tabBar)
+        .onGeometryChange(for: CGFloat?.self) { geometry in
+          // UIKit has already excluded its tab bar from this content frame.
+          tab == model.selectedTab ? geometry.frame(in: .global).maxY : nil
+        } action: { bottom in
+          if let bottom { activeTabContentBottom = bottom }
+        }
+    } label: {
+      Image(icon: tab.symbol, size: 22)
+    }
+    .accessibilityLabel(tab.title)
+    .accessibilityIdentifier("root.tab.\(tab.rawValue)")
+  }
+
+  private var showsPrimaryTabs: Bool {
+    RootNavigation.showsPrimaryTabs(in: model.activeNavigationPath)
+      && !isSearchCovering && !isComposing && !isKeyboardVisible && !model.isInlineEditing
+      && !isShowingMeetingDetail && !model.isToolsPresented
   }
 
   private var bottomControls: some View {
@@ -376,10 +386,9 @@ struct RootTabView: View {
 
     }
     .padding(.top, 4)
-    // `safeAreaInset` no longer contributes the home indicator inset inside the
-    // full-bleed drawer, so add it back here — except while the keyboard is up,
-    // where the keyboard's own safe area already lifts these controls.
-    .padding(.bottom, isKeyboardVisible ? 14 : safeAreaInsets.bottom)
+    // The drawer is full-bleed. Only add the home inset when neither UIKit's
+    // tab bar nor the keyboard is providing the bottom edge.
+    .padding(.bottom, showsPrimaryTabs ? MemoraSpacing.sm : (isKeyboardVisible ? 14 : safeAreaInsets.bottom))
     .background {
       if shouldShowComposer {
         ComposerBackdrop()
@@ -601,8 +610,7 @@ struct RootTabView: View {
     if case .projectChat(let id) = model.activeNavigationPath.last {
       guard let projectID = model.projectChat(id: id)?.projectID, model.space(id: projectID) != nil else { return false }
     }
-    // The detail keeps its own contextual field; Ask AI has its own chat field,
-    // so the shared "Ask Anything" bar is for the three list tabs.
+    // Record detail must explicitly make room for its contextual composer.
     if isShowingMeetingDetail {
       return model.isDetailComposerVisible
     }
@@ -613,24 +621,5 @@ struct RootTabView: View {
   private var isShowingMeetingDetail: Bool {
     if case .file = composerScope { return true }
     return false
-  }
-}
-
-private extension View {
-  /// Removes the system tab bar: navigation lives in the side menu, and the
-  /// bottom edge belongs to the Ask AI composer.
-  /// The modifier has to be applied inside a tab, not on the `TabView` itself.
-  @ViewBuilder
-  func hidesSystemTabBar() -> some View {
-    let base = toolbar(.hidden, for: .tabBar)
-      .toolbarBackgroundVisibility(.hidden, for: .tabBar)
-
-    if #available(iOS 26.0, *) {
-      // Blurs scrolling content as it passes under the floating bar, so the
-      // glass stays legible.
-      base.scrollEdgeEffectStyle(.hard, for: .bottom)
-    } else {
-      base
-    }
   }
 }

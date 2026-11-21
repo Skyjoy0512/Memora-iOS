@@ -4,30 +4,28 @@ import { launchMemora, openSettingsGallery, scrollToControl, tapControl, tapTab 
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
-test('screen polish: Library is the default and leads Journal in the drawer', async ({ app, device, screen }) => {
+test('screen polish: Library is the default and leads Journal in the tab bar', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await expect(screen.getByRole('button', { name: 'ファイル', exact: true, selected: true })).toBeVisible();
-  await tapControl(screen, screen.getByLabel('メニュー').first());
-  const library = screen.getByRole('button', { name: 'ライブラリ', exact: true });
-  const journal = screen.getByRole('button', { name: 'ジャーナル', exact: true });
+  const library = screen.getByRole('tab', { name: 'ライブラリ', exact: true });
+  const journal = screen.getByRole('tab', { name: 'ジャーナル', exact: true });
   await expect(library).toBeVisible();
   await expect(journal).toBeVisible();
   const libraryBox = await library.boundingBox();
   const journalBox = await journal.boundingBox();
-  if (!libraryBox || !journalBox) throw new Error('sidebar destinations have no frame');
-  expect(libraryBox.y).toBeLessThan(journalBox.y);
-  await app.screenshot('library-first-sidebar');
+  if (!libraryBox || !journalBox) throw new Error('root destinations have no frame');
+  expect(libraryBox.x).toBeLessThan(journalBox.x);
+  await app.screenshot('library-first-tab-bar');
   await tapControl(screen, journal);
-  await expect(screen.getByText('今日のタスク', { exact: true })).toBeVisible();
+  await expect(journal).toBeSelected();
   await app.restart();
   await expect(screen.getByRole('button', { name: 'ファイル', exact: true, selected: true })).toBeVisible();
 });
 
 test('screen polish: Settings opens after the drawer closes on every main destination', { timeout: 180_000 }, async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
-  for (const destination of ['ジャーナル', 'Ask AI', 'ツール', 'ライブラリ']) {
-    await tapControl(screen, screen.getByLabel('メニュー').first());
-    await tapControl(screen, screen.getByRole('button', { name: destination, exact: true }).last());
+  for (const destination of ['ジャーナル', 'Ask AI', 'ライブラリ', 'マーケットプレイス']) {
+    await tapTab(screen, destination);
     await tapControl(screen, screen.getByLabel('メニュー').first());
     await tapControl(screen, screen.getByRole('button', { name: '設定', exact: true }).last());
     await expect(screen.getByTestId('settings.profile').first()).toBeVisible();

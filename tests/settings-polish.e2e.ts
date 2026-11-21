@@ -69,7 +69,7 @@ test('settings polish: topic hierarchy, profile editing and shared sidebar icons
 test('settings polish: personal workspace stays selectable and unavailable team setup is explained', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await tapControl(screen, screen.getByLabel('メニュー'));
-  await expect(screen.getByRole('button', { name: 'ライブラリ', exact: true })).toBeVisible();
+  await expect(screen.getByTestId('sidebar.search')).toBeVisible();
   await expect(screen.getByLabel('ワークスペース', { exact: true })).not.toBeVisible();
   await tapControl(screen, screen.getByRole('button', { name: '設定', exact: true }).last());
   await expect(screen.getByTestId('settings.profile').first()).toBeVisible();

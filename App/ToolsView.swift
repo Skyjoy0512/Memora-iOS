@@ -3,6 +3,7 @@ import SwiftUI
 struct ToolsView: View {
   @Environment(MemoraModel.self) private var model
   var onOpenSidebar: () -> Void
+  var onClose: () -> Void
   @State private var query = ""
   @State private var isSearching = false
   @State private var scope = MarketplaceScope.all
@@ -41,7 +42,9 @@ struct ToolsView: View {
         prompt: "\(section?.title ?? "マーケットプレイス")を検索")
     }
     .toolbar {
-      ToolbarActionItem(placement: .topBarLeading) {
+      ToolbarItemGroup(placement: .topBarLeading) {
+        ToolbarIconButton("マーケットプレイスを閉じる", icon: .xmark, action: onClose)
+          .accessibilityIdentifier("marketplace.close")
         ToolbarIconButton("メニュー", icon: .line3Horizontal) { onOpenSidebar() }
       }
       ToolbarActionItem(usesSystemBackground: true) { MarketplaceCreationMenu(section: section) }

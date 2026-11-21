@@ -15,7 +15,9 @@ detail = (app / "MeetingDetailView.swift").read_text()
 assert ".id(selectedSection)" not in detail
 assert "sectionTransition" not in detail
 root = (app / "RootTabView.swift").read_text()
-assert 'toolbar(.hidden, for: .tabBar)' in root
+assert 'Tab(value: tab)' in root
+assert 'tabBarMinimizeBehavior(.never)' in root
+assert 'toolbar(showsPrimaryTabs ? .visible : .hidden, for: .tabBar)' in root
 assert 'onCloseAnimationCompleted: completeSidebarAction' in root
 assert 'model.composerDismissRequests += 1' in root
 capture = (app / "CaptureFloatingButtons.swift").read_text()
@@ -47,4 +49,4 @@ for path in sorted(app.glob("*.swift")):
 assert not findings, findings
 assert "repeatForever" not in "".join(path.read_text() for path in app.glob("*.swift"))
 
-print("Motion policy passed: bounded screen/text entrances; no per-row reveal; native capture menus and journal Hero retained; bottom tabs hidden; animations gated by Reduce Motion")
+print("Motion policy passed: bounded screen/text entrances, native capture menus and tabs, journal Hero, and Reduce Motion")
