@@ -100,8 +100,10 @@ export async function tapTab(screen: any, name: string) {
 // destination without changing the app.
 export async function selectLibrarySection(screen: any, name: string) {
   const direct = screen.getByRole('button', { name, exact: true });
+  const menu = screen.getByRole('button', { name: /ライブラリの表示/ }).first();
+  await expect.poll(async () => await direct.isVisible() || await menu.isVisible()).toBe(true);
   if (await direct.isVisible()) { await tapControl(screen, direct); return; }
-  await tapControl(screen, screen.getByRole('button', { name: /ライブラリの表示/ }).first());
+  await tapControl(screen, menu);
   await tapControl(screen, screen.getByRole('button', { name, exact: true }).last());
 }
 
