@@ -11,7 +11,7 @@ class ExperiencePresentationChecks(unittest.TestCase):
         copy = (APP / "OnboardingPage.swift").read_text()
         preview = (APP / "OnboardingPreview.swift").read_text()
         for contract in ("ScrollView {", 'Button("スキップ", action: skip)', 'Button(action: showSample)',
-                         'Button("ログインせず始める", action: skip)', '"録音してみる"', "startRecording()", "OccupationSelectionView()"):
+                         'Button("このiPhoneで始める", action: skip)', '"録音してみる"', "await startRecording()", "OccupationSelectionView()"):
             self.assertIn(contract, view)
         for claim in ("設定も準備もいりません", "終わった瞬間", "担当と期限まで揃います"):
             self.assertNotIn(claim, copy)
@@ -25,6 +25,7 @@ class ExperiencePresentationChecks(unittest.TestCase):
         self.assertNotIn("repeatForever", preview)
         self.assertIn(".accessibilityElement(children: .combine)", preview)
         entry = (APP / "ContentView.swift").read_text()
+        self.assertIn("if model.isRecording, model.isCapturePresented", entry)
         self.assertIn("if model.openSummarizedAudioSample() { model.completeOnboarding() }", entry)
         self.assertNotIn("model.loadSampleContent()", entry)
         self.assertIn("既存の記録は変更していません", entry)

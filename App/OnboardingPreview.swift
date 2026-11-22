@@ -3,7 +3,6 @@ import SwiftUI
 /// Static native examples explain the result without pretending to record or run AI.
 struct OnboardingPreview: View {
   var page: OnboardingPage
-  var isCurrent: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: MemoraSpacing.md) {

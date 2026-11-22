@@ -1,6 +1,6 @@
 import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { launchMemora, openSettingsGallery, scrollToControl, tapControl, tapTab } from './ui-helpers';
+import { launchMemora, openSettingsGallery, requireRootMenu, scrollToControl, tapControl, tapTab } from './ui-helpers';
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
@@ -42,15 +42,53 @@ test('screen polish: onboarding remains readable and can finish without recordin
   await app.screenshot('onboarding-light');
   await device.setAppearance('dark');
   await app.screenshot('onboarding-dark');
-  const start = screen.getByRole('button', { name: 'このiPhoneで始める', exact: true });
-  for (let page = 0; page < 5 && !(await start.isVisible()); page++) {
-    await tapControl(screen, screen.getByRole('button', { name: '次へ', exact: true }));
-  }
+  const next = screen.getByTestId('onboarding.next');
+  const start = screen.getByTestId('onboarding.local');
+  await expect(screen.getByTestId('onboarding.primary')).not.toBeVisible();
+  await tapControl(next);
+  await expect(screen.getByText('あとから読み返す', { exact: true })).toBeVisible();
+  await expect(start).not.toBeVisible();
+  await tapControl(next);
+  await expect(screen.getByText('タスクにつなげる', { exact: true })).toBeVisible();
+  await expect(next).not.toBeVisible();
   await expect(start).toBeVisible();
   await app.screenshot('onboarding-last-page');
   await tapControl(screen, start);
-  await expect(screen.getByLabel('メニュー').first()).toBeVisible();
+  await requireRootMenu(app, screen);
   await expect(screen.getByText('録音画面を閉じる', { exact: true })).not.toBeVisible();
+});
+
+test('screen polish: onboarding stays open after microphone denial and can show a sample', { timeout: 120_000 }, async ({ app, device, screen }) => {
+  await device.installApp(undefined, { reinstall: true });
+  await device.setPermission('microphone', 'deny');
+  await app.restart();
+  const next = screen.getByTestId('onboarding.next');
+  await tapControl(next);
+  await expect(screen.getByText('あとから読み返す', { exact: true })).toBeVisible();
+  await tapControl(next);
+  await tapControl(screen.getByTestId('onboarding.primary'));
+  await expect(screen.getByText('マイクへのアクセスが必要です', { exact: true }).first()).toBeVisible();
+  await tapControl(screen.getByRole('button', { name: 'キャンセル', exact: true }));
+  await expect(screen.getByText('タスクにつなげる', { exact: true })).toBeVisible();
+  await app.screenshot('onboarding-after-microphone-denial');
+  await tapControl(screen.getByTestId('onboarding.sample'));
+  await expect(screen.getByText('発売準備ミーティング（サンプル）', { exact: true }).first()).toBeVisible();
+  await expect(next).not.toBeVisible();
+});
+
+test('screen polish: onboarding completes when a recording starts', { timeout: 120_000 }, async ({ app, device, screen }) => {
+  await device.installApp(undefined, { reinstall: true });
+  await device.setPermission('microphone', 'grant');
+  await app.restart();
+  const next = screen.getByTestId('onboarding.next');
+  await tapControl(next);
+  await expect(screen.getByText('あとから読み返す', { exact: true })).toBeVisible();
+  await tapControl(next);
+  await tapControl(screen.getByTestId('onboarding.primary'));
+  await expect(screen.getByRole('button', { name: '終了して保存', exact: true })).toBeVisible();
+  await tapControl(screen.getByRole('button', { name: '終了して保存', exact: true }));
+  await expect(screen.getByLabel('メニュー').first()).toBeVisible();
+  await expect(next).not.toBeVisible();
 });
 
 test('screen polish: account and plan retain honest states and usable controls', { timeout: 180_000 }, async ({ app, device, screen }) => {

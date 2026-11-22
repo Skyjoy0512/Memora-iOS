@@ -18,9 +18,9 @@ struct ContentView: View {
           .transition(.opacity.combined(with: .scale(scale: 0.97)))
       } else {
         OnboardingView {
-          model.completeOnboarding()
-          Task {
-            await model.startCapture()
+          await model.startCapture()
+          if model.isRecording, model.isCapturePresented {
+            model.completeOnboarding()
           }
         } showSample: {
           if model.openSummarizedAudioSample() { model.completeOnboarding() }
@@ -75,7 +75,7 @@ struct ContentView: View {
     .alert("サンプルを開けませんでした", isPresented: $sampleUnavailable) {
       Button("閉じる", role: .cancel) {}
     } message: {
-      Text("既存の記録は変更していません。個人ワークスペースと保存先の状態を確認してください。ログインせず始めることもできます。")
+      Text("既存の記録は変更していません。個人ワークスペースと保存先の状態を確認してください。「このiPhoneで始める」からも進めます。")
     }
     .alert("マイクへのアクセスが必要です", isPresented: $model.microphonePermissionDenied) {
       Button("設定を開く") {

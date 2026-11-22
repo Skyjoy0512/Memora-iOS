@@ -2,11 +2,12 @@ import SwiftUI
 
 struct OnboardingView: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  var startRecording: () -> Void
+  var startRecording: @MainActor () async -> Void
   var showSample: () -> Void
   var skip: () -> Void
   @State private var page = OnboardingPage.record
   @State private var isOccupationSelectionPresented = false
+  @State private var isStartingRecording = false
 
   var body: some View {
     VStack(spacing: 0) {
@@ -16,11 +17,14 @@ struct OnboardingView: View {
           MemoraWordmark(width: 96).accessibilityHidden(true)
         }
         Spacer()
-        Button("スキップ", action: skip)
-          .font(.subheadline)
-          .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget)
-          .accessibilityIdentifier("onboarding.skip")
+        if page.next != nil {
+          Button("スキップ", action: skip)
+            .font(.subheadline)
+            .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget)
+            .accessibilityIdentifier("onboarding.skip")
+        }
       }
+      .frame(minHeight: MemoraSpacing.touchTarget)
       .padding(.horizontal, MemoraSpacing.screen)
 
       ScrollViewReader { proxy in
@@ -34,7 +38,10 @@ struct OnboardingView: View {
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .lineSpacing(4)
-              OnboardingPreview(page: page, isCurrent: true)
+              OnboardingPreview(page: page)
+              if page == .understand {
+                aiDetails
+              }
             }
             .id(page)
 
@@ -47,34 +54,25 @@ struct OnboardingView: View {
               if page != .record {
                 Button("前へ") { page = page == .act ? .understand : .record }
                   .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget)
-              }
-              if let next = page.next {
-                Button("次へ") { page = next }
-                  .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget)
-                  .accessibilityLabel("説明の次のページ")
-                  .accessibilityIdentifier("onboarding.next")
+                  .disabled(isStartingRecording)
               }
             }
-            actions
 
-            DisclosureGroup {
-              Text("文字起こしには対応言語のモデル、要約には対応端末のAIかクラウドAIの設定が必要です。初回のモデル取得や処理に時間がかかる場合があります。クラウドAIには、許可した内容だけを送信します。")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .padding(.vertical, MemoraSpacing.sm)
-            } label: {
-              Text("文字起こしとAIについて")
-                .font(.subheadline)
-                .frame(minHeight: MemoraSpacing.touchTarget)
-            }
-            if page == .act {
+            if let next = page.next {
+              Button {
+                page = next
+              } label: {
+                Text("次へ").frame(maxWidth: .infinity)
+              }
+              .buttonStyle(MemoraButtonStyle())
+              .accessibilityIdentifier("onboarding.next")
+            } else {
+              actions
               Button("仕事・活動を選ぶ（任意）") { isOccupationSelectionPresented = true }
                 .font(.subheadline)
                 .frame(minHeight: MemoraSpacing.touchTarget)
+                .disabled(isStartingRecording)
             }
-            Text("録音はまず、このiPhoneに保存されます。ログインや購入は必要ありません。")
-              .font(.footnote)
-              .foregroundStyle(.secondary)
           }
           .padding(.horizontal, MemoraSpacing.screen)
           .padding(.vertical, MemoraSpacing.xxl)
@@ -98,12 +96,33 @@ struct OnboardingView: View {
     }
   }
 
+  private var aiDetails: some View {
+    DisclosureGroup {
+      Text("文字起こしには対応言語のモデル、要約には対応端末のAIかクラウドAIの設定が必要です。初回のモデル取得や処理に時間がかかる場合があります。クラウドAIには、許可した内容だけを送信します。")
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+        .padding(.vertical, MemoraSpacing.sm)
+    } label: {
+      Text("文字起こしとAIについて")
+        .font(.subheadline)
+        .frame(minHeight: MemoraSpacing.touchTarget)
+    }
+  }
+
   private var actions: some View {
     VStack(spacing: MemoraSpacing.md) {
+      Text("録音はこのiPhoneに保存されます。マイクの許可は録音を始めるときに確認します。")
+        .font(.footnote)
+        .foregroundStyle(.secondary)
+        .frame(maxWidth: .infinity, alignment: .leading)
       Button {
-        startRecording()
+        isStartingRecording = true
+        Task {
+          await startRecording()
+          isStartingRecording = false
+        }
       } label: {
-        Text("録音してみる")
+        Text(isStartingRecording ? "録音を準備中…" : "録音してみる")
           .frame(maxWidth: .infinity)
       }
       .buttonStyle(MemoraButtonStyle())
@@ -115,10 +134,11 @@ struct OnboardingView: View {
       }
         .buttonStyle(MemoraButtonStyle(emphasis: .secondary))
         .accessibilityIdentifier("onboarding.sample")
-      Button("ログインせず始める", action: skip)
+      Button("このiPhoneで始める", action: skip)
         .font(.subheadline)
         .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget)
         .accessibilityIdentifier("onboarding.local")
     }
+    .disabled(isStartingRecording)
   }
 }
