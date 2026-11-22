@@ -7,6 +7,7 @@ struct ToolbarSearchField: View {
   @Binding var text: String
   @Binding var isPresented: Bool
   var prompt: String
+  var selection: (count: Int, cancel: () -> Void)? = nil
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.dynamicTypeSize) private var typeSize
@@ -30,9 +31,14 @@ struct ToolbarSearchField: View {
           .textInputAutocapitalization(.never)
           .accessibilityLabel(prompt)
           .accessibilityIdentifier("collection.search.input")
+          .disabled(selection != nil)
           .onSubmit { isFocused = false }
 
-        if !text.isEmpty {
+        if let selection {
+          Text("\(selection.count)件を選択")
+            .font(.subheadline.weight(.medium))
+            .lineLimit(1)
+        } else if !text.isEmpty {
           MemoraIconButton("検索語を消去", icon: .xmarkCircleFill) {
             text = ""
             isFocused = true
@@ -55,6 +61,9 @@ struct ToolbarSearchField: View {
     .background(MemoraPalette.background)
     .preservesComposerFocus()
     .onAppear { isFocused = true }
+    .onChange(of: selection != nil) { _, selecting in
+      if selecting { isFocused = false }
+    }
     .onChange(of: text) { previous, current in
       if isPresented, !previous.isEmpty, current.isEmpty { isFocused = true }
     }
@@ -62,6 +71,10 @@ struct ToolbarSearchField: View {
 
   /// Closing also clears the query, so the screen returns to its full list.
   private func close() {
+    if let selection {
+      selection.cancel()
+      return
+    }
     isFocused = false
     withAnimation(reduceMotion ? nil : MemoraMotion.control) {
       text = ""
@@ -77,6 +90,7 @@ private struct ToolbarSearchModifier: ViewModifier {
   @Binding var text: String
   @Binding var isPresented: Bool
   var prompt: String
+  var selection: (count: Int, cancel: () -> Void)?
 
   func body(content: Content) -> some View {
     content
@@ -84,7 +98,7 @@ private struct ToolbarSearchModifier: ViewModifier {
       .toolbar(isPresented ? .hidden : .visible, for: .navigationBar)
       .safeAreaInset(edge: .top, spacing: 0) {
         if isPresented {
-          ToolbarSearchField(text: $text, isPresented: $isPresented, prompt: prompt)
+          ToolbarSearchField(text: $text, isPresented: $isPresented, prompt: prompt, selection: selection)
             .transition(.move(edge: .top).combined(with: .opacity))
         }
       }
@@ -104,7 +118,10 @@ extension View {
   /// Shows `ToolbarSearchField` in place of the navigation bar while
   /// `isPresented`. The screen puts the button that sets it in its own toolbar,
   /// so the items keep the order that screen chose.
-  func toolbarSearch(text: Binding<String>, isPresented: Binding<Bool>, prompt: String) -> some View {
-    modifier(ToolbarSearchModifier(text: text, isPresented: isPresented, prompt: prompt))
+  func toolbarSearch(
+    text: Binding<String>, isPresented: Binding<Bool>, prompt: String,
+    selection: (count: Int, cancel: () -> Void)? = nil
+  ) -> some View {
+    modifier(ToolbarSearchModifier(text: text, isPresented: isPresented, prompt: prompt, selection: selection))
   }
 }

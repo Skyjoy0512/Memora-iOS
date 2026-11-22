@@ -28,7 +28,7 @@ struct BulkSpacePickerSheet: View {
             }
           }
         } footer: {
-          Text("\(meetingIDs.count)件を移動します。保存に成功すると、移動元の一覧から非表示になります。")
+          Text("\(meetingIDs.count)件の所属先を変更します。")
         }
       }
       .navigationTitle("プロジェクトへ移動")

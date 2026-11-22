@@ -144,7 +144,8 @@ struct LibraryView: View {
       .background(MemoraPalette.background)
       .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : (isSearching ? "" : "ライブラリ"))
       .navigationBarTitleDisplayMode(.inline)
-      .toolbarSearch(text: $query, isPresented: $isSearching, prompt: model.librarySection.searchPrompt)
+      .toolbarSearch(text: $query, isPresented: $isSearching, prompt: model.librarySection.searchPrompt,
+        selection: isSelectionMode ? (selectedMeetingIDs.count, endSelection) : nil)
       .task(id: sourceSearchRequest) { [request = sourceSearchRequest] in
         guard CollectionSearch.hasQuery(request.query), !request.sources.isEmpty else { return }
         guard completedSourceRequest != request else { return }
@@ -190,6 +191,9 @@ struct LibraryView: View {
         }
       }
       .onAppear { model.isFileSelectionActive = isSelectionMode }
+      .onChange(of: isSearching) { wasSearching, searching in
+        if wasSearching, !searching, isSelectionMode { endSelection() }
+      }
       .onChange(of: model.meetingTitles) { _, titles in
         guard isSelectionMode else { return }
         selectedMeetingIDs.formIntersection(titles.keys)
@@ -674,9 +678,7 @@ struct LibraryView: View {
     var transaction = Transaction(animation: nil)
     transaction.disablesAnimations = true
     withTransaction(transaction) {
-      isSearching = false
-      query = ""
-      model.isSearchActive = false
+      // Preserve the search and its inset while the native swipe settles.
       isSelectionMode = true
       selectedMeetingIDs = id.map { [$0] } ?? []
       model.isFileSelectionActive = true

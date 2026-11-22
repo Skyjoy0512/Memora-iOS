@@ -1,6 +1,6 @@
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { launchMemora, scrollToControl, tapControl } from './ui-helpers';
+import { launchMemora, scrollToControl, selectLibrarySection, tapControl } from './ui-helpers';
 
 const longTitle = '表示検証：定例ミーティングの決済サイクル変更・集計基準の統一・接客対応と次回リリースの確認事項';
 
@@ -58,7 +58,7 @@ async function swipeToSelect(screen: any, box: { x: number; y: number; width: nu
   await expect(screen.getByText('1件を選択', { exact: true }).first()).toBeVisible();
 }
 
-test('Library selection keeps wrapped text inside its rows through repeated mode changes', { timeout: 240_000 }, async ({ app, device, screen }) => {
+async function loadSampleFiles(app: any, device: any, screen: any) {
   // launchMemora reinstalls only the dedicated test simulator's app.
   await launchMemora(app, device, screen);
   await tapControl(screen.getByLabel('メニュー').first());
@@ -72,7 +72,10 @@ test('Library selection keeps wrapped text inside its rows through repeated mode
   await tapControl(screen.getByRole('button', { name: '置き換える', exact: true }));
   await tapControl(screen.getByTestId('BackButton'));
   await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }));
+}
 
+test('Library selection keeps wrapped text inside its rows through repeated mode changes', { timeout: 240_000 }, async ({ app, device, screen }) => {
+  await loadSampleFiles(app, device, screen);
   const record = screen.getByRole('button', { name: /^リリース方針レビュー、/ });
   // Wait for the settings sheet to leave before the first Library gesture.
   await expect(record).toBeVisible({ timeout: 15_000 });
@@ -139,4 +142,59 @@ test('Library selection keeps wrapped text inside its rows through repeated mode
     await tapControl(screen.getByRole('button', { name: 'キャンセル', exact: true }));
     expectUnchangedLayout(initial, await verifyRowLayout(screen, false));
   }
+});
+
+test('Library search preserves its results through selection, cancel and bulk move', { timeout: 180_000 }, async ({ app, device, screen }) => {
+  await loadSampleFiles(app, device, screen);
+  const first = screen.getByRole('button', { name: /^リリース方針レビュー、/ });
+  const second = screen.getByRole('button', { name: /^デザインレビュー、/ });
+  const other = screen.getByRole('button', { name: /^顧客インタビュー音声、/ });
+  await expect(first).toBeVisible();
+  await tapControl(screen.getByRole('button', { name: 'ファイルを検索', exact: true }));
+  const query = screen.getByTestId('collection.search.input');
+  await query.fill('レビュー');
+  await expect(query).toHaveValue('レビュー');
+  await expect(first).toBeVisible();
+  await expect(other).not.toBeVisible();
+
+  const cancel = screen.getByTestId('collection.search.cancel');
+  for (const fullSwipe of [false, true]) {
+    const box = await first.boundingBox();
+    if (!box) throw new Error('Search result has no frame');
+    await swipeToSelect(screen, box, fullSwipe);
+    await expect(first).toBeSelected();
+    await expect(query).toBeDisabled();
+    await expect(query).toHaveValue('レビュー');
+    await expect(screen.getByRole('keyboard')).not.toBeVisible();
+    await expect(screen.getByTestId(/^root\.tab\./)).toHaveCount(0);
+    await expect(other).not.toBeVisible();
+    const selected = await first.boundingBox();
+    if (!selected) throw new Error('Selected search result has no frame');
+    expect(selected.y).toBeCloseTo(box.y, 0);
+    if (!fullSwipe) {
+      await tapControl(cancel);
+      await expect(query).toBeEnabled();
+      await expect(query).toHaveValue('レビュー');
+    }
+  }
+
+  await tapControl(second);
+  await expect(screen.getByText('2件を選択', { exact: true }).first()).toBeVisible();
+  await app.screenshot('library-search-selection');
+  await tapControl(screen.getByRole('button', { name: '移動', exact: true }));
+  await expect(screen.getByText('2件の所属先を変更します。', { exact: true })).toBeVisible();
+  await tapControl(screen.getByRole('button', { name: '法人提案', exact: true }));
+  await expect(query).toBeEnabled();
+  await expect(query).toHaveValue('レビュー');
+  await expect(first).toBeVisible();
+  await expect(second).toBeVisible();
+  await expect(other).not.toBeVisible();
+
+  await tapControl(cancel);
+  await expect(screen.getByTestId('root.tab.files')).toBeSelected();
+  await selectLibrarySection(screen, 'プロジェクト');
+  await tapControl(screen.getByRole('button', { name: /^法人提案/ }).first());
+  await expect(first).toBeVisible();
+  await expect(second).toBeVisible();
+  await expect(other).not.toBeVisible();
 });

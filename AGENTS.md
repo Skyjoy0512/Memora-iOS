@@ -103,6 +103,9 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   never the list behind them. Do not bring back an always-visible `.searchable`
   drawer. Picking files on Files (`isFileSelectionActive`) hides the composer
   the same way, so the share / move / delete bar owns the bottom edge.
+  Selection from search keeps the field, query and results in place. Dismiss the
+  keyboard, pause search input, and return to the same search on cancellation
+  or after a successful move or deletion.
 - **Marketplace**: `ToolsView` retains the saved Tools destination and opens
   マーケットプレイス from the side menu. It shows an active-item icon strip and
   skill/template/integration rows. Rows open the existing details; section headings
