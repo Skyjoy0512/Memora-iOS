@@ -1,14 +1,12 @@
 import Foundation
 import Observation
 
-/// The microphone level the glow follows. It is kept apart from the model so the
-/// 10 updates a second reach only the view that draws the glow, instead of
-/// every screen observing the model.
+/// Keep microphone-level updates local to the recording sheet's meter.
 @Observable
 final class RecordingLevelMeter {
-  /// 0...1, smoothed so the glow follows a voice rather than jittering.
+  /// 0...1, smoothed to avoid jitter between samples.
   private(set) var level: Double = 0
-  /// False while no screen is showing the glow; sampling then costs nothing.
+  /// Disables sampling when the meter is hidden.
   var isActive = false
 
   func update(from target: Double) {

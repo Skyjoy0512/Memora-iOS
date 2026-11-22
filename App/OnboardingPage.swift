@@ -14,7 +14,7 @@ enum OnboardingPage: String, CaseIterable, Identifiable, Hashable {
     case .understand:
       .textAlignleft
     case .act:
-      .checkmark
+      .circle
     }
   }
 
@@ -32,17 +32,35 @@ enum OnboardingPage: String, CaseIterable, Identifiable, Hashable {
   var detail: String {
     switch self {
     case .record:
-      "会議や思いついたことを、音声で残せます。"
+      "会議や思いつきを音声で残せます。"
     case .understand:
-      "文字起こしと要約で、決まったことや元の発言を確認できます。"
+      "文字起こしと要約から、発言や決定を振り返れます。"
     case .act:
-      "会話で決まった作業をタスクにできます。"
+      "会話の中で決まった作業を、タスクとして残せます。"
     }
   }
 
   var next: OnboardingPage? {
-    let all = Self.allCases
-    guard let index = all.firstIndex(of: self), index + 1 < all.count else { return nil }
-    return all[index + 1]
+    switch self {
+    case .record: .understand
+    case .understand: .act
+    case .act: nil
+    }
+  }
+
+  var previous: OnboardingPage? {
+    switch self {
+    case .record: nil
+    case .understand: .record
+    case .act: .understand
+    }
+  }
+
+  var number: Int {
+    switch self {
+    case .record: 1
+    case .understand: 2
+    case .act: 3
+    }
   }
 }

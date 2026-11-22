@@ -2,6 +2,7 @@ import SwiftUI
 
 struct OnboardingView: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   var startRecording: @MainActor () async -> Void
   var showSample: () -> Void
   var skip: () -> Void
@@ -11,75 +12,26 @@ struct OnboardingView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      HStack {
-        HStack(spacing: MemoraSpacing.sm) {
-          MemoraBrandMark(width: 96).accessibilityHidden(true)
-          MemoraWordmark(width: 96).accessibilityHidden(true)
-        }
-        Spacer()
-        if page.next != nil {
-          Button("スキップ", action: skip)
-            .font(.subheadline)
-            .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget)
-            .accessibilityIdentifier("onboarding.skip")
-        }
-      }
-      .frame(minHeight: MemoraSpacing.touchTarget)
-      .padding(.horizontal, MemoraSpacing.screen)
-
-      ScrollViewReader { proxy in
+      header
+      GeometryReader { geometry in
         ScrollView {
-          VStack(alignment: .leading, spacing: MemoraSpacing.section) {
-            VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
-              Text(page.title)
-                .font(MemoraTypography.display)
-                .accessibilityAddTraits(.isHeader)
-              Text(page.detail)
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .lineSpacing(4)
-              OnboardingPreview(page: page)
-              if page == .understand {
-                aiDetails
-              }
-            }
-            .id(page)
-
-            HStack {
-              Text("\((OnboardingPage.allCases.firstIndex(of: page) ?? 0) + 1) / \(OnboardingPage.allCases.count)")
-                .font(.footnote.monospacedDigit())
-                .foregroundStyle(.secondary)
-                .accessibilityLabel("ページ \((OnboardingPage.allCases.firstIndex(of: page) ?? 0) + 1) / \(OnboardingPage.allCases.count)")
-              Spacer()
-              if page != .record {
-                Button("前へ") { page = page == .act ? .understand : .record }
-                  .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget)
-                  .disabled(isStartingRecording)
-              }
-            }
-
-            if let next = page.next {
-              Button {
-                page = next
-              } label: {
-                Text("次へ").frame(maxWidth: .infinity)
-              }
-              .buttonStyle(MemoraButtonStyle())
-              .accessibilityIdentifier("onboarding.next")
-            } else {
-              actions
-              Button("仕事・活動を選ぶ（任意）") { isOccupationSelectionPresented = true }
-                .font(.subheadline)
-                .frame(minHeight: MemoraSpacing.touchTarget)
-                .disabled(isStartingRecording)
-            }
+          VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
+            introduction
+            if dynamicTypeSize.isAccessibilitySize { footer }
           }
-          .padding(.horizontal, MemoraSpacing.screen)
           .padding(.vertical, MemoraSpacing.xxl)
-          .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
-          .frame(maxWidth: .infinity)
+          .frame(minHeight: geometry.size.height, alignment: .center)
+          .padding(.horizontal, MemoraSpacing.screen)
+          .frame(maxWidth: MemoraSpacing.readingWidth)
+          .frame(maxWidth: .infinity, alignment: .center)
         }
-        .onChange(of: page) { proxy.scrollTo(page, anchor: .top) }
+        .id(page)
+      }
+      if !dynamicTypeSize.isAccessibilitySize {
+        footer
+          .padding(.horizontal, MemoraSpacing.screen)
+          .padding(.bottom, MemoraSpacing.sm)
+          .frame(maxWidth: MemoraSpacing.readingWidth)
       }
     }
     .background(MemoraPalette.background)
@@ -92,6 +44,83 @@ struct OnboardingView: View {
               Button("完了") { isOccupationSelectionPresented = false }
             }
           }
+      }
+    }
+  }
+
+  private var header: some View {
+    ZStack {
+      MemoraWordmark(width: 84)
+        .accessibilityLabel("Memora")
+      HStack(spacing: MemoraSpacing.sm) {
+        if let previous = page.previous {
+          Button {
+            page = previous
+          } label: {
+            Label("前へ", icon: .chevronLeft)
+              .labelStyle(.iconOnly)
+              .frame(width: MemoraSpacing.touchTarget, height: MemoraSpacing.touchTarget)
+              .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+          .disabled(isStartingRecording)
+        }
+        Spacer()
+        if page.next != nil {
+          Button("スキップ", action: skip)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .frame(minHeight: MemoraSpacing.touchTarget)
+            .accessibilityIdentifier("onboarding.skip")
+        }
+      }
+    }
+    .frame(minHeight: MemoraSpacing.touchTarget)
+    .padding(.horizontal, MemoraSpacing.screen)
+  }
+
+  private var introduction: some View {
+    VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
+      VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
+        Text("\(page.number) / \(OnboardingPage.allCases.count)")
+          .font(.footnote.monospacedDigit())
+          .foregroundStyle(.secondary)
+          .accessibilityLabel("ページ \(page.number) / \(OnboardingPage.allCases.count)")
+        Text(page.title)
+          .font(MemoraTypography.display)
+          .accessibilityAddTraits(.isHeader)
+        Text(page.detail)
+          .font(.body)
+          .foregroundStyle(.secondary)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+      OnboardingPreview(page: page)
+      if page == .understand {
+        aiDetails
+      }
+      if page == .act {
+        Button("仕事・活動を選ぶ（任意）") { isOccupationSelectionPresented = true }
+          .font(.footnote)
+          .foregroundStyle(.secondary)
+          .frame(minHeight: MemoraSpacing.touchTarget)
+          .disabled(isStartingRecording)
+      }
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+  }
+
+  private var footer: some View {
+    Group {
+      if let next = page.next {
+        Button {
+          page = next
+        } label: {
+          Text("次へ").frame(maxWidth: .infinity)
+        }
+        .buttonStyle(MemoraButtonStyle())
+        .accessibilityIdentifier("onboarding.next")
+      } else {
+        actions
       }
     }
   }
@@ -110,8 +139,8 @@ struct OnboardingView: View {
   }
 
   private var actions: some View {
-    VStack(spacing: MemoraSpacing.md) {
-      Text("録音はこのiPhoneに保存されます。マイクの許可は録音を始めるときに確認します。")
+    VStack(spacing: MemoraSpacing.sm) {
+      Text("録音はこのiPhoneに保存されます。開始時にマイクの許可を確認します。")
         .font(.footnote)
         .foregroundStyle(.secondary)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -129,15 +158,20 @@ struct OnboardingView: View {
       .accessibilityIdentifier("onboarding.primary")
       .accessibilityHint("マイクの許可を確認してから録音します。")
 
-      Button(action: showSample) {
-        Text("サンプルを見る").frame(maxWidth: .infinity)
+      let optionsLayout = dynamicTypeSize >= .xxLarge
+        ? AnyLayout(VStackLayout(spacing: 0))
+        : AnyLayout(HStackLayout(spacing: MemoraSpacing.md))
+      optionsLayout {
+        Button("サンプルを見る", action: showSample)
+          .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget)
+          .accessibilityIdentifier("onboarding.sample")
+        Button("このiPhoneで始める", action: skip)
+          .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget)
+          .accessibilityIdentifier("onboarding.local")
       }
-        .buttonStyle(MemoraButtonStyle(emphasis: .secondary))
-        .accessibilityIdentifier("onboarding.sample")
-      Button("このiPhoneで始める", action: skip)
-        .font(.subheadline)
-        .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget)
-        .accessibilityIdentifier("onboarding.local")
+      .font(.subheadline)
+      .multilineTextAlignment(.center)
+      .foregroundStyle(.secondary)
     }
     .disabled(isStartingRecording)
   }

@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { launchMemora, tapControl, tapTab } from './ui-helpers';
+import { launchMemora, requireRootMenu, tapControl, tapTab } from './ui-helpers';
 import { isolatedDatabase, sql } from './sqlite-fixture-helpers';
 
 // A short regression by default; an explicit duration runs real wall-clock
@@ -18,7 +18,12 @@ if (!Number.isInteger(backgroundSeconds) || backgroundSeconds < 5 || backgroundS
 async function startIsolatedRecording(app: any, device: any, screen: any) {
   await launchMemora(app, device, screen);
   const marker = 'recording-lifecycle-' + randomUUID();
-  await device.openLink('memora://new-memo');
+  if (process.env.MEMORA_RECORDING_BASELINE === '1') {
+    await device.openLink('memora://new-memo');
+  } else {
+    await tapControl(screen.getByLabel('追加メニュー').first());
+    await tapControl(screen.getByRole('button', { name: 'ノートを追加', exact: true }));
+  }
   await screen.getByRole('textbox', { name: 'タイトル', exact: true }).fill(marker);
   const noteBody = screen.getByRole('textbox', { name: 'ノート本文', exact: true });
   await tapControl(screen, noteBody);
@@ -33,13 +38,15 @@ async function startIsolatedRecording(app: any, device: any, screen: any) {
   if (!simulator) throw new Error('Cannot identify the isolated recording simulator');
   await device.setPermission('microphone', 'grant');
   await app.restart();
+  await requireRootMenu(app, screen);
   await tapControl(screen, screen.getByLabel('追加メニュー').first());
   await tapControl(screen.getByRole('button', { name: '録音する', exact: true }));
   await expect(screen.getByRole('button', { name: '終了して保存', exact: true })).toBeVisible();
   // The retained old build predates this control. Baseline mode is used only
   // for the separate SIGKILL durability comparison, never a low-power claim.
   if (process.env.MEMORA_RECORDING_BASELINE !== '1') {
-    await tapControl(screen.getByRole('tab', { name: '省電力', exact: true }));
+    await tapControl(screen.getByTestId('recording.options'));
+    await tapControl(screen.getByText('省電力', { exact: true }));
   }
   const document = (key: string) => {
     const value = sql(database, `SELECT CAST(data AS TEXT) FROM documents WHERE key='${key}';`);
@@ -106,7 +113,7 @@ test('background low-power recording keeps the same draft and a complete decodab
     const actualBackgroundSeconds = (performance.now() - backgroundStarted) / 1_000;
     await device.openApp(capture.bundleId);
     await expect(screen.getByRole('button', { name: '一時停止', exact: true })).toBeVisible();
-    await expect(screen.getByText('省電力動作中：ライブ認識と音量アニメーションを休止。録音品質は変わりません。', { exact: true })).toBeVisible();
+    await expect(screen.getByText('省電力動作中', { exact: true })).toBeVisible();
     expect(capture.document('memoraRecordingDraft')?.fileName).toBe(capture.draft.fileName);
     await app.screenshot('recording-after-background');
     await tapControl(screen.getByRole('button', { name: '終了して保存', exact: true }));
@@ -212,7 +219,7 @@ test('a finalized AAC staged as a recovery draft still offers manual transcripti
     expect(Math.abs(recovered()[0].duration - audio.duration)).toBeLessThan(0.1);
     await tapTab(screen, 'ライブラリ');
     await tapControl(screen.getByRole('button', { name: new RegExp('^' + draft.title) }).first());
-    await expect(screen.getByText('音声を文字にする', { exact: true })).toBeVisible();
+    await expect(screen.getByText('文字起こし前', { exact: true })).toBeVisible();
     await expect(screen.getByRole('button', { name: '文字起こしする', exact: true })).toBeEnabled();
     await app.screenshot('recording-readable-recovery');
     await app.restart();

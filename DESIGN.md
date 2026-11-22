@@ -11,13 +11,20 @@ Updated 2026-11-14. This is the current design specification. Product behavior
 and access constraints remain in AGENTS.md and domain documents under docs/.
 Historical visual experiments are superseded.
 
-2026-10-27: onboarding offers recording, the non-destructive sample and local
-use from the first page; explanatory pages are optional. Auth providers carry
-an unavailable label until connected. Plans use native Form/Picker, separating
-future pricing/credits from current on-device/BYOK features and local settings.
+Onboarding uses three brief pages with one static example each. The primary
+action stays at the bottom. The final page offers recording, the sample and local
+use. Auth providers carry an unavailable label until connected. Plans use native
+Form/Picker, separating future pricing and credits from current on-device/BYOK
+features and local settings.
 Brand assets follow the supplied canonical artwork in docs/BRANDING.md. Floating Ask AI controls use native Liquid Glass; motion follows the restrained page/text treatment below. See docs/UI_UX_2026_10.md.
 
 ## Everyday interactions
+
+- The recording overview centers the elapsed time and current recording state.
+  Pause or resume and save stay at the bottom, and the flag marks the current
+  audio position. The details action expands the same sheet for the title, notes,
+  live transcript and markers. Power saving and discard are in the options menu.
+  Closing the sheet leaves recording active.
 
 - The bottom row centers three icons 64pt apart for Library, Journal, and
   Ask AI. The selected Lucide glyph is filled and sits inside a gray capsule.

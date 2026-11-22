@@ -5,13 +5,14 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { launchMemora, tapControl } from './ui-helpers';
+import { launchMemora, requireRootMenu, tapControl } from './ui-helpers';
 import { isolatedDatabase, sql } from './sqlite-fixture-helpers';
 
 test('power mode changes and pause preserve the AAC recording and SQLite draft', { timeout: 240_000 }, async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   const marker = 'recording-power-' + randomUUID();
-  await device.openLink('memora://new-memo');
+  await tapControl(screen.getByLabel('追加メニュー').first());
+  await tapControl(screen.getByRole('button', { name: 'ノートを追加', exact: true }));
   await screen.getByRole('textbox', { name: 'タイトル', exact: true }).fill(marker);
   const noteBody = screen.getByRole('textbox', { name: 'ノート本文', exact: true });
   await tapControl(screen, noteBody);
@@ -24,6 +25,7 @@ test('power mode changes and pause preserve the AAC recording and SQLite draft',
   const database = isolatedDatabase(marker, identity.bundleId!, 'memoraProjectSources.v2');
   await device.setPermission('microphone', 'grant');
   await app.restart();
+  await requireRootMenu(app, screen);
   await tapControl(screen, screen.getByLabel('追加メニュー').first());
   await tapControl(screen.getByRole('button', { name: '録音する', exact: true }));
   await expect(screen.getByRole('button', { name: '終了して保存', exact: true })).toBeVisible();
@@ -36,10 +38,33 @@ test('power mode changes and pause preserve the AAC recording and SQLite draft',
   const root = dirname(dirname(dirname(dirname(database))));
   const audio = join(root, 'Documents', 'Recordings', firstDraft.fileName.split('/').pop());
   expect(existsSync(audio)).toBe(true);
-  await tapControl(screen.getByRole('tab', { name: '省電力', exact: true }));
-  await expect(screen.getByText('省電力動作中：ライブ認識と音量アニメーションを休止。録音品質は変わりません。', { exact: true })).toBeVisible();
+  const details = screen.getByTestId('recording.details');
+  const title = screen.getByTestId('recording.title');
+  await expect(title).not.toBeVisible();
+  await app.screenshot('recording-overview');
+  await tapControl(details);
+  await expect(title).toBeVisible();
+  await expect(screen.getByRole('textbox', { name: '録音中のメモ' })).toBeVisible();
+  await tapControl(screen.getByRole('button', { name: '文字起こし', exact: true }));
+  await expect(title).not.toBeVisible();
+  await tapControl(screen.getByRole('button', { name: '重要マーク', exact: true }));
+  await expect(screen.getByText('重要マークはありません', { exact: true })).toBeVisible();
+  await tapControl(screen.getByRole('button', { name: 'ノート', exact: true }));
+  await expect(title).toBeVisible();
+  await app.screenshot('recording-details');
+  const recordingTitle = 'Recording ' + marker;
+  await title.fill(recordingTitle);
+  await tapControl(details);
+  await expect(title).not.toBeVisible();
+  await tapControl(details);
+  await expect(title).toHaveValue(recordingTitle);
+  await tapControl(details);
+  await tapControl(screen.getByTestId('recording.options'));
+  await tapControl(screen.getByText('省電力', { exact: true }));
+  await expect(screen.getByText('省電力動作中', { exact: true })).toBeVisible();
   await tapControl(screen.getByRole('button', { name: '一時停止', exact: true }));
   await expect(screen.getByRole('button', { name: '再開', exact: true })).toBeVisible();
+  await expect(screen.getByText('一時停止中', { exact: true })).toBeVisible();
   expect(draft().fileName).toBe(firstDraft.fileName);
   await tapControl(screen.getByRole('button', { name: '再開', exact: true }));
   await expect(screen.getByRole('button', { name: '一時停止', exact: true })).toBeVisible();
@@ -52,7 +77,8 @@ test('power mode changes and pause preserve the AAC recording and SQLite draft',
   await expect(screen.getByRole('button', { name: '終了して保存', exact: true })).not.toBeVisible();
   await expect.poll(async () => {
     const value = sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';");
-    return value !== '' && JSON.parse(value).some((record: any) => record.id === firstDraft.id);
+    return value !== '' && JSON.parse(value).some((record: any) =>
+      record.id === firstDraft.id && record.title === recordingTitle);
   }).toBe(true);
   expect(existsSync(audio)).toBe(true);
   expect(statSync(audio).size).toBeGreaterThan(0);

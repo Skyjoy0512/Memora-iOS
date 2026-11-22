@@ -10,7 +10,7 @@ class ExperiencePresentationChecks(unittest.TestCase):
         view = (APP / "OnboardingView.swift").read_text()
         copy = (APP / "OnboardingPage.swift").read_text()
         preview = (APP / "OnboardingPreview.swift").read_text()
-        for contract in ("ScrollView {", 'Button("スキップ", action: skip)', 'Button(action: showSample)',
+        for contract in ("ScrollView {", 'Button("スキップ", action: skip)', 'Button("サンプルを見る", action: showSample)',
                          'Button("このiPhoneで始める", action: skip)', '"録音してみる"', "await startRecording()", "OccupationSelectionView()"):
             self.assertIn(contract, view)
         for claim in ("設定も準備もいりません", "終わった瞬間", "担当と期限まで揃います"):
@@ -20,7 +20,8 @@ class ExperiencePresentationChecks(unittest.TestCase):
         actions = view.split("private var actions:")[1]
         self.assertIn("startRecording()", actions)
         self.assertNotIn("page.next", actions)
-        self.assertIn("表示例・架空の会話", preview)
+        for example in ("録音の例", "要約の例", "タスクの例"):
+            self.assertIn(example, preview)
         self.assertNotIn("memoraCard", preview)
         self.assertNotIn("repeatForever", preview)
         self.assertIn(".accessibilityElement(children: .combine)", preview)

@@ -48,6 +48,9 @@ test('screen polish: onboarding remains readable and can finish without recordin
   await tapControl(next);
   await expect(screen.getByText('あとから読み返す', { exact: true })).toBeVisible();
   await expect(start).not.toBeVisible();
+  await tapControl(screen.getByRole('button', { name: '前へ', exact: true }));
+  await expect(screen.getByText('会話を録音する', { exact: true })).toBeVisible();
+  await tapControl(next);
   await tapControl(next);
   await expect(screen.getByText('タスクにつなげる', { exact: true })).toBeVisible();
   await expect(next).not.toBeVisible();

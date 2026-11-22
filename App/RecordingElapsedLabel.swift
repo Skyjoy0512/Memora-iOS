@@ -1,21 +1,34 @@
 import SwiftUI
 
-/// The recording sheet's dot and running time. Its own view so the once-a-second
-/// tick redraws only this label, not the notes and live transcript around it.
+/// Keep the once-a-second tick local while the editors and transcript are open.
 struct RecordingElapsedLabel: View {
   @Environment(MemoraModel.self) private var model
+  var compact = false
 
   var body: some View {
-    HStack(spacing: 8) {
-      Circle()
-        .fill(model.isRecordingPaused ? Color.secondary : Color.red)
-        .frame(width: 8, height: 8)
+    let layout = compact
+      ? AnyLayout(HStackLayout(spacing: MemoraSpacing.md))
+      : AnyLayout(VStackLayout(spacing: MemoraSpacing.xs))
+    let duration = MemoraFormat.duration(model.recordingElapsed)
+    layout {
+      HStack(spacing: MemoraSpacing.xs) {
+        Circle()
+          .fill(model.isRecordingPaused || model.isSavingCapture ? Color.secondary : Color.red)
+          .frame(width: 7, height: 7)
+          .accessibilityHidden(true)
+        Text(status)
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+      }
 
-      Text(MemoraFormat.duration(model.recordingElapsed))
-        .font(.subheadline.monospacedDigit().weight(.semibold))
-        .contentTransition(.numericText())
+      Text(duration)
+        .font((compact ? Font.headline : .largeTitle).monospacedDigit().weight(.semibold))
+        .accessibilityLabel("録音時間 \(duration)")
     }
-    .accessibilityElement(children: .combine)
-    .accessibilityLabel("録音時間 \(MemoraFormat.duration(model.recordingElapsed))")
+  }
+
+  private var status: String {
+    if model.isSavingCapture { return "保存しています…" }
+    return model.isRecordingPaused ? "一時停止中" : "録音中"
   }
 }
