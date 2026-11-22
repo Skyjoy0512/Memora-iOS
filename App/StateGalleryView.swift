@@ -7,6 +7,7 @@ struct StateGalleryView: View {
       #if DEBUG
       Section("表示（架空データ）") {
         NavigationLink("AI待機表示（状態遷移の確認）") { AIWaitingExampleView() }
+        NavigationLink("外部レコーダーの状態（表示確認）") { OmiPairingReviewView() }
         NavigationLink("デザインと保存の検証") { DesignSystemReviewView() }
         NavigationLink("OSSの部分移植（表示比較）") { AIMarkdownPolishExampleView() }
         NavigationLink("Ask AI 2.0（表示の確認）") { AskAIExperienceExampleView() }

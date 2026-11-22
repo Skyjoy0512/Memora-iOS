@@ -24,6 +24,7 @@ final class OmiPairingManager: NSObject {
     case remembered(String)
     case preparing
     case scanning
+    case scanFinished
     case connecting(String)
     case connected(String)
     case bluetoothOff
@@ -41,6 +42,8 @@ final class OmiPairingManager: NSObject {
         "準備中"
       case .scanning:
         "検索中"
+      case .scanFinished:
+        "検索完了"
       case .connecting:
         "接続中"
       case .connected:
@@ -70,6 +73,10 @@ final class OmiPairingManager: NSObject {
   /// True only while someone is looking for a device. Bluetooth coming back on
   /// must not start a scan by itself.
   @ObservationIgnored private var wantsScanning = false
+  @ObservationIgnored private var scanDeadline: DispatchWorkItem?
+  #if DEBUG
+  @ObservationIgnored private var isReview = false
+  #endif
 
   private static let audioService = CBUUID(string: "19B10000-E8F2-537E-4F6C-D104768A1214")
   private static let deviceInformationService = CBUUID(string: "180A")
@@ -95,13 +102,29 @@ final class OmiPairingManager: NSObject {
     super.init()
   }
 
+  #if DEBUG
+  convenience init(reviewState: ConnectionState) {
+    self.init()
+    isReview = true
+    state = reviewState
+    if reviewState == .scanning { startScanning() }
+  }
+  #endif
+
   func startScanning() {
+    #if DEBUG
+    if isReview {
+      wantsScanning = true
+      state = .scanning
+      scheduleScanDeadline()
+      return
+    }
+    #endif
     #if targetEnvironment(simulator)
     state = .unsupported
     #else
+    cancelPairing()
     wantsScanning = true
-    devices = []
-    peripherals = [:]
     state = .preparing
 
     if let centralManager {
@@ -112,16 +135,28 @@ final class OmiPairingManager: NSObject {
     #endif
   }
 
-  func stopScanning() {
+  func cancelPairing() {
     wantsScanning = false
+    scanDeadline?.cancel()
+    scanDeadline = nil
     centralManager?.stopScan()
+    let pending = connectingPeripheralID.flatMap { peripherals[$0] }
+    connectingPeripheralID = nil
+    if let pending {
+      centralManager?.cancelPeripheralConnection(pending)
+    }
+    devices = []
     releaseUnconnectedPeripherals()
-    if case .scanning = state {
+    switch state {
+    case .preparing, .scanning, .scanFinished, .connecting:
       state = rememberedState
+    default:
+      break
     }
   }
 
   func connect(to device: Device) {
+    guard state == .scanning || state == .scanFinished else { return }
     guard let peripheral = peripherals[device.id], let centralManager else { return }
     if let previous = connectedPeripheral { centralManager.cancelPeripheralConnection(previous) }
     connectedPeripheral = nil
@@ -129,12 +164,15 @@ final class OmiPairingManager: NSObject {
     batteryState = RecorderBatteryState()
     connectingPeripheralID = peripheral.identifier
     wantsScanning = false
+    scanDeadline?.cancel()
+    scanDeadline = nil
     centralManager.stopScan()
     state = .connecting(device.name)
     centralManager.connect(peripheral)
   }
 
   func disconnect() {
+    cancelPairing()
     if let connectedPeripheral, let centralManager {
       centralManager.cancelPeripheralConnection(connectedPeripheral)
     }
@@ -169,10 +207,14 @@ final class OmiPairingManager: NSObject {
 
   private func beginScanIfPossible(using central: CBCentralManager) {
     guard wantsScanning else {
+      guard connectedPeripheral == nil, connectingPeripheralID == nil else { return }
       state = availabilityState(for: central)
       return
     }
     guard central.state == .poweredOn else {
+      if central.state != .unknown, central.state != .resetting {
+        wantsScanning = false
+      }
       state = availabilityState(for: central)
       return
     }
@@ -181,6 +223,21 @@ final class OmiPairingManager: NSObject {
       withServices: [Self.audioService],
       options: [CBCentralManagerScanOptionAllowDuplicatesKey: false]
     )
+    scheduleScanDeadline()
+  }
+
+  private func scheduleScanDeadline() {
+    scanDeadline?.cancel()
+    let deadline = DispatchWorkItem { [weak self] in
+      guard let self, self.wantsScanning, self.state == .scanning else { return }
+      // Retain the results so a person can still select a device after the scan.
+      self.wantsScanning = false
+      self.centralManager?.stopScan()
+      self.scanDeadline = nil
+      self.state = .scanFinished
+    }
+    scanDeadline = deadline
+    DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(15), execute: deadline)
   }
 
   /// What to say about Bluetooth without starting anything.
@@ -205,8 +262,17 @@ final class OmiPairingManager: NSObject {
 extension OmiPairingManager: CBCentralManagerDelegate {
   func centralManagerDidUpdateState(_ central: CBCentralManager) {
     if central.state != .poweredOn {
+      if wantsScanning, central.state == .unknown || central.state == .resetting {
+        state = .preparing
+        return
+      }
+      cancelPairing()
       batteryState = RecorderBatteryState()
-      connectingPeripheralID = nil
+      connectedPeripheral = nil
+      details = nil
+      peripherals = [:]
+      state = availabilityState(for: central)
+      return
     }
     beginScanIfPossible(using: central)
   }
@@ -217,6 +283,7 @@ extension OmiPairingManager: CBCentralManagerDelegate {
     advertisementData: [String: Any],
     rssi RSSI: NSNumber
   ) {
+    guard wantsScanning, state == .scanning else { return }
     let advertisedName = advertisementData[CBAdvertisementDataLocalNameKey] as? String
     let name = peripheral.name ?? advertisedName ?? "Omi"
     let device = Device(id: peripheral.identifier, name: name, signalStrength: RSSI.intValue)

@@ -1,5 +1,4 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct ExternalRecorderSettingsView: View {
   @Environment(MemoraModel.self) private var model
@@ -19,18 +18,25 @@ struct ExternalRecorderSettingsView: View {
         }
         .accessibilityIdentifier("recorder.omi")
       } header: {
-        Text("直接接続")
+        Text("Bluetoothで接続")
       }
 
       Section {
         NavigationLink {
-          RecorderAudioImportView(title: "他のレコーダー・ボイスメモ", isPlaud: false)
+          RecorderAudioImportView(title: "PLAUD", isPlaud: true)
         } label: {
-          recorderRow(title: "他のレコーダー・ボイスメモ", detail: "PLAUD・ICレコーダーなどから書き出した音声", symbol: .squareAndArrowDown)
+          recorderRow(title: "PLAUD", detail: "アプリから書き出した音声", symbol: .squareAndArrowDown)
+        }
+        .accessibilityIdentifier("recorder.plaud")
+
+        NavigationLink {
+          RecorderAudioImportView(title: "その他・ボイスメモ", isPlaud: false)
+        } label: {
+          recorderRow(title: "その他・ボイスメモ", detail: "ICレコーダーなどの音声", symbol: .squareAndArrowDown)
         }
         .accessibilityIdentifier("recorder.other")
       } header: {
-        Text("音声ファイルを取り込む")
+        Text("書き出した音声を取り込む")
       }
     }
     .navigationTitle("外部レコーダー")
@@ -52,7 +58,7 @@ struct ExternalRecorderSettingsView: View {
   }
 
   private func recorderRow(title: String, detail: String, symbol: MemoraIcon) -> some View {
-    HStack(spacing: 12) {
+    HStack(spacing: MemoraSpacing.md) {
       MemoraInterfaceIcon(icon: symbol)
       VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
         Text(title).foregroundStyle(.primary)

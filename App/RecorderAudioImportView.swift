@@ -17,8 +17,8 @@ struct RecorderAudioImportView: View {
     MemoraForm {
       Section {
         Text(isPlaud
-          ? "PLAUDアプリから音声を書き出し、「ファイル」に保存して選択してください。"
-          : "PLAUD、ICレコーダー、ボイスメモから音声を書き出し、「ファイル」に保存して選択してください。USBストレージも「ファイル」に表示されていれば選択できます。")
+          ? "PLAUDアプリで録音を開き、音声を書き出して「ファイル」に保存します。その音声をここで選びます。"
+          : "レコーダーやボイスメモから音声を「ファイル」に保存し、ここで選びます。「ファイル」に表示されるUSBストレージからも選べます。")
           .foregroundStyle(.secondary)
         Button("音声を選んで取り込む", icon: .squareAndArrowDown) {
           importContext = LocalImportContext(in: model)
@@ -27,22 +27,24 @@ struct RecorderAudioImportView: View {
             showsFailure = true
             return
           }
-          importedRecordID = nil
           isImporterPresented = true
         }
         .disabled(isWorking || model.isImporting)
         .accessibilityIdentifier("recorder.importAudio")
-        if isWorking { ProgressView("音声を保存しています") }
+        if isWorking { ProgressView("音声を保存しています…") }
         if let id = importedRecordID, model.source(id: id) != nil {
           Label("ライブラリに音声を保存しました", icon: .checkmark)
             .accessibilityIdentifier("recorder.importSuccess")
+          NavigationLink {
+            ProjectSourceDetailView(sourceID: id)
+          } label: {
+            Label("取り込んだ音声を開く", icon: .arrowUpRightSquare)
+          }
+          .accessibilityIdentifier("recorder.openImportedAudio")
+          .disabled(isWorking)
         }
       } footer: {
-        Text("再生可能な音声だけを取り込みます。元のファイルは変更しません。対応端末では文字起こしと要約を自動で作成します。外部AIへの送信には既存の許可が必要です。")
-      }
-      Section {
-        LabeledContent("接続方法", value: "音声ファイルの取り込み")
-        LabeledContent("Bluetooth直接接続", value: "未対応")
+        Text("元のファイルはそのまま残ります。外部AIへの送信には許可が必要です。")
       }
     }
     .navigationTitle(Text(title))
@@ -52,19 +54,7 @@ struct RecorderAudioImportView: View {
     .fileImporter(isPresented: $isImporterPresented, allowedContentTypes: [.audio]) { result in
       switch result {
       case .success(let url):
-        let context = importContext
-        isWorking = true
-        Task { @MainActor in
-          defer { isWorking = false }
-          let id = await model.importInformationFile(url, context: context)
-          guard let context, context.isCurrent(in: model) else { return }
-          if let id {
-            importedRecordID = id
-          } else {
-            failure = model.importErrorMessage ?? model.persistenceFailureMessage ?? "取り込めませんでした。保存先を確認して、もう一度ファイルを選んでください。"
-            showsFailure = true
-          }
-        }
+        importAudio(url)
       case .failure(let error):
         guard (error as NSError).code != NSUserCancelledError else { return }
         failure = error.localizedDescription
@@ -75,6 +65,32 @@ struct RecorderAudioImportView: View {
       Button("閉じる", role: .cancel) {}
     } message: {
       Text(failure)
+    }
+  }
+
+  private func importAudio(_ url: URL) {
+    guard let context = importContext, context.isCurrent(in: model), !isWorking, !model.isImporting else {
+      failure = "保存先を確認し、もう一度ファイルを選んでください。"
+      showsFailure = true
+      return
+    }
+    isWorking = true
+    Task { @MainActor in
+      defer { isWorking = false }
+      do {
+        let ids = try await model.importInformationSources(url, context: context, presentsErrorsLocally: true)
+        guard context.isCurrent(in: model) else { return }
+        if let id = ids?.first {
+          importedRecordID = id
+        } else {
+          failure = model.persistenceFailureMessage ?? "保存先を確認し、もう一度ファイルを選んでください。"
+          showsFailure = true
+        }
+      } catch {
+        guard context.isCurrent(in: model) else { return }
+        failure = error.localizedDescription
+        showsFailure = true
+      }
     }
   }
 }

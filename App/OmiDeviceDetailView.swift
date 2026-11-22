@@ -7,7 +7,6 @@ struct OmiDeviceDetailView: View {
   @Environment(\.dismiss) private var dismiss
   var manager: OmiPairingManager
 
-  @State private var isFirmwareNoticePresented = false
   @State private var isPairingPresented = false
   @State private var isUnpairingPresented = false
 
@@ -22,22 +21,19 @@ struct OmiDeviceDetailView: View {
       }
 
       Section("デバイス") {
-        infoRow("名前", details?.name ?? "不明")
-        infoRow("モデル", details?.model ?? "取得できませんでした")
-        infoRow("メーカー", details?.manufacturer ?? "取得できませんでした")
+        infoRow("名前", details?.name ?? "未取得")
+        infoRow("モデル", details?.model ?? "未取得")
+        infoRow("メーカー", details?.manufacturer ?? "未取得")
         infoRow("識別子", shortIdentifier)
-        infoRow("バッテリー", manager.batteryState.percentage.map { "\($0)%" } ?? "取得できませんでした")
+        infoRow("バッテリー", manager.batteryState.percentage.map { "\($0)%" } ?? "未取得")
       }
 
       Section {
-        infoRow("インストール済み", details?.firmwareVersion ?? "取得できませんでした")
-        Button("ファームウェアを更新", icon: .arrowTriangle2Circlepath) {
-          isFirmwareNoticePresented = true
-        }
+        infoRow("インストール済み", details?.firmwareVersion ?? "未取得")
       } header: {
         Text("ファームウェア")
       } footer: {
-        Text("このアプリはまだファームウェアの更新を行えません。バージョンは接続時にデバイスから読み取った値です。")
+        Text("アプリからの更新は未対応です。")
       }
 
       Section {
@@ -60,21 +56,16 @@ struct OmiDeviceDetailView: View {
     } message: {
       Text("保存した録音は残ります。再び使うときは接続し直してください。")
     }
-    .alert("ファームウェア", isPresented: $isFirmwareNoticePresented) {
-      Button("閉じる", role: .cancel) {}
-    } message: {
-      Text("ファームウェアの確認と更新はまだ対応していません。")
-    }
   }
 
   private var header: some View {
-    HStack(spacing: 14) {
+    HStack(spacing: MemoraSpacing.md) {
       Image(icon: .dotRadiowavesLeftAndRight, size: 22)
         .foregroundStyle(.primary)
         .frame(width: 48, height: 48)
         .background(Color(uiColor: .secondarySystemBackground), in: Circle())
 
-      VStack(alignment: .leading, spacing: 3) {
+      VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
         Text(deviceName)
           .font(.headline)
         Label(isConnected ? "接続済み" : "未接続", icon: isConnected ? .checkmarkCircleFill : .link)
@@ -94,7 +85,7 @@ struct OmiDeviceDetailView: View {
   }
 
   private var shortIdentifier: String {
-    guard let identifier = details?.identifier.uuidString else { return "不明" }
+    guard let identifier = details?.identifier.uuidString else { return "未取得" }
     return String(identifier.prefix(8)).uppercased()
   }
 

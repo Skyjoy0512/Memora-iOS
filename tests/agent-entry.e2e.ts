@@ -1,6 +1,6 @@
 import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { focusComposer, launchMemora, tapControl, tapTab } from './ui-helpers';
+import { focusComposer, launchMemora, openSettingsGallery, tapControl, tapTab } from './ui-helpers';
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
@@ -47,13 +47,14 @@ test('agent entry: chat attachment sheet preserves the draft, keyboard and attac
   await expect(screen.getByLabel('候補を閉じる')).toBeVisible();
 });
 
-test('agent entry: recorder hub exposes direct pairing and honest generic import', async ({ app, device, screen }) => {
+test('agent entry: recorder hub distinguishes Omi pairing from PLAUD and other audio imports', { timeout: 120_000 }, async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await tapControl(screen.getByTestId('recorder.toolbarStatus'));
   await expect(screen.getByTestId('recorder.omi')).toBeVisible();
-  await expect(screen.getByTestId('recorder.plaud')).not.toBeVisible();
+  await expect(screen.getByTestId('recorder.plaud')).toBeVisible();
   await expect(screen.getByTestId('recorder.other')).toBeVisible();
-  await expect(screen.getByText(/OmiはBluetoothで直接接続できます/)).not.toBeVisible();
+  await expect(screen.getByText('Bluetoothで接続', { exact: true })).toBeVisible();
+  await expect(screen.getByText('書き出した音声を取り込む', { exact: true })).toBeVisible();
   await app.screenshot('agent-recorder-hub');
   await tapControl(screen.getByTestId('recorder.omi'));
   const search = screen.getByRole('button', { name: 'Omiを探す', exact: true });
@@ -62,12 +63,18 @@ test('agent entry: recorder hub exposes direct pairing and honest generic import
   if (!searchBox) throw new Error('Omi search button has no frame');
   expect(searchBox.height).toBeGreaterThanOrEqual(44);
   await app.screenshot('recorder-omi-centered-label');
-  await tapControl(screen.getByRole('button', { name: '完了', exact: true }));
+  await tapControl(search);
+  await expect(screen.getByText(/この環境ではOmiを検索できません/)).toBeVisible();
+  await app.screenshot('omi-simulator-unavailable');
+  await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }));
+  await tapControl(screen.getByTestId('recorder.plaud'));
+  await expect(screen.getByText(/PLAUDアプリで録音を開き/)).toBeVisible();
+  await device.setAppearance('dark');
+  await app.screenshot('plaud-import-dark');
+  await tapControl(screen.getByTestId('BackButton'));
   await tapControl(screen, screen.getByTestId('recorder.other'));
   await expect(screen.getByTestId('recorder.importAudio')).toBeVisible();
-  await expect(screen.getByText(/PLAUD、ICレコーダー、ボイスメモから音声を書き出し/)).toBeVisible();
-  await expect(screen.getByText('Bluetooth直接接続', { exact: true })).toBeVisible();
-  await expect(screen.getByText('Bluetooth直接接続、未対応', { exact: true })).toBeVisible();
+  await expect(screen.getByText(/レコーダーやボイスメモから音声を「ファイル」に保存/)).toBeVisible();
   await app.screenshot('agent-recorder-generic-import');
   await tapControl(screen, screen.getByTestId('recorder.importAudio'));
   const cancel = screen.getByRole('button', { name: /^(キャンセル|Cancel)$/ });
@@ -75,4 +82,33 @@ test('agent entry: recorder hub exposes direct pairing and honest generic import
   await tapControl(screen, cancel);
   await expect(screen.getByTestId('recorder.importAudio')).toBeEnabled();
   await expect(screen.getByTestId('recorder.importSuccess')).not.toBeVisible();
+});
+
+test('agent entry: recorder search times out, retries and stops without leaving pairing', { timeout: 150_000 }, async ({ app, device, screen }) => {
+  await launchMemora(app, device, screen);
+  await tapControl(screen.getByLabel('メニュー').first());
+  await tapControl(screen.getByTestId('sidebar.settings'));
+  await openSettingsGallery(screen);
+  await tapControl(screen.getByRole('button', { name: '外部レコーダーの状態（表示確認）', exact: true }));
+  await tapControl(screen.getByRole('button', { name: '候補なしの検索', exact: true }));
+  await expect(screen.getByRole('button', { name: '検索を中止', exact: true })).toBeVisible();
+  const noDevices = screen.getByText('Omiが見つかりませんでした', { exact: true });
+  await expect(noDevices).toBeVisible({ timeout: 22_000 });
+  await app.screenshot('omi-scan-empty');
+  await tapControl(screen.getByRole('button', { name: 'もう一度探す', exact: true }));
+  await tapControl(screen.getByRole('button', { name: '検索を中止', exact: true }));
+  await expect(screen.getByRole('button', { name: 'Omiを探す', exact: true })).toBeVisible();
+  await expect(noDevices).not.toBeVisible();
+  const close = screen.getByRole('button', { name: '閉じる', exact: true });
+  await tapControl(close);
+  await tapControl(screen.getByRole('button', { name: '接続中', exact: true }));
+  await tapControl(screen.getByRole('button', { name: '接続を中止', exact: true }));
+  await expect(screen.getByRole('button', { name: 'Omiを探す', exact: true })).toBeVisible();
+  await tapControl(close);
+  await tapControl(screen.getByRole('button', { name: 'アクセス未許可', exact: true }));
+  await expect(screen.getByRole('button', { name: '設定を開く', exact: true })).toBeVisible();
+  await tapControl(close);
+  await tapControl(screen.getByRole('button', { name: 'Bluetoothオフ', exact: true }));
+  await expect(screen.getByText('Bluetoothがオフです', { exact: true })).toBeVisible();
+  await expect(screen.getByRole('button', { name: 'もう一度探す', exact: true })).toBeVisible();
 });

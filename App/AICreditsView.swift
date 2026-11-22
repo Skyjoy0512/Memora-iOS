@@ -15,7 +15,7 @@ struct AICreditsView: View {
         if let blocker = model.memoraIntelligenceBlocker {
           Text(blocker)
         } else {
-          Text("残高はMemora Intelligenceを使ったときに更新されます。")
+          Text("利用すると残高が更新されます。")
         }
       }
 

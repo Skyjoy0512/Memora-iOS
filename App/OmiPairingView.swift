@@ -4,6 +4,7 @@ struct OmiPairingView: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(\.openURL) private var openURL
   var manager: OmiPairingManager
+  var isReview = false
 
   /// Opens the device detail page right after a pairing completes.
   @State private var showsDetails = false
@@ -15,7 +16,7 @@ struct OmiPairingView: View {
           statusContent
         }
 
-        if !manager.devices.isEmpty {
+        if (manager.state == .scanning || manager.state == .scanFinished), !manager.devices.isEmpty {
           Section("近くのデバイス") {
             ForEach(manager.devices) { device in
               Button {
@@ -28,19 +29,18 @@ struct OmiPairingView: View {
                   Label(device.name, icon: .waveform)
                 }
               }
-              .disabled(isConnecting)
             }
           }
         }
       }
-      .navigationTitle("Omiを接続")
+      .navigationTitle(isReview ? "Omiを接続（表示例）" : "Omiを接続")
       .navigationBarTitleDisplayMode(.inline)
       .navigationDestination(isPresented: $showsDetails) {
         OmiDeviceDetailView(manager: manager)
       }
       .toolbar {
         ToolbarItem(placement: .confirmationAction) {
-          ToolbarIconButton("完了", icon: .checkmark) { dismiss() }
+          ToolbarIconButton("閉じる", icon: .xmark) { dismiss() }
         }
       }
       .onChange(of: manager.state) { previous, current in
@@ -48,7 +48,7 @@ struct OmiPairingView: View {
         showsDetails = true
       }
       .onDisappear {
-        manager.stopScanning()
+        manager.cancelPairing()
       }
     }
   }
@@ -57,12 +57,9 @@ struct OmiPairingView: View {
   private var statusContent: some View {
     switch manager.state {
     case .idle, .remembered:
-      VStack(alignment: .leading, spacing: 12) {
-        Label("Omiを近くに置いてください", icon: .dotRadiowavesLeftAndRight)
+      VStack(alignment: .leading, spacing: MemoraSpacing.md) {
+        Text("Omiの電源を入れて、iPhoneの近くに置きます。")
           .font(.headline)
-        Text("見つけたデバイスへ、このiPhoneから直接接続します。")
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
         Button {
           manager.startScanning()
         } label: {
@@ -73,27 +70,28 @@ struct OmiPairingView: View {
         .buttonStyle(.borderedProminent)
       }
       .padding(.vertical, MemoraSpacing.sm)
-    case .preparing, .scanning:
-      HStack(spacing: 12) {
-        ProgressView()
-        VStack(alignment: .leading, spacing: 3) {
-          Text("近くのOmiを探しています")
+    case .preparing:
+      pairingProgress("Bluetoothを準備しています", cancelTitle: "準備を中止")
+    case .scanning:
+      pairingProgress("近くのOmiを探しています", cancelTitle: "検索を中止")
+    case .scanFinished:
+      VStack(alignment: .leading, spacing: MemoraSpacing.md) {
+        if manager.devices.isEmpty {
+          Text("Omiが見つかりませんでした")
             .font(.headline)
-          Text("電源が入っていることを確認してください。")
+          Text("電源を確認し、iPhoneに近づけてから探してください。")
             .font(.subheadline)
             .foregroundStyle(.secondary)
+        } else {
+          Text("接続するOmiを選んでください。")
         }
+        retryButton
       }
       .padding(.vertical, MemoraSpacing.sm)
     case .connecting(let name):
-      HStack(spacing: 12) {
-        ProgressView()
-        Text("\(name)へ接続しています")
-          .font(.headline)
-      }
-      .padding(.vertical, MemoraSpacing.sm)
+      pairingProgress("\(name)へ接続しています", cancelTitle: "接続を中止")
     case .connected(let name):
-      VStack(alignment: .leading, spacing: 12) {
+      VStack(alignment: .leading, spacing: MemoraSpacing.md) {
         Label("\(name)に接続しました", icon: .checkmarkCircleFill)
           .font(.headline)
         Text("次回もこのOmiを接続候補として表示します。")
@@ -110,13 +108,16 @@ struct OmiPairingView: View {
       }
       .padding(.vertical, MemoraSpacing.sm)
     case .bluetoothOff:
-      ContentUnavailableView(
-        "Bluetoothがオフです",
-        icon: .antennaRadiowavesLeftAndRightSlash,
-        description: Text("BluetoothをオンにするとOmiを探せます。")
-      )
+      VStack(alignment: .leading, spacing: MemoraSpacing.md) {
+        Text("Bluetoothがオフです").font(.headline)
+        Text("iPhoneの「設定 › Bluetooth」でオンにしてから、もう一度探してください。")
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+        retryButton
+      }
+      .padding(.vertical, MemoraSpacing.sm)
     case .unauthorized:
-      VStack(alignment: .leading, spacing: 12) {
+      VStack(alignment: .leading, spacing: MemoraSpacing.md) {
         Label("Bluetoothへのアクセスが必要です", icon: .handRaised)
           .font(.headline)
         Text("近くのOmiを見つけて接続するために使用します。")
@@ -133,26 +134,33 @@ struct OmiPairingView: View {
       ContentUnavailableView(
         "iPhone実機で接続できます",
         icon: .iphoneAndArrowForward,
-        description: Text("シミュレーターではBluetoothデバイスを検索できません。")
+        description: Text("この環境ではOmiを検索できません。書き出した音声は外部レコーダー画面から取り込めます。")
       )
     case .failed(let message):
-      VStack(alignment: .leading, spacing: 12) {
+      VStack(alignment: .leading, spacing: MemoraSpacing.md) {
         Label("接続できませんでした", icon: .exclamationmarkTriangle)
           .font(.headline)
         Text(message)
           .font(.subheadline)
           .foregroundStyle(.secondary)
-        Button("もう一度探す", icon: .arrowClockwise) {
-          manager.startScanning()
-        }
+        retryButton
       }
       .padding(.vertical, MemoraSpacing.sm)
     }
   }
 
-  private var isConnecting: Bool {
-    if case .connecting = manager.state { return true }
-    return false
+  private var retryButton: some View {
+    Button("もう一度探す", icon: .arrowClockwise) { manager.startScanning() }
+      .frame(minHeight: MemoraSpacing.touchTarget)
+  }
+
+  private func pairingProgress(_ title: String, cancelTitle: String) -> some View {
+    VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
+      ProgressView(title)
+      Button(cancelTitle) { manager.cancelPairing() }
+        .frame(minHeight: MemoraSpacing.touchTarget)
+    }
+    .padding(.vertical, MemoraSpacing.sm)
   }
 
   private func isConnected(_ state: OmiPairingManager.ConnectionState) -> Bool {
