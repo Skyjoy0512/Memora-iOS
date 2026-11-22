@@ -4,26 +4,18 @@ import SwiftUI
 /// never a surprise.
 struct AICreditsView: View {
   @Environment(MemoraModel.self) private var model
-  @State private var meter = MemoraCreditMeter.shared
 
   var body: some View {
     MemoraForm {
       Section {
         LabeledContent("プラン", value: model.planName)
-        LabeledContent("今月のクレジット", value: model.effectivePlan.map { "\($0.monthlyCredits.formatted())" } ?? "なし")
-        LabeledContent("残り") {
-          if let remaining = meter.remaining {
-            Text("\(remaining.formatted())")
-          } else {
-            Text("まだ使っていません").foregroundStyle(.secondary)
-          }
-        }
+        LabeledContent("利用状況", value: model.memoraCreditStatus)
         LabeledContent("文字起こし", value: "端末内（無制限）")
       } footer: {
         if let blocker = model.memoraIntelligenceBlocker {
           Text(blocker)
         } else {
-          Text("残りはMemora Intelligenceを使ったときに更新されます。毎月1日に戻ります。")
+          Text("残高はMemora Intelligenceを使ったときに更新されます。")
         }
       }
 
@@ -32,9 +24,9 @@ struct AICreditsView: View {
           LabeledContent(cost.action, value: "\(cost.credits)クレジット")
         }
       } header: {
-        Text("使うクレジットの目安")
+        Text(MemoraIntelligence.isConfigured ? "使うクレジットの目安" : "提供予定のクレジットの目安")
       } footer: {
-        Text("実際に使った量で引かれます。長い会議ほど多く、短い質問ほど少なくなります。端末内AIと自分のAPIキー（BYOK）ではクレジットを使いません。")
+        Text("端末内AIと自分のAPIキーではMemoraのクレジットを使いません。API利用料は提供元の条件に従います。")
       }
 
       Section {

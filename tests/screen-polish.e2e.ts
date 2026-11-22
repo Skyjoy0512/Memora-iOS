@@ -55,29 +55,55 @@ test('screen polish: onboarding remains readable and can finish without recordin
 
 test('screen polish: account and plan retain honest states and usable controls', { timeout: 180_000 }, async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
-  for (const appearance of ['light', 'dark'] as const) {
-    await device.setAppearance(appearance);
-    await tapControl(screen, screen.getByLabel('メニュー').first());
-    await expect(screen.getByRole('button', { name: 'サインイン', exact: true })).not.toBeVisible();
-    await tapControl(screen, screen.getByRole('button', { name: '設定', exact: true }).last());
-    await tapControl(screen, screen.getByTestId('settings.category.account').first());
-    await tapControl(screen, screen.getByRole('button', { name: /^サインイン \/ 新規登録/ }));
-    await expect(screen.getByText(/サインインはまだ/)).toBeVisible();
-    await app.screenshot(`account-${appearance}`);
-    await tapControl(screen, screen.getByLabel('あとで').first());
-    await tapControl(screen, screen.getByTestId('BackButton'));
-    await tapControl(screen, screen.getByRole('button', { name: '閉じる', exact: true }).last());
-    await tapControl(screen, screen.getByLabel('メニュー').first());
-    await tapControl(screen, screen.getByRole('button', { name: 'Memora Plus、プランと利用状況', exact: true }));
-    await expect(screen.getByText('プラン', { exact: true }).first()).toBeVisible();
-    await app.screenshot(`plan-${appearance}`);
-    const restore = screen.getByRole('button', { name: '購入を復元', exact: true });
-    await scrollToControl(screen, restore);
-    await tapControl(screen, restore);
-    await expect(screen.getByText('購入はまだ接続されていません', { exact: true })).toBeVisible();
-    await tapControl(screen, screen.getByRole('button', { name: 'OK', exact: true }));
-    await tapControl(screen, screen.getByRole('button', { name: '閉じる', exact: true }));
-  }
+  await tapControl(screen.getByLabel('メニュー').first());
+  await expect(screen.getByRole('button', { name: 'サインイン', exact: true })).not.toBeVisible();
+  await tapControl(screen.getByTestId('sidebar.settings'));
+  await tapControl(screen.getByTestId('settings.category.account'));
+  await tapControl(screen.getByRole('button', { name: /^サインイン \/ 新規登録/ }));
+  await expect(screen.getByText(/アカウント連携と複数端末の同期は準備中/)).toBeVisible();
+  await app.screenshot('account-local');
+  await tapControl(screen.getByLabel('あとで').first());
+  await tapControl(screen.getByTestId('BackButton'));
+  await tapControl(screen.getByTestId('settings.category.plan'));
+
+  const plan = screen.getByRole('button', { name: /^プラン、/ });
+  await tapControl(plan);
+  await expect(screen.getByText(/購入・復元は準備中/)).toBeVisible();
+  const light = screen.getByTestId('plan.option.light');
+  const pro = screen.getByTestId('plan.option.pro');
+  await scrollToControl(screen, light);
+  await expect(light).not.toBeSelected();
+  await expect(pro).not.toBeSelected();
+  await app.screenshot('plans-comparison-light');
+  const save = screen.getByTestId('plan.chooseLocal');
+  await scrollToControl(screen, save);
+  await expect(save).toBeDisabled();
+  await screen.swipe({ from: { x: 210, y: 260 }, to: { x: 210, y: 650 }, duration: 450 });
+  await tapControl(light);
+  await expect(light).toBeSelected();
+  await device.setAppearance('dark');
+  await app.screenshot('plans-comparison-dark');
+  await scrollToControl(screen, save);
+  await tapControl(save);
+  await expect(screen.getByText('この端末の設定を更新しました。', { exact: true }).first()).toBeVisible();
+  await expect(save).toBeDisabled();
+  await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }).last());
+  await expect(plan).toHaveText(/ライト/);
+  await tapControl(screen.getByRole('button', { name: /^AIクレジット、未接続/ }));
+  await expect(screen.getByText('利用状況、未接続', { exact: true })).toBeVisible();
+  await app.screenshot('credits-disconnected');
+  await tapControl(screen.getByTestId('BackButton'));
+  await tapControl(plan);
+  await scrollToControl(screen, light);
+  await expect(light).toBeSelected();
+  const license = screen.getByRole('button', { name: '法人ライセンスコードを入力', exact: true });
+  await scrollToControl(screen, license);
+  await tapControl(license);
+  const code = screen.getByRole('textbox', { name: 'ライセンスコード', exact: true });
+  await expect(screen.getByRole('button', { name: '有効にする', exact: true })).toBeDisabled();
+  await code.fill('invalid-code');
+  await tapControl(screen.getByRole('button', { name: '有効にする', exact: true }));
+  await expect(screen.getByText(/コードの形式が正しくありません/)).toBeVisible();
 });
 
 test('screen polish: the task editor still saves to the local store', async ({ app, device, screen }) => {

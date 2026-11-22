@@ -205,7 +205,7 @@ struct SettingsCategoryView: View {
             AICreditsView()
           } label: {
             LabeledContent {
-              Text(creditSummary)
+              Text(model.memoraCreditStatus)
             } label: {
               SettingsLabel("AIクレジット", icon: .sparklesRectangleStack)
             }
@@ -545,14 +545,6 @@ struct SettingsCategoryView: View {
         }
         #endif
     }
-  }
-
-  /// The credits left this month, as the server last said, or what the plan
-  /// includes while no answer has come back yet.
-  private var creditSummary: String {
-    if let remaining = MemoraCreditMeter.shared.remaining { return "残り\(remaining)" }
-    if let plan = model.effectivePlan { return "\(plan.monthlyCredits)/月" }
-    return "なし"
   }
 
   /// Turning the toggle on asks for calendar access the first time; a refusal

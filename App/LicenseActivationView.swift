@@ -20,7 +20,7 @@ struct LicenseActivationView: View {
         } header: {
           Text("有効なライセンス")
         } footer: {
-          Text("このライセンスのプランとチーム機能が使えます。個人で選んだプランより優先されます。")
+          Text("このライセンスのプランが、この端末のプラン設定より優先されます。")
         }
 
         Section {
@@ -36,6 +36,7 @@ struct LicenseActivationView: View {
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
             .focused($isFieldFocused)
+            .accessibilityLabel("ライセンスコード")
 
           Button("有効にする", action: activate)
             .disabled(code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)

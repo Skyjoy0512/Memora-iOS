@@ -3,8 +3,8 @@ import SwiftUI
 struct PaywallView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
-  @State private var selectedPlan: MemoraPlan = .pro
-  @State private var isUnavailableNoticePresented = false
+  @Environment(\.dynamicTypeSize) private var typeSize
+  @State private var selectedPlan: MemoraPlan?
   @State private var isLicensePresented = false
   @State private var savedLocalPlan: MemoraPlan?
 
@@ -12,36 +12,8 @@ struct PaywallView: View {
     NavigationStack {
       MemoraForm {
         Section {
-          Text("プランを確認")
-            .font(MemoraTypography.screenTitle)
-            .accessibilityAddTraits(.isHeader)
-          Text("購入とMemora Intelligenceは準備中です。プランを選んでも課金されません。")
+          Text("購入・復元は準備中です。端末の設定を変えても課金されません。")
             .foregroundStyle(.secondary)
-        }
-        Section {
-          Picker("プラン", selection: $selectedPlan) {
-            ForEach(MemoraPlan.allCases) { plan in
-              Text(plan.label).tag(plan)
-            }
-          }
-          .pickerStyle(.menu)
-          .accessibilityIdentifier("plan.selection")
-          LabeledContent("月額（予定）", value: selectedPlan.priceLabel)
-          LabeledContent("AIクレジット（予定）", value: "\(selectedPlan.monthlyCredits.formatted()) / 月")
-          if selectedPlan.includesTeam {
-            Text("チームワークスペースは準備中です。クレジットは1人ごとの上限です。")
-              .font(.subheadline)
-              .foregroundStyle(.secondary)
-          }
-          if selectedPlan == .unlimited || selectedPlan == .team {
-            Text("Memora Intelligenceには月間上限があります。クラウドAIが無制限になるプランではありません。")
-              .font(.subheadline)
-              .foregroundStyle(.secondary)
-          }
-        } header: {
-          Text("提供予定のプラン")
-        } footer: {
-          Text("予定価格とクレジットは未提供の内容です。現在は購入・復元・クレジットの利用はできません。")
         }
         Section {
           Text("録音と端末内の文字起こし")
@@ -49,39 +21,48 @@ struct PaywallView: View {
         } header: {
           Text("いま利用できること")
         } footer: {
-          Text("BYOKの利用料は各プロバイダーから請求されます。プラン変更で外部APIが無料にはなりません。")
+          Text("自分のAPIキーではMemoraのクレジットを使いません。API利用料は提供元の条件に従います。")
+        }
+        Section {
+          ForEach(MemoraPlan.allCases) { plan in
+            planRow(plan)
+          }
+        } header: {
+          Text("提供予定のプラン")
+        } footer: {
+          Text("AIクレジットには月間上限があります。チームの上限は1人ごとです。")
         }
         Section {
           LabeledContent("この端末の設定", value: model.plan?.label ?? "無料")
-          if model.activeLicense != nil {
-            Text("法人ライセンスの利用権限が優先されます。")
-              .font(.subheadline)
-              .foregroundStyle(.secondary)
+            .accessibilityIdentifier("plan.saved")
+          if let license = model.activeLicense {
+            LabeledContent("適用中の法人ライセンス", value: "\(license.plan.label)（\(license.company)）")
           }
-          Button(model.plan == selectedPlan ? "この端末で選択済み" : "\(selectedPlan.label)を端末の設定として選ぶ") {
+          Button("この端末の設定に保存") {
+            guard let selectedPlan else { return }
             model.choosePlan(selectedPlan)
             savedLocalPlan = selectedPlan
             model.announce("この端末の設定を更新しました。")
           }
-          .disabled(model.plan == selectedPlan)
+          .disabled(selectedPlan == nil || model.plan == selectedPlan)
           .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget)
           .accessibilityIdentifier("plan.chooseLocal")
-          if savedLocalPlan == selectedPlan, model.plan == selectedPlan {
+          if let savedLocalPlan, savedLocalPlan == selectedPlan, model.plan == selectedPlan {
             Text("この端末の設定を更新しました。")
               .font(.footnote)
               .foregroundStyle(MemoraPalette.textSecondary)
           }
-        } footer: {
-          Text("ローカルな設定です。有効な購入やサブスクリプションを示すものではありません。")
         }
         Section {
-          Button("購入の復元について") { isUnavailableNoticePresented = true }
-            .frame(minHeight: MemoraSpacing.touchTarget)
           Button("法人ライセンスコードを入力") { isLicensePresented = true }
             .frame(minHeight: MemoraSpacing.touchTarget)
           #if DEBUG
-          Button("無料プランに戻す", role: .destructive) { model.choosePlan(nil) }
-            .frame(minHeight: MemoraSpacing.touchTarget)
+          Button("無料プランに戻す", role: .destructive) {
+            model.choosePlan(nil)
+            selectedPlan = nil
+            savedLocalPlan = nil
+          }
+          .frame(minHeight: MemoraSpacing.touchTarget)
           #endif
         }
       }
@@ -92,15 +73,43 @@ struct PaywallView: View {
           ToolbarIconButton("閉じる", icon: .xmark) { dismiss() }
         }
       }
-      .onAppear { selectedPlan = model.effectivePlan ?? .pro }
+      .onAppear { selectedPlan = model.plan }
       .sheet(isPresented: $isLicensePresented) {
         NavigationStack { LicenseActivationView() }
       }
-      .alert("購入・復元は準備中です", isPresented: $isUnavailableNoticePresented) {
-        Button("閉じる", role: .cancel) {}
-      } message: {
-        Text("StoreKitは未接続です。端末のプラン設定による課金はありません。Memora Intelligenceとチームワークスペースは利用可能になりません。")
-      }
     }
+  }
+
+  private func planRow(_ plan: MemoraPlan) -> some View {
+    let layout = typeSize.isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.xs))
+      : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: MemoraSpacing.md))
+    let isSelected = selectedPlan == plan
+    return Button {
+      selectedPlan = plan
+    } label: {
+      HStack(spacing: MemoraSpacing.sm) {
+        layout {
+          Text(plan.label)
+            .font(MemoraTypography.body.weight(.medium))
+            .frame(maxWidth: .infinity, alignment: .leading)
+          VStack(alignment: typeSize.isAccessibilitySize ? .leading : .trailing, spacing: MemoraSpacing.xs) {
+            Text(plan.priceLabel)
+              .monospacedDigit()
+            Text("\(plan.monthlyCredits.formatted()) AIクレジット/月")
+              .font(.footnote)
+              .foregroundStyle(.secondary)
+          }
+        }
+        Image(icon: .checkmark, size: 16)
+          .opacity(isSelected ? 1 : 0)
+          .accessibilityHidden(true)
+      }
+      .frame(minHeight: MemoraSpacing.touchTarget)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityAddTraits(isSelected ? .isSelected : [])
+    .accessibilityIdentifier("plan.option.\(plan.rawValue)")
   }
 }

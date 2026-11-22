@@ -44,10 +44,12 @@ class ExperiencePresentationChecks(unittest.TestCase):
 
     def test_plans_separate_future_products_from_local_selection(self):
         plan = (APP / "PaywallView.swift").read_text()
-        for contract in ('Text("提供予定のプラン")', 'Text("いま利用できること")', 'Picker("プラン", selection: $selectedPlan)',
-                         ".pickerStyle(.menu)", "model.choosePlan(selectedPlan)", "LicenseActivationView()", "model.activeLicense != nil"):
-            self.assertIn(contract, plan)
-        for contract in ("有効な購入やサブスクリプションを示すものではありません", "クラウドAIが無制限になるプランではありません", "購入の復元について"):
+        for contract in ('Text("提供予定のプラン")', 'Text("いま利用できること")',
+                         "ForEach(MemoraPlan.allCases)", "plan.priceLabel", "plan.monthlyCredits",
+                         "selectedPlan = model.plan", "model.choosePlan(selectedPlan)",
+                         "LicenseActivationView()", "if let license = model.activeLicense",
+                         "購入・復元は準備中", "AIクレジットには月間上限があります",
+                         'Button("この端末の設定に保存")'):
             self.assertIn(contract, plan)
         self.assertNotIn("年額は月額の10か月分", plan)
         self.assertNotIn("BenefitRow", plan)

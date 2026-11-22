@@ -23,13 +23,20 @@ extension MemoraModel {
 
   /// Why Memora Intelligence cannot be used now, or nil when it can.
   var memoraIntelligenceBlocker: String? {
-    guard effectivePlan != nil else {
-      return "Memora Intelligenceはライト以上のプランで使えます。自分のAPIキー（BYOK）や端末内AIは無料で使えます。"
-    }
     guard MemoraIntelligence.isConfigured else {
       return "Memora Intelligenceのサーバーはまだ接続されていません。接続されるまでは、端末内AIか自分のAPIキーを使ってください。"
     }
+    guard effectivePlan != nil else {
+      return "Memora Intelligenceはライト以上のプランで利用できます。端末内AIや自分のAPIキーではMemoraのクレジットを使いません。"
+    }
     return nil
+  }
+
+  var memoraCreditStatus: String {
+    guard MemoraIntelligence.isConfigured else { return "未接続" }
+    guard effectivePlan != nil else { return "対象プランなし" }
+    guard let remaining = MemoraCreditMeter.shared.remaining else { return "未取得" }
+    return "残り\(remaining.formatted())"
   }
 
   // MARK: - Licenses
