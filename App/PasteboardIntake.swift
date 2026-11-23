@@ -35,8 +35,22 @@ enum PasteboardIntake {
     read(from: .general)
   }
 
+  /// Reports whether the general pasteboard holds usable content that has not
+  /// been attached yet, without claiming it. Peeking never records the change
+  /// count, so the explicit attachment path can still read the same copy.
+  @MainActor
+  static func peek() -> Reading? {
+    reading(from: .general, claiming: false)
+  }
+
   @MainActor
   static func read(from pasteboard: UIPasteboard) -> Reading? {
+    reading(from: pasteboard, claiming: true)
+  }
+
+  @MainActor
+  private static func reading(from pasteboard: UIPasteboard,
+                              claiming: Bool) -> Reading? {
     let changeCount = pasteboard.changeCount
     guard changeCount != lastHandledChangeCount else { return nil }
     guard !containsPrivateContent(pasteboard) else { return nil }
@@ -67,7 +81,9 @@ enum PasteboardIntake {
     // The pasteboard changed while its content was being read; the copy is no
     // longer the one that was checked.
     guard let reading, pasteboard.changeCount == changeCount else { return nil }
-    lastHandledChangeCount = changeCount
+    if claiming {
+      lastHandledChangeCount = changeCount
+    }
     return reading
   }
 

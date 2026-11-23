@@ -66,6 +66,7 @@ struct ContentView: View {
       if phase == .active {
         model.scheduleWidgetSnapshot()
         model.resumePendingSummariesIfNeeded()
+        Task { await PasteboardResumeNotice.postIfNeeded() }
       }
       if phase == .background { model.scheduleBackgroundSummary() }
       appLock.handleScenePhase(phase, isRecording: model.isRecording)
