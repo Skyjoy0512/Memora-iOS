@@ -43,7 +43,7 @@ enum AuthProvider: String, Codable, Hashable, CaseIterable, Identifiable {
     case .email:
       .envelope
     case .chatGPT:
-      .sparkles
+      .chatBubble
     }
   }
 }
