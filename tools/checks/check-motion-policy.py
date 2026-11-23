@@ -33,6 +33,24 @@ assert "matchedTransitionSource" in (app / "HomeView.swift").read_text()
 # gated by Reduce Motion. Shared press feedback is brief and the continuous
 # renderers pause themselves through their own `reduceMotion` checks.
 press_styles = {"MemoraButtonStyle.swift", "MemoraMenuButtonStyle.swift", "MemoraQuietButtonStyle.swift"}
+
+def animation_nil_first_argument(line):
+    marker = ".animation("
+    start = 0
+    found = False
+    while True:
+        start = line.find(marker, start)
+        if start == -1:
+            return found
+        found = True
+        argument = line[start + len(marker):].lstrip()
+        if not argument.startswith("nil"):
+            return False
+        rest = argument[len("nil"):].lstrip()
+        if not (rest.startswith(",") or rest.startswith(")")):
+            return False
+        start += len(marker)
+
 findings = []
 for path in sorted(app.glob("*.swift")):
     if path.name == "MemoraMotion.swift":
@@ -44,7 +62,7 @@ for path in sorted(app.glob("*.swift")):
             if "reduceMotion" not in window:
                 findings.append(f"{path.name}:{index + 1} withAnimation without Reduce Motion")
         if ".animation(" in line and "TimelineView(.animation" not in line and path.name not in press_styles:
-            if "reduceMotion" not in line:
+            if "reduceMotion" not in line and not animation_nil_first_argument(line):
                 findings.append(f"{path.name}:{index + 1} .animation without Reduce Motion")
 assert not findings, findings
 assert "repeatForever" not in "".join(path.read_text() for path in app.glob("*.swift"))
