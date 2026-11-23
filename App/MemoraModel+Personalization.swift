@@ -31,9 +31,16 @@ extension MemoraModel {
     OccupationCatalog.recommendedIDs(for: occupationProfile).compactMap(summaryChoice)
   }
 
+  /// The templates a person can pick from: the built-in ones, the ones they
+  /// wrote, and the catalog. The list only changes with the person's own
+  /// templates, so it is kept until one of those changes.
   var allSummaryChoices: [SummaryTemplateChoice] {
-    SummaryTemplateChoice.builtInChoices + customTemplates.map { .market($0) }
+    if let cachedSummaryChoices, cachedSummaryChoicesTemplates == customTemplates { return cachedSummaryChoices }
+    let choices = SummaryTemplateChoice.builtInChoices + customTemplates.map { .market($0) }
       + SummaryTemplateCatalog.market.map { .market($0) }
+    cachedSummaryChoicesTemplates = customTemplates
+    cachedSummaryChoices = choices
+    return choices
   }
 
   func summaryChoice(_ id: String) -> SummaryTemplateChoice? {

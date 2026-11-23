@@ -24,6 +24,10 @@ final class MemoraModel {
   var agentToolCallCounts: [UUID: Int] = [:]
   var disabledIntegrationIDs: [String] = []
   var disabledSkillIDs: [String] = []
+  /// The tool registry is kept between calls, so the fixture needs the same
+  /// storage the production model has.
+  var cachedToolRegistryInputs: MemoraModel.ToolRegistryInputs?
+  var cachedToolRegistry: AIToolRegistry?
   var integrationUsage: [IntegrationUsage] = []
   var isAIMemoryEnabled = false
   var aiMemories: [String] = []

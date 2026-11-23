@@ -215,6 +215,13 @@ final class MemoraModel {
   @ObservationIgnored var taskIndex = IdentifiableIndex<MemoraTask>()
   @ObservationIgnored var projectSourceIndex = IdentifiableIndex<ProjectSource>()
   @ObservationIgnored var meetingSearchTexts: [UUID: String] = [:]
+  /// The tool registry is rebuilt from the same inputs over and over during one
+  /// agent turn, so the last one is kept until those inputs change.
+  @ObservationIgnored var cachedToolRegistryInputs: ToolRegistryInputs?
+  @ObservationIgnored var cachedToolRegistry: AIToolRegistry?
+  /// The templates a person can pick from, kept until their own templates change.
+  @ObservationIgnored var cachedSummaryChoices: [SummaryTemplateChoice]?
+  @ObservationIgnored var cachedSummaryChoicesTemplates: [SummaryMarketTemplate]?
   @ObservationIgnored private var dayChangeObservers: [NSObjectProtocol] = []
   @ObservationIgnored private var inboxObserver: NSObjectProtocol?
   @ObservationIgnored private var localSaveFailureObserver: NSObjectProtocol?

@@ -15,7 +15,29 @@ extension MemoraModel {
     }
   }
 
+  /// Everything the tool registry is built from. When none of it changes, the
+  /// same registry is handed out again instead of rebuilding every tool's schema.
+  struct ToolRegistryInputs: Equatable {
+    var offered: [AgentTool]
+    var disabledIntegrationIDs: [String]
+    var gmailConnected: Bool
+    var gmailConfigured: Bool
+    var notionConfigured: Bool
+    var webResearchKeyed: Bool
+    var activeMCPTools: [String: MCPTool]
+    var mcpServers: [MCPServerConfig]
+  }
+
+  private func toolRegistryInputs() -> ToolRegistryInputs {
+    ToolRegistryInputs(offered: AgentTool.offered, disabledIntegrationIDs: disabledIntegrationIDs,
+      gmailConnected: GmailService.shared.isConnected, gmailConfigured: GmailService.isConfigured,
+      notionConfigured: NotionService.isConfigured, webResearchKeyed: KeychainStore.has(WebResearchClient.keyName),
+      activeMCPTools: activeMCPTools, mcpServers: mcpServers)
+  }
+
   func toolRegistry() -> AIToolRegistry {
+    let inputs = toolRegistryInputs()
+    if let cachedToolRegistry, cachedToolRegistryInputs == inputs { return cachedToolRegistry }
     var registry = AIToolRegistry()
     for tool in enabledAgentTools {
       _ = registry.register(AIToolDefinition(id: "memora:" + tool.rawValue, name: tool.rawValue, summary: tool.summary,
@@ -30,6 +52,8 @@ extension MemoraModel {
       definition.isEnabled = server.map { mcpServerIsEnabled($0) } ?? false
       _ = registry.register(definition)
     }
+    cachedToolRegistryInputs = inputs
+    cachedToolRegistry = registry
     return registry
   }
 
