@@ -25,7 +25,7 @@ struct AIChatVoicePanel: View {
         LiveMicrophoneMeter(session: session)
       }
       if !transcript.isEmpty {
-        Text(transcript).font(.body).lineLimit(3).multilineTextAlignment(.center)
+        Text(transcript).font(.body).multilineTextAlignment(.center)
           .frame(maxWidth: 480)
       }
       if let attachmentName {
@@ -79,9 +79,9 @@ struct AIChatVoicePanel: View {
     }
     .padding(.horizontal, 8).padding(.top, 30).padding(.bottom, 8)
     .frame(maxWidth: .infinity)
-    .frame(height: typeSize.isAccessibilitySize ? 400 : 300)
+    .frame(minHeight: typeSize.isAccessibilitySize ? 400 : 300)
     .background {
-      LinearGradient(colors: [MemoraPalette.background.opacity(0), Color.cyan.opacity(0.12), Color.blue.opacity(0.3)], startPoint: .top, endPoint: .bottom)
+      MemoraPalette.background
         .padding(.horizontal, -12).ignoresSafeArea(edges: .bottom)
     }
   }

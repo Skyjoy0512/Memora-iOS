@@ -42,17 +42,6 @@ enum AIEngine: String, CaseIterable, Identifiable, Codable {
     }
   }
 
-  /// The settings tile color, one per engine.
-  var tint: Color {
-    switch self {
-    case .automatic: .purple
-    case .memora: .indigo
-    case .foundation: .gray
-    case .local: .teal
-    case .cloud: .blue
-    }
-  }
-
   var detail: String {
     switch self {
     case .automatic:
