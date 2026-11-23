@@ -1,6 +1,27 @@
 import Foundation
 
 enum ConversationSourceIntake {
+  /// The intent an already prepared attachment came from.
+  ///
+  /// A link keeps its URL, a snapshot file keeps its file, and anything else
+  /// keeps the text it carries. A snapshot is already prepared, so it is not
+  /// fetched again.
+  static func intent(for attachment: AIAttachment) -> CaptureIntent {
+    if let originalURL = attachment.originalURL,
+       let scheme = originalURL.scheme?.lowercased(), scheme == "http" || scheme == "https" {
+      return .url(originalURL)
+    }
+    if attachment.url.pathExtension == "memorasource" {
+      return .file(attachment.url)
+    }
+    return .text("")
+  }
+
+  /// The intent for a link the person sent.
+  static func intent(forLink url: URL) -> CaptureIntent {
+    .url(url)
+  }
+
   static func prepare(_ url: URL, fetcher: WebSourceFetcher = .init()) async throws -> AIAttachment {
     let link = try ProjectSourceURL.normalized(url.absoluteString)
     if let videoID = link.youtubeID {
