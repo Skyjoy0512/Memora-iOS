@@ -7,8 +7,43 @@ import UIKit
 enum MediaFiles {
   /// The folder recordings and imported audio are copied into.
   static var directory: URL {
-    FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
       .appendingPathComponent("Recordings", isDirectory: true)
+    _ = prepareProtectedDirectory(at: folder)
+    return folder
+  }
+
+  /// Creates a media folder, or repairs one that is already there, so its
+  /// contents stay complete-protected and out of device backups. A file where
+  /// the folder belongs is refused rather than replaced.
+  @discardableResult
+  static func prepareProtectedDirectory(at folder: URL) -> Bool {
+    let manager = FileManager.default
+    do {
+      var isDirectory: ObjCBool = false
+      if manager.fileExists(atPath: folder.path, isDirectory: &isDirectory) {
+        guard isDirectory.boolValue else { return false }
+      } else {
+        try manager.createDirectory(
+          at: folder,
+          withIntermediateDirectories: true,
+          attributes: [.protectionKey: FileProtectionType.complete]
+        )
+      }
+
+      try manager.setAttributes(
+        [.protectionKey: FileProtectionType.complete],
+        ofItemAtPath: folder.path
+      )
+
+      var values = URLResourceValues()
+      values.isExcludedFromBackup = true
+      var target = folder
+      try target.setResourceValues(values)
+      return true
+    } catch {
+      return false
+    }
   }
 
   /// The length of a media file, or nil when it cannot be read.
@@ -87,14 +122,15 @@ enum MediaFiles {
   /// `thumbnailMaxSide` is given, a small copy is written beside it so lists can
   /// draw a tile without decoding the full-size file.
   static func writePhoto(_ data: Data, thumbnailMaxSide: CGFloat? = nil) -> String? {
+    let folder = photosDirectory
+    guard prepareProtectedDirectory(at: folder) else { return nil }
     let name = "\(UUID().uuidString).jpg"
-    let url = photosDirectory.appendingPathComponent(name)
+    let url = folder.appendingPathComponent(name)
     do {
-      try FileManager.default.createDirectory(at: photosDirectory, withIntermediateDirectories: true)
       try data.write(to: url, options: .atomic)
       if let thumbnailMaxSide, let small = ImageDownscale.jpeg(data, maxSide: thumbnailMaxSide) {
         try? small.write(
-          to: photosDirectory.appendingPathComponent(thumbnailName(for: name)),
+          to: folder.appendingPathComponent(thumbnailName(for: name)),
           options: .atomic
         )
       }

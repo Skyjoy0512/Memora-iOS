@@ -13,6 +13,7 @@ final class LocalStore {
   enum StoreError: Error {
     case open(Int32)
     case statement(Int32)
+    case filesystem
   }
 
   private let lock = NSLock()
@@ -36,12 +37,8 @@ final class LocalStore {
   func prepare() throws {
     lock.lock()
     defer { lock.unlock() }
+    try protectFiles()
     guard db == nil else { return }
-
-    try FileManager.default.createDirectory(
-      at: fileURL.deletingLastPathComponent(),
-      withIntermediateDirectories: true
-    )
 
     var handle: OpaquePointer?
     let flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX
@@ -61,10 +58,55 @@ final class LocalStore {
         updated_at REAL NOT NULL
       );
       """)
+      try protectFiles()
     } catch {
       sqlite3_close(handle)
       db = nil
       throw error
+    }
+  }
+
+  /// The database and its side files hold every record, so the folder that
+  /// contains them stays complete-protected and out of device backups. Files
+  /// that do not exist yet are fine: SQLite creates them on demand.
+  private func protectFiles() throws {
+    let manager = FileManager.default
+    var folder = fileURL.deletingLastPathComponent()
+    do {
+      var isDirectory: ObjCBool = false
+      if manager.fileExists(atPath: folder.path, isDirectory: &isDirectory) {
+        guard isDirectory.boolValue else { throw StoreError.filesystem }
+      } else {
+        try manager.createDirectory(
+          at: folder,
+          withIntermediateDirectories: true,
+          attributes: [.protectionKey: FileProtectionType.complete]
+        )
+      }
+
+      try manager.setAttributes(
+        [.protectionKey: FileProtectionType.complete],
+        ofItemAtPath: folder.path
+      )
+
+      var values = URLResourceValues()
+      values.isExcludedFromBackup = true
+      try folder.setResourceValues(values)
+
+      for path in [
+        fileURL.path,
+        fileURL.path + "-wal",
+        fileURL.path + "-shm",
+      ] where manager.fileExists(atPath: path) {
+        try manager.setAttributes(
+          [.protectionKey: FileProtectionType.complete],
+          ofItemAtPath: path
+        )
+      }
+    } catch let error as StoreError {
+      throw error
+    } catch {
+      throw StoreError.filesystem
     }
   }
 
