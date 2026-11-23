@@ -10,7 +10,7 @@ enum MemoraMotion {
   static let control = Animation.snappy(duration: 0.22)
   static let press = Animation.smooth(duration: 0.14)
   /// Moments worth celebrating, such as finishing a recording.
-  static let emphasis = Animation.smooth(duration: 0.36)
+  static let emphasis = Animation.smooth(duration: 0.32)
 }
 
 extension View {

@@ -17,7 +17,7 @@ enum MemoraPalette {
   static let actionLabel = adaptive(light: 0xFFFFFF, dark: 0x0D0D0D)
   static let selection = adaptive(light: 0xEDEDED, dark: 0x414141)
   static let focus = adaptive(light: 0x0169CC, dark: 0x339CFF)
-  static let danger = adaptive(light: 0xBA2623, dark: 0xFF8583)
+  static let danger = adaptive(light: 0xBA2623, dark: 0xFF908E)
   static let warning = adaptive(light: 0x923B0F, dark: 0xFF9E6C)
   static let success = adaptive(light: 0x00692A, dark: 0x66D492)
 

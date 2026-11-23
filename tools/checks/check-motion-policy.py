@@ -32,7 +32,7 @@ assert "matchedTransitionSource" in (app / "HomeView.swift").read_text()
 # Every animation that changes layout or journeys across a screen must be
 # gated by Reduce Motion. Shared press feedback is brief and the continuous
 # renderers pause themselves through their own `reduceMotion` checks.
-press_styles = {"MemoraButtonStyle.swift", "MemoraMenuButtonStyle.swift", "MemoraQuietButtonStyle.swift"}
+press_styles = {"MemoraButtonStyle.swift", "MemoraMenuButtonStyle.swift"}
 
 def animation_nil_first_argument(line):
     marker = ".animation("
