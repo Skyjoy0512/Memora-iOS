@@ -482,9 +482,6 @@ final class MemoraModel {
   func isActiveDetail(_ id: UUID) -> Bool {
     activeDetailMeetingIDs.contains(id)
   }
-  /// Meeting details temporarily hide their contextual AI field once people
-  /// move into the document.
-  var isDetailComposerVisible = true
   var composerFocusRequest: UUID?
   var systemTaskFilterToday: Bool?
   /// Bumped by a screen to ask the focused composer to put the keyboard away.

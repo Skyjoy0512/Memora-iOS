@@ -123,7 +123,6 @@ struct MeetingDetailView: View {
             detailTab = model.selectedTab
             model.pushActiveDetail(meeting.id)
             // Ask AI stays on screen however far the record is scrolled.
-            model.isDetailComposerVisible = true
             player.load(input: meeting.audioPlaybackInput, title: meeting.displayTitle)
             if !didApplyInitialPlayback, let start = initialPlaybackStart {
               didApplyInitialPlayback = true
@@ -162,7 +161,6 @@ struct MeetingDetailView: View {
           }
           .onDisappear {
             model.popActiveDetail(meeting.id, tab: detailTab)
-            model.isDetailComposerVisible = true
           }
         }
         .navigationBarTitleDisplayMode(.inline)

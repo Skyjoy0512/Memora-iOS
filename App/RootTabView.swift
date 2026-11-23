@@ -417,7 +417,6 @@ struct RootTabView: View {
     .animation(nil, value: isComposing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.activePlayback != nil)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isInlineEditing)
-    .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: shouldShowComposer)
     // Leaving or opening a record moves the bar with the screen, rather than
     // letting it snap in or out.
@@ -622,10 +621,6 @@ struct RootTabView: View {
     guard !model.isToolsPresented, !model.isInlineEditing, !isSearchCovering else { return false }
     if case .projectChat(let id) = model.activeNavigationPath.last {
       guard let projectID = model.projectChat(id: id)?.projectID, model.space(id: projectID) != nil else { return false }
-    }
-    // Record detail must explicitly make room for its contextual composer.
-    if isShowingMeetingDetail {
-      return model.isDetailComposerVisible
     }
     // Every list tab, including Ask AI, uses the shared input above the bar.
     return true
