@@ -23,7 +23,7 @@ class DesignTokenChecks(unittest.TestCase):
                 r"static let (\w+) = adaptive\(light: 0x([A-F0-9]+), dark: 0x([A-F0-9]+)", palette)
         }
         for role in ("textPrimary", "textSecondary", "danger", "warning", "success"):
-            for surface in ("background", "card"):
+            for surface in ("background", "card", "selection", "elevated"):
                 for appearance in (0, 1):
                     a, b = sorted((luminance(colors[role][appearance]), luminance(colors[surface][appearance])))
                     self.assertGreaterEqual((b + .05) / (a + .05), 4.5, (role, surface, appearance))
