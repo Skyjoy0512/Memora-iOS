@@ -16,12 +16,16 @@ extension MemoraModel {
   /// writes its own fingerprint and meeting marker after the caller's values,
   /// so those markers cannot be replaced. `title` is the name the caller
   /// already knows the item by; without one the coordinator names it.
+  /// `removing` holds the draft keys that must be settled in the same
+  /// transaction as the record, so a saved capture never leaves a draft that
+  /// restores as a duplicate.
   ///
   /// `.audio` is stored as a record that is transcribed, not as a source.
   /// `.meeting` is stored as a link source that carries the meeting marker in
   /// its metadata.
   func capture(_ intent: CaptureIntent, context: LocalImportContext, sourceID: UUID? = nil,
-               metadata: [String: String] = [:], title: String? = nil) async -> CaptureOutcome {
+               metadata: [String: String] = [:], title: String? = nil,
+               removing: [String] = []) async -> CaptureOutcome {
     guard !isRestoring, !isStoreProtected, currentTeamID == nil else {
       return .refused("保存先が変更されたため取り込めませんでした。画面を開き直してください。")
     }
@@ -31,15 +35,15 @@ extension MemoraModel {
 
     switch intent {
     case .url(let url):
-      return await captureLink(url, context: context, isMeeting: false, sourceID: sourceID, metadata: metadata, title: title)
+      return await captureLink(url, context: context, isMeeting: false, sourceID: sourceID, metadata: metadata, title: title, removing: removing)
     case .meeting(let url):
-      return await captureLink(url, context: context, isMeeting: true, sourceID: sourceID, metadata: metadata, title: title)
+      return await captureLink(url, context: context, isMeeting: true, sourceID: sourceID, metadata: metadata, title: title, removing: removing)
     case .text(let text):
-      return await captureText(text, context: context, sourceID: sourceID, metadata: metadata, title: title)
+      return await captureText(text, context: context, sourceID: sourceID, metadata: metadata, title: title, removing: removing)
     case .image(let data):
-      return await captureImage(data, context: context, sourceID: sourceID, metadata: metadata, title: title)
+      return await captureImage(data, context: context, sourceID: sourceID, metadata: metadata, title: title, removing: removing)
     case .file(let url):
-      return await captureFile(url, context: context, sourceID: sourceID, metadata: metadata, title: title)
+      return await captureFile(url, context: context, sourceID: sourceID, metadata: metadata, title: title, removing: removing)
     case .audio(let url):
       return await captureAudio(url, context: context, sourceID: sourceID, metadata: metadata)
     }
@@ -47,7 +51,8 @@ extension MemoraModel {
 
   /// A public link, and a meeting that is kept as a link with a marker.
   private func captureLink(_ url: URL, context: LocalImportContext, isMeeting: Bool,
-                           sourceID: UUID?, metadata: [String: String], title: String?) async -> CaptureOutcome {
+                           sourceID: UUID?, metadata: [String: String], title: String?,
+                           removing: [String]) async -> CaptureOutcome {
     let link: ProjectSourceURL.Link
     do {
       link = try ProjectSourceURL.normalized(url.absoluteString)
@@ -60,6 +65,9 @@ extension MemoraModel {
     if let existing = projectSources.first(where: {
       $0.projectID == context.projectID && $0.originalURL == link.url
     }) {
+      if !removing.isEmpty, !persistBatch({ [] }, removing: removing) {
+        return .refused("保存できませんでした。ストレージの空き容量を確認してください。")
+      }
       return .duplicate(existing.id)
     }
     let resolvedTitle: String
@@ -77,7 +85,7 @@ extension MemoraModel {
     guard context.isCurrent(in: self) else {
       return .refused("保存先が変更されたため取り込めませんでした。画面を開き直してください。")
     }
-    guard storeProjectSource(source) else {
+    guard storeProjectSource(source, removing: removing) else {
       return .refused("リンクを保存できませんでした。ストレージの空き容量を確認してください。")
     }
     guard context.isCurrent(in: self) else {
@@ -89,7 +97,8 @@ extension MemoraModel {
 
   /// Copied text, stored as a note that is never longer than the limit.
   private func captureText(_ text: String, context: LocalImportContext,
-                           sourceID: UUID?, metadata: [String: String], title: String?) async -> CaptureOutcome {
+                           sourceID: UUID?, metadata: [String: String], title: String?,
+                           removing: [String]) async -> CaptureOutcome {
     let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else {
       return .refused("テキストが長すぎます。10,000文字以内で入力してください。")
@@ -106,6 +115,9 @@ extension MemoraModel {
     if let existing = projectSources.first(where: {
       $0.projectID == context.projectID && $0.metadata?["captureFingerprint"] == fingerprint
     }) {
+      if !removing.isEmpty, !persistBatch({ [] }, removing: removing) {
+        return .refused("保存できませんでした。ストレージの空き容量を確認してください。")
+      }
       return .duplicate(existing.id)
     }
     let data: Data
@@ -131,7 +143,7 @@ extension MemoraModel {
     source.processingStatus = .ready
     source.textCoverage = .complete
     source.acquiredAt = .now
-    guard storeProjectSource(source) else {
+    guard storeProjectSource(source, removing: removing) else {
       await ProjectSourceFiles.shared.remove([name])
       return .refused("テキストを保存できませんでした。ストレージの空き容量を確認してください。")
     }
@@ -146,7 +158,8 @@ extension MemoraModel {
   /// deduplication stays in one place. A caller's identity is stored directly
   /// so a retried share keeps the same source.
   private func captureImage(_ data: Data, context: LocalImportContext,
-                            sourceID: UUID?, metadata: [String: String], title: String?) async -> CaptureOutcome {
+                            sourceID: UUID?, metadata: [String: String], title: String?,
+                            removing: [String]) async -> CaptureOutcome {
     guard !data.isEmpty, data.count <= ProjectSourceFiles.maximumFileBytes else {
       return .refused("写真が大きすぎます。")
     }
@@ -173,7 +186,7 @@ extension MemoraModel {
           localFileReference: reference, contentFingerprint: fingerprint,
           metadata: metadata.isEmpty ? nil : metadata)
         source.id = sourceID
-        guard storeProjectSource(source) else {
+        guard storeProjectSource(source, removing: removing) else {
           await ProjectSourceFiles.shared.remove([reference])
           return .refused("写真を保存できませんでした。ストレージの空き容量を確認してください。")
         }
@@ -208,7 +221,8 @@ extension MemoraModel {
   /// A file, copied into managed storage and deduplicated by its destination
   /// and content fingerprint.
   private func captureFile(_ url: URL, context: LocalImportContext,
-                           sourceID: UUID?, metadata: [String: String], title: String?) async -> CaptureOutcome {
+                           sourceID: UUID?, metadata: [String: String], title: String?,
+                           removing: [String]) async -> CaptureOutcome {
     let receipt: ProjectSourceFiles.Receipt
     do {
       receipt = try await ProjectSourceFiles.shared.copy(url)
@@ -223,6 +237,9 @@ extension MemoraModel {
       $0.projectID == context.projectID && $0.contentFingerprint == receipt.fingerprint
     }) {
       await ProjectSourceFiles.shared.remove([receipt.reference])
+      if !removing.isEmpty, !persistBatch({ [] }, removing: removing) {
+        return .refused("保存できませんでした。ストレージの空き容量を確認してください。")
+      }
       return .duplicate(existing.id)
     }
     var source = ProjectSource(projectID: context.projectID, kind: SourceIntake.kind(for: url),
@@ -230,7 +247,7 @@ extension MemoraModel {
       localFileReference: receipt.reference,
       contentFingerprint: receipt.fingerprint, metadata: metadata.isEmpty ? nil : metadata)
     if let sourceID { source.id = sourceID }
-    guard storeProjectSource(source) else {
+    guard storeProjectSource(source, removing: removing) else {
       await ProjectSourceFiles.shared.remove([receipt.reference])
       return .refused("ファイルを保存できませんでした。ストレージの空き容量を確認してください。")
     }

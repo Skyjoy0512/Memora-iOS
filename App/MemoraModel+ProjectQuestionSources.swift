@@ -9,7 +9,7 @@ extension MemoraModel {
     guard let projectID = context.projectID else { throw CancellationError() }
     for url in InlineURLDetector.urls(in: question) {
       guard context.isCurrent(in: self), isCurrent() else { throw CancellationError() }
-      guard let id = try addProjectLink(url.absoluteString, projectID: projectID) else {
+      guard let id = try await addProjectLink(url.absoluteString, projectID: projectID) else {
         throw ProjectQuestionSourceFailure.unavailable("リンクを保存できませんでした。入力は残しています。")
       }
       await prepareProjectSource(id)

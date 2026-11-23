@@ -2,25 +2,28 @@ import Foundation
 
 extension MemoraModel {
   @discardableResult
-  func addProjectLink(_ input: String, projectID: UUID?, removing: [String] = []) throws -> UUID? {
-    guard !Task.isCancelled, !isRestoring, !isStoreProtected, currentTeamID == nil,
-          projectID.map({ space(id: $0) != nil }) ?? true else { return nil }
+  func addProjectLink(_ input: String, projectID: UUID?, removing: [String] = []) async throws -> UUID? {
+    guard let context = LocalImportContext(projectID: projectID, in: self) else { return nil }
     let link = try ProjectSourceURL.normalized(input)
-    if let existing = projectSources.first(where: { $0.projectID == projectID && $0.originalURL == link.url }) {
-      // Reusing a source must settle its draft too, without rewriting privacy,
-      // metadata or dispatching another paid preparation job. Re-adding a source
-      // that previously failed is an explicit retry of the same record.
-      guard removing.isEmpty || persistBatch({ [] }, removing: removing) else { return nil }
-      if existing.processingStatus == .failed {
-        scheduleProjectSourcePreparation(existing.id)
+    let title = link.youtubeID.map { "YouTube · \($0)" } ?? link.url.host ?? "Webリンク"
+    let intent = CaptureIntent.url(link.url)
+    // The coordinator settles the drafts in the same transaction as the
+    // record, so a saved link never leaves a draft that restores as a
+    // duplicate.
+    let outcome = await capture(intent, context: context, title: title, removing: removing)
+    // Reusing a source must not dispatch another paid preparation job.
+    // Re-adding a source that previously failed is an explicit retry.
+    switch outcome {
+    case .imported(let id):
+      return id
+    case .duplicate(let id):
+      if let existing = source(id: id), existing.processingStatus == .failed {
+        scheduleProjectSourcePreparation(id)
       }
-      return existing.id
+      return id
+    case .refused:
+      return nil
     }
-    let source = ProjectSource(projectID: projectID, kind: link.kind,
-      title: link.youtubeID.map { "YouTube · \($0)" } ?? link.url.host ?? "Webリンク", originalURL: link.url)
-    guard storeProjectSource(source, removing: removing) else { return nil }
-    scheduleProjectSourcePreparation(source.id)
-    return source.id
   }
 
   func performProjectSourcePreparation(_ id: UUID) async {

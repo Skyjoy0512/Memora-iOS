@@ -267,8 +267,11 @@ struct ProjectSourceAddSheet: View {
       let draftKeys = [DraftStore.storageKey(for: draftKey), DraftStore.storageKey(for: draftKey + ".title")]
       let id: UUID?
       if let url = URL(string: input), url.scheme != nil, !input.contains(where: \.isWhitespace) {
-        id = try model.handlingPersistenceFailureLocally { try model.addProjectLink(input, projectID: projectID, removing: draftKeys) }
+        id = try await model.addProjectLink(input, projectID: projectID, removing: draftKeys)
       } else {
+        // A note the person wrote is their own composition, so it keeps the
+        // note store's size limit and its attachments. Captured text from
+        // outside is what the coordinator's shorter limit applies to.
         id = try await model.addProjectNote(title: title, text: input, projectID: projectID, presentsErrorsLocally: true,
           removing: draftKeys, attachedSourceIDs: importedSourceIDs)
         if let id { Task { await model.summarizeProjectSource(id) } }

@@ -16,8 +16,10 @@ struct InlineLinkSummaryView: View {
         NavigationLink("リンク先の資料を開く") { ProjectSourceDetailView(sourceID: id) }.frame(minHeight: 44)
       } else if let url = urls.first {
         Button("リンク先を資料に追加", icon: .link) {
-          do { savedID = try model.addProjectLink(url.absoluteString, projectID: model.visibleProjectID) }
-          catch { failure = error.localizedDescription }
+          Task {
+            do { savedID = try await model.addProjectLink(url.absoluteString, projectID: model.visibleProjectID) }
+            catch { failure = error.localizedDescription }
+          }
         }
         .frame(minHeight: 44)
         .disabled(model.currentTeamID != nil || model.isRestoring || model.isStoreProtected)
