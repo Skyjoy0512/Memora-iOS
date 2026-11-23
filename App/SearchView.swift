@@ -1,10 +1,13 @@
 import SwiftUI
+import Combine
+import UIKit
 
 struct SearchView: View {
   @Environment(MemoraModel.self) private var model
   @State private var query = ""
   @State private var isSearchSheetPresented = false
   @State private var isHistoryPresented = false
+  @State private var screenshotShare: AIAnswerShareContent?
   @State private var filters = SearchFilters()
   var isComposing = false
   var onOpenSidebar: () -> Void
@@ -70,7 +73,28 @@ struct SearchView: View {
           delete: { model.deleteAIHistoryEntry($0) }
         )
       }
+      // iOS tells the app after a screenshot is taken; the answer on screen
+      // can then be offered as a card instead of the raw capture.
+      .onReceive(NotificationCenter.default.publisher(for: UIApplication.userDidTakeScreenshotNotification)) { _ in
+        presentScreenshotShare()
+      }
+      .sheet(item: $screenshotShare) { content in
+        AIAnswerShareSheet(content: content)
+      }
     }
+  }
+
+  private func presentScreenshotShare() {
+    guard model.selectedTab == .askAI,
+          !model.isToolsPresented,
+          !isSearchSheetPresented,
+          !isHistoryPresented,
+          screenshotShare == nil,
+          let answer = model.aiMessages.last(where: {
+            $0.role == .assistant && !$0.isThinking && !$0.text.isEmpty
+          })
+    else { return }
+    screenshotShare = model.answerShareContent(for: answer)
   }
 
   private var chatTranscript: some View {

@@ -43,4 +43,19 @@ extension MemoraModel {
   func savedAnswerDocument(for message: AIChatMessage) -> MemoraDocument? {
     documents.first { $0.sourceAnswerID == message.id && $0.provenance?.workspaceID == currentTeamID }
   }
+
+  /// The question that led to an answer and the answer itself, both as they
+  /// were written, for the card offered after a screenshot.
+  func answerShareContent(for message: AIChatMessage) -> AIAnswerShareContent {
+    let question: String
+    if let index = aiMessages.firstIndex(where: { $0.id == message.id }),
+       let asked = aiMessages[..<index].last(where: { $0.role == .user }) {
+      question = asked.text
+    } else {
+      question = ""
+    }
+    return AIAnswerShareContent(question: question,
+      answer: AnswerCitations.stripped(answerExportMarkdown(message)),
+      createdAt: message.createdAt)
+  }
 }
