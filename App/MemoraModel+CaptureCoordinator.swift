@@ -49,6 +49,58 @@ extension MemoraModel {
     }
   }
 
+  /// Stores a source that a caller has already prepared.
+  ///
+  /// The context is the destination: a stale destination or a store that may
+  /// not be written refuses the capture, so prepared work cannot land in a
+  /// workspace that changed while it was being built. A source is deduplicated
+  /// only inside the context's project, by a non-nil content fingerprint, a
+  /// non-nil original URL, or all four PDF partition values. A matched source
+  /// is returned as `.duplicate` only when its readable evidence is unchanged;
+  /// otherwise it is refused rather than replaced. `removing` holds the draft
+  /// keys settled in the same transaction as the record.
+  func capture(_ source: ProjectSource, context: LocalImportContext,
+               removing: [String] = []) async -> CaptureOutcome {
+    guard !isRestoring, !isStoreProtected, currentTeamID == nil else {
+      return .refused("保存先が変更されたため取り込めませんでした。画面を開き直してください。")
+    }
+    guard context.isCurrent(in: self) else {
+      return .refused("保存先が変更されたため取り込めませんでした。画面を開き直してください。")
+    }
+    if let existing = projectSources.first(where: { candidate in
+      guard candidate.projectID == context.projectID else { return false }
+      let sameFingerprint = source.contentFingerprint != nil &&
+        candidate.contentFingerprint == source.contentFingerprint
+      let sameOriginalURL = source.originalURL != nil && candidate.originalURL == source.originalURL
+      let partitionKeys = ["partitionOriginalFingerprint", "partitionOriginalPageCount",
+        "partitionFirstPage", "partitionLastPage"]
+      let samePartition = source.metadata.map { metadata in
+        partitionKeys.allSatisfy { key in
+          guard let value = metadata[key] else { return false }
+          return candidate.metadata?[key] == value
+        }
+      } ?? false
+      return sameFingerprint || sameOriginalURL || samePartition
+    }) {
+      // The stored record is the same thing as the prepared one, so it is
+      // reused. A record that was changed in the meantime is still the one
+      // that holds this content, so the person is pointed at it instead of
+      // getting a second copy.
+      if !removing.isEmpty, !persistBatch({ [] }, removing: removing) {
+        return .refused("保存できませんでした。ストレージの空き容量を確認してください。")
+      }
+      return .duplicate(existing.id)
+    }
+    guard storeProjectSource(source, removing: removing) else {
+      return .refused("資料を保存できませんでした。ストレージの空き容量を確認してください。")
+    }
+    guard context.isCurrent(in: self) else {
+      return .refused("保存先が変更されたため取り込めませんでした。画面を開き直してください。")
+    }
+    scheduleProjectSourcePreparation(source.id)
+    return .imported(source.id)
+  }
+
   /// A public link, and a meeting that is kept as a link with a marker.
   private func captureLink(_ url: URL, context: LocalImportContext, isMeeting: Bool,
                            sourceID: UUID?, metadata: [String: String], title: String?,

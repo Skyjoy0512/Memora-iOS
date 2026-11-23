@@ -43,17 +43,24 @@ extension MemoraModel {
     let kind = SourceIntake.kind(for: URL(fileURLWithPath: receipt.reference))
     let value = ProjectSource(projectID: projectID, kind: kind, title: title, originalURL: originalURL,
       localFileReference: receipt.reference, contentFingerprint: receipt.fingerprint, metadata: sourceMetadata)
-    // Only the synchronous registration owns this scope, never file I/O or
-    // later extraction, which may outlive this sheet.
-    guard storeProjectSource(value, presentsErrorsLocally: presentsErrorsLocally) else {
-      await discardProjectImportReceipt(receipt); return nil
+    let outcome = await capture(value, context: context)
+    switch outcome {
+    case .imported(let id):
+      if waitsForPreparation { await prepareProjectSource(id) }
+      else { scheduleProjectSourcePreparation(id) }
+      // Once registered, the original belongs to SQLite, even if a later analysis
+      // is invalidated. Never remove it or report success in a different workspace.
+      guard context.isCurrent(in: self), source(id: id)?.projectID == projectID else { return nil }
+      return id
+    case .duplicate(let id):
+      await discardProjectImportReceipt(receipt)
+      guard context.isCurrent(in: self), source(id: id)?.projectID == projectID else { return nil }
+      return id
+    case .refused(let message):
+      if presentsErrorsLocally { importErrorMessage = message }
+      await discardProjectImportReceipt(receipt)
+      return nil
     }
-    if waitsForPreparation { await prepareProjectSource(value.id) }
-    else { scheduleProjectSourcePreparation(value.id) }
-    // Once registered, the original belongs to SQLite, even if a later analysis
-    // is invalidated. Never remove it or report success in a different workspace.
-    guard context.isCurrent(in: self), source(id: value.id)?.projectID == projectID else { return nil }
-    return value.id
   }
 
   private func discardProjectImportReceipt(_ receipt: ProjectSourceFiles.Receipt) async {
