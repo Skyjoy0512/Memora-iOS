@@ -103,10 +103,12 @@ extension MemoraModel {
     let requests = residentAgents.filter { $0.isEnabled && $0.trigger == .afterMeeting }
       .compactMap { residentRequest($0, meetingID: meetingID, automatic: true) }
     guard !requests.isEmpty else { return }
-    Task {
+    // The run reaches the model, so the task holds it weakly: a resident that
+    // outlives the model should stop rather than keep every record alive.
+    Task { [weak self] in
       for request in requests {
         guard !Task.isCancelled else { return }
-        await runResident(request)
+        await self?.runResident(request)
       }
     }
   }
