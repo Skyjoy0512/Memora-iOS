@@ -33,7 +33,8 @@ struct ProjectSourcesView: View {
     .background(MemoraPalette.background)
     .navigationTitle("参考資料").navigationBarTitleDisplayMode(.inline)
     .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "参考資料を検索")
-    .task(id: SourceSearchRequest(query: query, sources: model.projectSources, workspaceGeneration: model.aiWorkspaceGeneration)) {
+    .task(id: SourceSearchRequest.make(query: query, sources: model.projectSources,
+      workspaceGeneration: model.aiWorkspaceGeneration)) {
       matchingSourceIDs = []
       let value = query
       guard CollectionSearch.hasQuery(value) else { completedQuery = value; return }

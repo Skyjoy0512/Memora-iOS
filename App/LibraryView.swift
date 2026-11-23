@@ -147,7 +147,7 @@ struct LibraryView: View {
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: model.librarySection.searchPrompt,
         selection: isSelectionMode ? (selectedMeetingIDs.count, endSelection) : nil)
       .task(id: sourceSearchRequest) { [request = sourceSearchRequest] in
-        guard CollectionSearch.hasQuery(request.query), !request.sources.isEmpty else { return }
+        guard CollectionSearch.hasQuery(request.query), request.hasSources else { return }
         guard completedSourceRequest != request else { return }
         let matches = await model.matchingSourceIDs(query: request.query)
         guard !Task.isCancelled, sourceSearchRequest == request else { return }
@@ -348,7 +348,8 @@ struct LibraryView: View {
   }
 
   private var sourceSearchRequest: SourceSearchRequest {
-    SourceSearchRequest(query: query, sources: model.projectSources, workspaceGeneration: model.aiWorkspaceGeneration)
+    SourceSearchRequest.make(query: query, sources: model.projectSources,
+      workspaceGeneration: model.aiWorkspaceGeneration)
   }
 
   private var filesPage: some View {
