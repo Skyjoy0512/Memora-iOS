@@ -28,19 +28,6 @@ extension MemoraModel {
     UserDefaults.standard.set(updated.map(\.uuidString), forKey: "memora.projects.recentIDs")
   }
 
-  static func countProjectTasks(meetings: [Meeting], tasks: [MemoraTask]) -> [UUID: Int] {
-    let projectByMeeting = Dictionary(meetings.compactMap { meeting in
-      meeting.spaceID.map { (meeting.id, $0) }
-    }, uniquingKeysWith: { first, _ in first })
-    var counts: [UUID: Int] = [:]
-    for task in tasks where !task.isCompleted {
-      if let meetingID = task.meetingID, let projectID = projectByMeeting[meetingID] {
-        counts[projectID, default: 0] += 1
-      }
-    }
-    return counts
-  }
-
   /// Returns the new project's id so the caller can open it.
   @discardableResult
   func addSpace(name: String) -> UUID? {

@@ -145,7 +145,6 @@ final class MemoraModel {
       MemoryRetrievalOrchestrator.invalidate()
       taskIndex.invalidate()
       tasksByMeeting = nil
-      rebuildProjectTaskCounts()
       refreshSampleContentFlag()
       invalidatePendingResidents()
       invalidatePendingWebhookDeliveries()
@@ -169,7 +168,6 @@ final class MemoraModel {
   private(set) var markedMeetingDays: Set<Date> = []
   /// Per-project counts and previews, and per-person record counts.
   private(set) var spaceAggregates: [UUID: SpaceAggregate] = [:]
-  private(set) var projectTaskCounts: [UUID: Int] = [:]
   private(set) var personMeetingCounts: [UUID: Int] = [:]
   /// Records tagged with each person, newest first.
   private(set) var meetingsByPerson: [UUID: [Meeting]] = [:]
@@ -906,14 +904,7 @@ final class MemoraModel {
     conversationPersistenceReady = true
   }
 
-  /// One pass over the records for the per-project and per-person numbers the
-  /// screens show, instead of a scan per tile per redraw.
-  private func rebuildProjectTaskCounts() {
-    assignIfChanged(\.projectTaskCounts, Self.countProjectTasks(meetings: meetings, tasks: tasks))
-  }
-
   private func rebuildMeetingAggregates() {
-    rebuildProjectTaskCounts()
     // Sorted once, so every group below is already newest first.
     let newestFirst = meetings.sorted { $0.createdAt > $1.createdAt }
     assignIfChanged(\.markedMeetingDays, Set(newestFirst.map { Calendar.current.startOfDay(for: $0.createdAt) }))

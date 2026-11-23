@@ -46,6 +46,9 @@ final class AudioPlayerService {
   private var loadedInput: AudioPlaybackInput?
   /// The session claim this player holds, so only this run gives it up.
   private var sessionToken: AudioSessionCoordinator.Token?
+  /// The coordinator's handle for this player's stop request, so the player
+  /// removes only its own when it goes away.
+  @ObservationIgnored private var stopperID: UUID?
   /// The coordinator's handle for pausing this player when another takes over.
   private var playbackPauserID: UUID?
   /// The remote-command targets this player registered, so it removes only its
@@ -56,9 +59,14 @@ final class AudioPlayerService {
     timePitch.rate = rate
     // A stale handler only holds a weak player, so it does nothing once this one
     // is gone; it is registered once here rather than on every play.
-    AudioSessionCoordinator.shared.registerStopper(.playback) { [weak self] in
+    stopperID = AudioSessionCoordinator.shared.registerStopper(.playback) { [weak self] in
       self?.stop()
     }
+  }
+
+  isolated deinit {
+    guard let stopperID = self.stopperID else { return }
+    AudioSessionCoordinator.shared.unregisterStopper(stopperID, for: .playback)
   }
 
   private var sampleRate: Double {

@@ -23,13 +23,21 @@ final class SpeechInputService {
   @ObservationIgnored private var isStarting = false
   /// The session claim this run holds, so only this run gives it up.
   @ObservationIgnored private var sessionToken: AudioSessionCoordinator.Token?
+  /// The coordinator's handle for this service's stop request, so the service
+  /// removes only its own when it goes away.
+  @ObservationIgnored private var stopperID: UUID?
 
   init() {
     // Registered once, so a recording can ask voice input to stop and wait for it
     // before taking the session. The handler holds this service weakly.
-    AudioSessionCoordinator.shared.registerStopper(.speechInput) { [weak self] in
+    stopperID = AudioSessionCoordinator.shared.registerStopper(.speechInput) { [weak self] in
       self?.stop()
     }
+  }
+
+  isolated deinit {
+    guard let stopperID = self.stopperID else { return }
+    AudioSessionCoordinator.shared.unregisterStopper(stopperID, for: .speechInput)
   }
 
   func toggle(transcriptChanged: @escaping @MainActor (String) -> Void) async {
