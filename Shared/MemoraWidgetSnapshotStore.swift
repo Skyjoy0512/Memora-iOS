@@ -2,10 +2,12 @@ import Foundation
 
 enum MemoraWidgetSnapshotStore {
   static var fileURL: URL? {
-    guard let group = Bundle.main.object(forInfoDictionaryKey: "MemoraWidgetAppGroup") as? String,
-          var hostID = Bundle.main.bundleIdentifier else { return nil }
-    if hostID.hasSuffix(".widget-extension") { hostID = String(hostID.dropLast(".widget-extension".count)) }
-    guard !hostID.hasPrefix("app.bitrig.new."), group == "group." + hostID else { return nil }
+    guard let configuredGroup = Bundle.main.object(forInfoDictionaryKey: "MemoraWidgetAppGroup") as? String else { return nil }
+    #if DEBUG
+    let group = configuredGroup + ".debug"
+    #else
+    let group = configuredGroup
+    #endif
     return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group)?
       .appendingPathComponent("MemoraWidgetSnapshot.v1.json")
   }

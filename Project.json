@@ -63,7 +63,10 @@
       "entitlements" : {
         "path" : "App\/Memora.entitlements",
         "properties" : {
-          "com.apple.developer.healthkit" : true
+          "com.apple.developer.healthkit" : true,
+          "com.apple.security.application-groups" : [
+            "group.app.bitrig.new.memora"
+          ]
         }
       },
       "info" : {
@@ -99,6 +102,12 @@
           "CKSharingSupported" : true,
           "LSSupportsOpeningDocumentsInPlace" : false,
           "MemoraLicensePublicKey" : "IisSdDP4tKvk5\/RRQGQ8e1mI\/jbo\/+4dPqedWShIzV4=",
+          "MemoraShareAppGroup" : "group.app.bitrig.new.memora",
+          "MemoraWidgetAppGroup" : "group.app.bitrig.new.memora",
+          "MemoraFirebaseAPIKey" : "",
+          "MemoraIntelligenceURL" : "",
+          "MemoraMarketplaceURL" : "",
+          "MemoraGoogleClientID" : "",
           "NSBluetoothAlwaysUsageDescription" : "近くのOmiレコーダーを見つけて、会話の音声をMemoraへ取り込むためにBluetoothを使用します。",
           "NSCalendarsFullAccessUsageDescription" : "予定の表示・編集、会議の録音、利用者が依頼したAsk AIの予定整理にカレンダーを使用します。",
           "NSCameraUsageDescription" : "紙の資料やホワイトボードを撮影し、Memoraの資料として保存するためにカメラを使用します。",
@@ -147,10 +156,19 @@
           "product" : "LucideSwift"
         }
       ],
+      "entitlements" : {
+        "path" : "Widget Extension\/MemoraWidgetExtension.entitlements",
+        "properties" : {
+          "com.apple.security.application-groups" : [
+            "group.app.bitrig.new.memora"
+          ]
+        }
+      },
       "info" : {
         "path" : "Widget Extension\/Info.plist",
         "properties" : {
           "CFBundleDisplayName" : "Memora Widget Extension",
+          "MemoraWidgetAppGroup" : "group.app.bitrig.new.memora",
           "NSExtension" : {
             "NSExtensionPointIdentifier" : "com.apple.widgetkit-extension"
           }
@@ -175,6 +193,14 @@
     "Memora Share Extension" : {
       "type" : "app-extension",
       "platform" : "iOS",
+      "entitlements" : {
+        "path" : "Share Extension\/MemoraShareExtension.entitlements",
+        "properties" : {
+          "com.apple.security.application-groups" : [
+            "group.app.bitrig.new.memora"
+          ]
+        }
+      },
       "sources" : [
         {
           "path" : "Share Extension"
@@ -195,6 +221,7 @@
           "CFBundleDisplayName" : "Memora",
           "CFBundleShortVersionString" : "1.0",
           "CFBundleVersion" : "1",
+          "MemoraShareAppGroup" : "group.app.bitrig.new.memora",
           "NSExtension" : {
             "NSExtensionPointIdentifier" : "com.apple.share-services",
             "NSExtensionPrincipalClass" : "$(PRODUCT_MODULE_NAME).ShareViewController",
