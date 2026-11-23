@@ -152,6 +152,8 @@ extension MemoraModel {
   /// made a streaming summary slow the app down; the finished result is saved.
   func updateMeetingTransiently(_ id: UUID, change: (inout Meeting) -> Void) {
     guard let index = meetings.firstIndex(where: { $0.id == id }) else { return }
+    isApplyingTransientMeetingUpdate = true
+    defer { isApplyingTransientMeetingUpdate = false }
     change(&meetings[index])
   }
 }

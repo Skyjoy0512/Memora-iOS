@@ -70,8 +70,12 @@ final class MemoraModel {
   var cloudStorageEnabled = false {
     didSet { UserDefaults.standard.set(cloudStorageEnabled, forKey: StorageKey.cloudStorage) }
   }
+  /// Set only while a transient in-memory edit is applied, so the observable
+  /// collection updates without running the stored-change side effects.
+  @ObservationIgnored var isApplyingTransientMeetingUpdate = false
   var meetings: [Meeting] {
     didSet {
+      guard !isApplyingTransientMeetingUpdate else { return }
       invalidateSummaryArtifacts(previous: oldValue)
       MemoryRetrievalOrchestrator.invalidate()
       meetingIndex.invalidate()
