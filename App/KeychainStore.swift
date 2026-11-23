@@ -29,19 +29,24 @@ enum KeychainStore {
     let succeeded: Bool
 
     if let stored, let data = stored.data(using: .utf8) {
-      // Update in place so a failure leaves the previous secret untouched.
       let updateStatus = SecItemUpdate(
         base as CFDictionary,
         [kSecValueData as String: data] as CFDictionary
       )
 
       if updateStatus == errSecItemNotFound {
-        var attributes = base
-        attributes[kSecValueData as String] = data
-        attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
-        succeeded = SecItemAdd(attributes as CFDictionary, nil) == errSecSuccess
+        succeeded = add(data, base: base)
+      } else if updateStatus == errSecSuccess {
+        // SecItemUpdate keeps the attribute an older build stored, so the
+        // matching item is replaced to adopt the current protection.
+        let deleteStatus = SecItemDelete(base as CFDictionary)
+        if deleteStatus == errSecSuccess || deleteStatus == errSecItemNotFound {
+          succeeded = add(data, base: base)
+        } else {
+          succeeded = false
+        }
       } else {
-        succeeded = updateStatus == errSecSuccess
+        succeeded = false
       }
     } else {
       let deleteStatus = SecItemDelete(base as CFDictionary)
@@ -84,6 +89,13 @@ enum KeychainStore {
 
   static func has(_ key: String) -> Bool {
     string(forKey: key) != nil
+  }
+
+  private static func add(_ data: Data, base: [String: Any]) -> Bool {
+    var attributes = base
+    attributes[kSecValueData as String] = data
+    attributes[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+    return SecItemAdd(attributes as CFDictionary, nil) == errSecSuccess
   }
 
   private static func readFromKeychain(_ key: String) -> String? {
