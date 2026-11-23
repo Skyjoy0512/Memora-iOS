@@ -96,9 +96,14 @@ struct SearchView: View {
       }
       .scrollDismissesKeyboard(.interactively)
       .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
-      .refreshable { await model.refresh() }
+      // The pull that starts a new chat needs the rubber band even when the
+      // conversation is shorter than the screen.
+      .scrollBounceBehavior(.always)
       .modifier(ConversationScrollFollowing(proxy: proxy, latestMessageID: model.aiMessages.last?.id,
         isBusy: model.isAIChatResponding, bottomInset: model.bottomContentClearance))
+      .modifier(ConversationPullToNewChat {
+        model.startNewAIChat()
+      })
       // An approval card needs to be seen to be answered, so the keyboard
       // steps aside and the card scrolls into view.
       .onChange(of: model.pendingAgentApproval?.id) { _, id in

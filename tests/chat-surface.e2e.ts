@@ -73,14 +73,13 @@ test('chat surface: stacked controls keep draft navigation available after dismi
   await expect(input).toHaveValue('画面を行き来しても残しておく相談の下書き');
 });
 
-test('chat surface: flat title menu still opens history and search', async ({ app, device, screen }) => {
+test('chat surface: flat title menu keeps history and search reachable', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await tapTab(screen, 'Ask AI');
-  await tapControl(screen, screen.getByLabel('Memora、履歴と検索'));
   await tapControl(screen, screen.getByRole('button', { name: '履歴', exact: true }));
   await expect(screen.getByText('質問履歴', { exact: true }).first()).toBeVisible();
   await tapControl(screen, screen.getByRole('button', { name: '完了', exact: true }));
-  await tapControl(screen, screen.getByLabel('Memora、履歴と検索'));
+  await tapControl(screen, screen.getByLabel('Memora、検索'));
   await tapControl(screen, screen.getByRole('button', { name: '検索', exact: true }));
   await expect(screen.getByText('会話を検索', { exact: true })).toBeVisible();
   const search = screen.getByRole('textbox', { name: '会議、発言、決定、タスク', exact: true });

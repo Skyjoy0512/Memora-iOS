@@ -52,7 +52,7 @@ test('native header: Ask AI sidebar search retains the existing chat actions', a
   const closeSearch = screen.getByRole('button', { name: 'close', exact: true });
   if (await closeSearch.isVisible()) await tapControl(screen, closeSearch);
   await tapControl(screen, screen.getByRole('button', { name: '完了', exact: true }));
-  await expect(screen.getByLabel('Memora、履歴と検索')).toBeVisible();
+  await expect(screen.getByLabel('Memora、検索')).toBeVisible();
   await expect(screen.getByLabel('新しいチャット')).toBeDisabled();
 });
 

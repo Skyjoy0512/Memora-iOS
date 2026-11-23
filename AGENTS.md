@@ -219,7 +219,9 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   an editable draft. Existing drafts and attachments take precedence.
   Keep no random greeting or idle glow. The empty chat has a static, faint Memora
   mark above the suggestion chips. `AskAIHeader` is one compact row:
-  sidebar / history and search menu / new chat. Replies remain plain
+  sidebar / scope title with search menu / history / new chat. Suggestions carry
+  no trailing chevrons. Pulling the conversation past its top shows a spinner
+  and, at the limit, starts a new chat (`ConversationPullToNewChat`). Replies remain plain
   text with no bubble, only the person's messages in `aiBubble`. Tab navigation
   and system Ask AI links preserve the conversation;
   only the explicit new-chat action clears it. A bounded SQLite resume document
