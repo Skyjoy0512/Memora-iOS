@@ -4,6 +4,7 @@ enum AuthProvider: String, Codable, Hashable, CaseIterable, Identifiable {
   case apple
   case google
   case email
+  case chatGPT
 
   var id: Self { self }
 
@@ -15,6 +16,8 @@ enum AuthProvider: String, Codable, Hashable, CaseIterable, Identifiable {
       "Google"
     case .email:
       "メールアドレス"
+    case .chatGPT:
+      "ChatGPT"
     }
   }
 
@@ -26,6 +29,8 @@ enum AuthProvider: String, Codable, Hashable, CaseIterable, Identifiable {
       "Googleでサインイン"
     case .email:
       "メールアドレスで続ける"
+    case .chatGPT:
+      "ChatGPTで続ける"
     }
   }
 
@@ -37,6 +42,8 @@ enum AuthProvider: String, Codable, Hashable, CaseIterable, Identifiable {
       .gCircle
     case .email:
       .envelope
+    case .chatGPT:
+      .sparkles
     }
   }
 }

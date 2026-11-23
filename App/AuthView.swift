@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// Optional sign-in. There is no auth service behind it yet, so the screen
-/// explains that rather than pretending to create an account.
+/// Optional sign-in. There is no auth service behind the Apple, Google and
+/// e-mail buttons yet, so those explain that rather than pretending to
+/// create an account. ChatGPT sign-in is connected and opens the browser.
 struct AuthView: View {
   @Environment(\.dismiss) private var dismiss
+  @Environment(MemoraModel.self) private var model
 
   var body: some View {
     NavigationStack {
@@ -13,7 +15,7 @@ struct AuthView: View {
             .font(MemoraTypography.display)
             .accessibilityAddTraits(.isHeader)
 
-          Text("ログインせず、このiPhoneで使えます。アカウント連携と複数端末の同期は準備中です。")
+          Text("ログインせず、このiPhoneで使えます。ChatGPTのアカウントを連携すると、ChatGPTの権限に応じて利用できます。")
             .font(.body)
             .foregroundStyle(.secondary)
             .lineSpacing(4)
@@ -27,11 +29,33 @@ struct AuthView: View {
             .accessibilityIdentifier("auth.continueLocal")
 
           VStack(spacing: MemoraSpacing.sm) {
+            AuthProviderButton(provider: .chatGPT) {
+              Task { await model.signInWithChatGPT() }
+            }
+            .disabled(model.isChatGPTSigningIn)
+
             AuthProviderButton(provider: .apple)
             AuthProviderButton(provider: .google)
             AuthProviderButton(provider: .email)
           }
           .padding(.top, MemoraSpacing.section)
+
+          if let message = model.chatGPTSignInFailureMessage {
+            Text(message)
+              .font(.footnote)
+              .foregroundStyle(MemoraPalette.danger)
+              .padding(.top, MemoraSpacing.sm)
+          }
+
+          if model.hasChatGPTPlanUsage {
+            HStack(spacing: MemoraSpacing.xs) {
+              Image(icon: .checkmarkCircle, size: 14)
+              Text("ChatGPTの計画的な利用が許可されています。")
+            }
+              .font(.footnote)
+              .foregroundStyle(.secondary)
+              .padding(.top, MemoraSpacing.sm)
+          }
 
           Text("録音はこのiPhoneに保存されます。クラウドAIを設定した場合は、許可した内容を送信します。")
             .font(.footnote)
@@ -54,5 +78,4 @@ struct AuthView: View {
       }
     }
   }
-
 }

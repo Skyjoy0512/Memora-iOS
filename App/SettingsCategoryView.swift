@@ -174,7 +174,7 @@ struct SettingsCategoryView: View {
         } header: {
           Text("アカウント")
         } footer: {
-          Text("アカウント連携は準備中")
+          Text("ChatGPTのアカウントは「サインイン / 新規登録」から連携できます。")
         }
 
         if model.isSignedIn {

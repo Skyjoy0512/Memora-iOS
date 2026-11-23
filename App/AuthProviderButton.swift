@@ -33,6 +33,10 @@ struct AuthProviderButton: View {
         .frame(width: 20, height: 20).accessibilityHidden(true)
     case .email:
       Image(icon: .envelope, size: 20).accessibilityHidden(true)
+    case .chatGPT:
+      // OpenAI's own mark is a brand identity, not an interface glyph.
+      Image("chatgpt-mark").renderingMode(.original).resizable().scaledToFit()
+        .frame(width: 20, height: 20).accessibilityHidden(true)
     }
   }
 }

@@ -448,6 +448,10 @@ final class MemoraModel {
   var account: MemoraAccount? {
     didSet { if oldValue != account { aiWorkspaceGeneration = UUID() } }
   }
+  /// The message of the last failed ChatGPT sign-in, when there is one.
+  var chatGPTSignInFailureMessage: String?
+  /// Whether a ChatGPT sign-in is running.
+  var isChatGPTSigningIn = false
   var isAuthPresented = false
   var isPaywallPresented = false
   var omiPairingManager = OmiPairingManager()

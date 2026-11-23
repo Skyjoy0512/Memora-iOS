@@ -96,6 +96,8 @@ extension MemoraModel {
       "you@gmail.com"
     case .email:
       "you@example.com"
+    case .chatGPT:
+      "you@chatgpt.com"
     }
   }
 
@@ -105,6 +107,8 @@ extension MemoraModel {
       provider.label + "ユーザー"
     case .email:
       String(email.prefix(while: { $0 != "@" }))
+    case .chatGPT:
+      provider.label + "ユーザー"
     }
   }
 }
