@@ -81,6 +81,15 @@ struct ChatGPTTokenResponse: Equatable, Sendable {
   }
 }
 
-enum ChatGPTTokenResponseError: Error, Equatable {
+/// Why a token response could not be used.
+enum ChatGPTTokenResponseError: LocalizedError, Equatable {
+  /// The response did not contain usable credentials.
   case invalidResponse
+
+  var errorDescription: String? {
+    switch self {
+    case .invalidResponse:
+      return "認証サーバーの応答を利用できません。もう一度サインインしてください。"
+    }
+  }
 }
