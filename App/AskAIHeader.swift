@@ -22,10 +22,6 @@ struct AskAIHeader: View {
             Text(name)
               .font(MemoraTypography.body.weight(.semibold))
               .lineLimit(1)
-          } else {
-            Text("Ask AI")
-              .font(MemoraTypography.body.weight(.semibold))
-              .lineLimit(1)
           }
           Image(icon: .chevronDown, size: MemoraIconMetrics.accessory)
             .foregroundStyle(MemoraPalette.textSecondary)

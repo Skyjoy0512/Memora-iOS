@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AgentPromptSuggestionsView: View {
   @Environment(MemoraModel.self) private var model
+  @State private var refusal: String?
   var isComposing = false
 
   var body: some View {
@@ -21,7 +22,9 @@ struct AgentPromptSuggestionsView: View {
               ForEach(suggestions.prefix(3)) { suggestion in
                 AgentPromptSuggestionRow(suggestion: suggestion) {
                   InteractionFeedback.shared.send(.selection)
-                  model.stageAgentSuggestion(suggestion)
+                  if !model.selectAgentSuggestion(suggestion), suggestion.sendsOnSelection {
+                    refusal = model.aiRequestRefusalMessage
+                  }
                 }
                 .disabled(model.isAIChatResponding)
               }
@@ -38,6 +41,11 @@ struct AgentPromptSuggestionsView: View {
         .frame(maxWidth: .infinity)
       }
       .scrollBounceBehavior(.basedOnSize)
+    }
+    .alert("送信できませんでした", isPresented: Binding(get: { refusal != nil }, set: { if !$0 { refusal = nil } })) {
+      Button("閉じる", role: .cancel) {}
+    } message: {
+      Text(refusal ?? "")
     }
   }
 }

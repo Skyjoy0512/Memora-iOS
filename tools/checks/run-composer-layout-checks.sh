@@ -12,3 +12,6 @@ swiftc -O -swift-version 6 App/AgentPromptSuggestion.swift App/MemoraModel+Agent
 "$check_dir/suggestions"
 swiftc -O -swift-version 6 App/RecorderBatteryState.swift tools/checks/RecorderBatteryChecks.swift -o "$check_dir/recorder-battery"
 "$check_dir/recorder-battery"
+swiftc -O -swift-version 6 App/AskAIAuroraPhase.swift App/AuroraAnimationState.swift \
+  tools/checks/AskAIAuroraChecks.swift -o "$check_dir/aurora"
+"$check_dir/aurora"

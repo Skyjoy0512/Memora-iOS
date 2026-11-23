@@ -17,7 +17,8 @@ class WaitingAudioPresentationChecks(unittest.TestCase):
         self.assertIn('isActive && !reduceMotion && scenePhase == .active', shimmer)
         self.assertNotIn('repeatForever', shimmer)
         self.assertIn('message.text.isEmpty || isWaiting', (APP / 'ThinkingTraceView.swift').read_text())
-        self.assertNotIn('AskAIGlow(', (APP / 'SearchView.swift').read_text())
+        self.assertNotIn('since:', (APP / 'ThinkingTraceView.swift').read_text())
+        self.assertIn('AskAIGlow(', (APP / 'SearchView.swift').read_text())
         self.assertIn('projectChatPartialAnswers', (APP / 'ProjectChatWaitingStatus.swift').read_text())
 
     def test_summary_uses_a_transient_instruction_not_a_checkbox(self):

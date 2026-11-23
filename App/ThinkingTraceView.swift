@@ -22,13 +22,12 @@ struct ThinkingTraceView: View {
         HStack(spacing: MemoraSpacing.sm) {
           MemoraThinkingLogo(isAnimating: !isWaiting)
           ConversationStatusLine(label: isWaiting ? "確認を待っています" : label,
-            since: message.createdAt, isWaiting: isWaiting, showsShimmer: message.text.isEmpty && permitsShimmer)
+            isWaiting: isWaiting, showsShimmer: message.text.isEmpty && permitsShimmer)
         }
         .transition(.opacity)
       }
       if !message.agentSteps.isEmpty {
-        AgentActivityView(steps: message.agentSteps, isRunning: message.isThinking, isWaiting: isWaiting,
-          startedAt: message.createdAt) { id in
+        AgentActivityView(steps: message.agentSteps, isRunning: message.isThinking, isWaiting: isWaiting) { id in
           let target = ArtifactSourceTarget.record(.meeting(id))
           guard model.answerCitationTargets(for: message).contains(target),
                 model.canOpenArtifactSource(target, workspaceID: model.artifactProvenance(for: message).workspaceID) else { return }
@@ -49,6 +48,6 @@ struct ThinkingTraceView: View {
       return message.searchFinished ? "回答を書いています" : "記録を探しています"
     }
     if !message.text.isEmpty { return "回答を書いています" }
-    return message.agentSteps.isEmpty ? "考えています" : "作業しています"
+    return "考えています"
   }
 }

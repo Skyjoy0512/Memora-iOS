@@ -14,6 +14,11 @@ final class MemoraModel {
   var meetings: [Meeting] = []
   var tasks: [MemoraTask] = []
 
+  func sendAIChat(_ prompt: String) -> Bool {
+    aiMessages.append(prompt)
+    return true
+  }
+
   func allowsRecordAccess(_ id: UUID, purpose: RecordAccessPolicy.Purpose) -> Bool {
     guard !isRestoring, !isStoreProtected, let record = meetings.first(where: { $0.id == id }) else { return false }
     return RecordAccessPolicy.allows(record.privacy, purpose: purpose)

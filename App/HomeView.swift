@@ -161,7 +161,7 @@ struct HomeView: View {
       }
       .memoraAppear()
       .background(MemoraPalette.background)
-      .navigationTitle(isSearching ? "" : "ジャーナル")
+      .navigationTitle("")
       .navigationBarTitleDisplayMode(.inline)
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "ジャーナルを検索")
       .toolbar {

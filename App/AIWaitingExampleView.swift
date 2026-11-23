@@ -22,6 +22,12 @@ struct AIWaitingExampleView: View {
         ConversationStatusLine(label: "確認を待っています（表示例）", isWaiting: true)
       }.frame(maxWidth: .infinity, alignment: .leading).padding(18)
     }
+    .background {
+      MemoraPalette.background.overlay {
+        MemoraAuroraBackground(isThinking: state == .waiting)
+      }
+      .ignoresSafeArea(.container)
+    }
     .navigationTitle("AI待機表示")
     .navigationBarTitleDisplayMode(.inline)
   }

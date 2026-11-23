@@ -1,6 +1,6 @@
 import Foundation
 
-/// Suggestions stage editable requests; source identifiers never grant tool access.
+/// Suggested requests can reference permitted sources without granting tool access.
 struct AgentPromptSuggestion: Identifiable, Equatable {
   enum Kind: String {
     case tasks, mail, document, priorities
@@ -11,6 +11,7 @@ struct AgentPromptSuggestion: Identifiable, Equatable {
   var sourceTaskID: UUID?
   var sourceTitle: String?
   var id: String { kind.rawValue }
+  var sendsOnSelection: Bool { kind == .tasks }
 
   var title: LocalizedStringResource {
     switch kind {

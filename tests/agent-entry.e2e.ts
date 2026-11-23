@@ -1,8 +1,19 @@
 import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { focusComposer, launchMemora, openSettingsGallery, tapControl, tapTab } from './ui-helpers';
+import { focusComposer, launchMemora, openSettingsGallery, requireRootMenu, tapControl, tapTab } from './ui-helpers';
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
+
+test('agent entry: the task suggestion sends immediately and leaves an empty composer', { timeout: 120_000 }, async ({ app, device, screen }) => {
+  await launchMemora(app, device, screen);
+  await tapTab(screen, 'Ask AI');
+  await tapControl(screen.getByTestId('ai.suggestion.tasks'));
+  await expect(screen.getByText(/参照できる記録から決定事項と次にやることを整理/).first()).toBeVisible();
+  await app.screenshot('ask-ai-task-suggestion-sent');
+  await expect(screen.getByTestId('ai.agentSuggestions')).not.toBeVisible();
+  await expect(screen.getByTestId('ai.composer.input')).toHaveValue('Memoraに話しかける');
+  await expect(screen.getByLabel('新しいチャット')).toBeEnabled();
+});
 
 test('agent entry: suggestions stage an editable request without sending', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
@@ -20,6 +31,7 @@ test('agent entry: suggestions stage an editable request without sending', async
   await expect(screen.getByLabel('新しいチャット')).toBeDisabled();
   await app.screenshot('agent-suggestion-draft');
   await app.restart();
+  await requireRootMenu(app, screen);
   await tapTab(screen, 'Ask AI');
   await expect(input).toHaveValue(/宛先は推測せず/);
   await expect(screen.getByLabel('新しいチャット')).toBeDisabled();

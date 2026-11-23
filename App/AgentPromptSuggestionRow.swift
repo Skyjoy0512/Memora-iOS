@@ -23,9 +23,11 @@ struct AgentPromptSuggestionRow: View {
           .multilineTextAlignment(.leading)
           .fixedSize(horizontal: false, vertical: true)
           .frame(maxWidth: .infinity, alignment: .leading)
-        Image(icon: .chevronRight, size: 12)
-          .foregroundStyle(MemoraPalette.textSecondary)
-          .accessibilityHidden(true)
+        if !suggestion.sendsOnSelection {
+          Image(icon: .chevronRight, size: 12)
+            .foregroundStyle(MemoraPalette.textSecondary)
+            .accessibilityHidden(true)
+        }
       }
       .padding(.vertical, MemoraSpacing.sm)
       .frame(minHeight: MemoraSpacing.touchTarget, alignment: .leading)
@@ -33,7 +35,7 @@ struct AgentPromptSuggestionRow: View {
     }
     .buttonStyle(MemoraQuietButtonStyle())
     .accessibilityValue(suggestion.sourceTitle ?? "")
-    .accessibilityHint("入力欄に提案を入れます。自動では送信しません。")
+    .accessibilityHint(suggestion.sendsOnSelection ? "この依頼を送信します。" : "入力欄に提案を入れます。自動では送信しません。")
     .accessibilityIdentifier("ai.suggestion.\(suggestion.id)")
   }
 }

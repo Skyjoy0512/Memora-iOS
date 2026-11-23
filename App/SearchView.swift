@@ -5,6 +5,7 @@ struct SearchView: View {
   @State private var query = ""
   @State private var isSearchSheetPresented = false
   @State private var isHistoryPresented = false
+  @State private var isChatOnScreen = false
   @State private var filters = SearchFilters()
   var isComposing = false
   var onOpenSidebar: () -> Void
@@ -25,7 +26,6 @@ struct SearchView: View {
         }
       }
       .memoraAppear()
-      .background(MemoraPalette.background)
       .safeAreaInset(edge: .top, spacing: 0) {
         VStack(spacing: MemoraSpacing.md) {
           assistantHeader
@@ -41,9 +41,17 @@ struct SearchView: View {
           MemoraPalette.background
           .ignoresSafeArea(edges: .top)
           .opacity(model.isAIChatResponding ? 0 : 1)
-          .animation(reduceMotion ? nil : .smooth(duration: 0.9), value: model.isAIChatResponding)
+          .animation(reduceMotion ? nil : .easeInOut(duration: MemoraAuroraBackground.fadeDuration), value: model.isAIChatResponding)
         }
       }
+      .background {
+        MemoraPalette.background.overlay {
+          AskAIGlow(isVisible: isChatOnScreen && !isHistoryPresented && !isSearchSheetPresented)
+        }
+        .ignoresSafeArea(.container)
+      }
+      .onAppear { isChatOnScreen = true }
+      .onDisappear { isChatOnScreen = false }
       // Tapping the conversation puts the keyboard away.
       .contentShape(Rectangle())
       .simultaneousGesture(TapGesture().onEnded { dismissKeyboard() })

@@ -25,11 +25,11 @@ extension MemoraModel {
   }
 
   @discardableResult
-  func stageAgentSuggestion(_ suggestion: AgentPromptSuggestion) -> Bool {
+  func selectAgentSuggestion(_ suggestion: AgentPromptSuggestion) -> Bool {
     guard aiMessages.isEmpty, !isAIChatResponding, composerDraft.isEmpty, composerAttachment == nil,
           agentPromptSuggestions.contains(suggestion) else { return false }
-    // Recompute the allowed sources at the moment of selection; no cached grant
-    // or draft is restored over something the person has already started typing.
+    // Revalidate access and the untouched composer before dispatching or staging.
+    if suggestion.sendsOnSelection { return sendAIChat(suggestion.prompt) }
     composerDraft = suggestion.prompt
     composerFocusRequest = UUID()
     return true

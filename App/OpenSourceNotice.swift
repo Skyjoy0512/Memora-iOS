@@ -21,6 +21,9 @@ struct OpenSourceNotice: Identifiable, Sendable {
   }
 
   static let all: [Self] = [
+    .init(id: "google-aurora", name: "Google ADK Recipes · Gemini Aurora", version: "9472726a (SwiftUIへの移植)", license: "Apache-2.0",
+      copyright: "Copyright 2026 Google LLC", files: ["GoogleADKRecipes-LICENSE.txt"],
+      url: "https://github.com/google/adk-recipes/tree/9472726a7eb239bc5e4bf1a5c6922286e658f5dc/core/python/adk-voice-agent"),
     .init(id: "json-render", name: "json-render / React / shadcn", version: "0.23.1 / 19.2.4", license: "Apache-2.0・MIT・第三者告知",
       copyright: "Vercel, Meta, Radix and contributors", files: ["JSONRenderLicenses.txt"],
       url: "https://github.com/vercel-labs/json-render"),

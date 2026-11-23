@@ -4,7 +4,6 @@ struct AgentActivityView: View {
   var steps: [AgentStep]
   var isRunning: Bool
   var isWaiting = false
-  var startedAt: Date?
   var openSource: ((UUID) -> Void)?
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var isExpanded = false
@@ -13,9 +12,6 @@ struct AgentActivityView: View {
     let summary = AgentActivitySummary(steps: steps, isRunning: isRunning, isWaiting: isWaiting)
     DisclosureGroup(isExpanded: $isExpanded) {
       VStack(alignment: .leading, spacing: 16) {
-        if isExpanded, isRunning, !isWaiting, let startedAt {
-          ElapsedText(since: startedAt).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-        }
         if steps.count > 24 { Text("直近24件を表示").font(.caption).foregroundStyle(.secondary) }
         ForEach(steps.suffix(24)) { step in
           VStack(alignment: .leading, spacing: 6) {

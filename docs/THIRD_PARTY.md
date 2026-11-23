@@ -157,3 +157,15 @@ and `JSONRenderLicenses.txt`. The latter is readable from Settings' open-source
 licenses. Upstream: https://github.com/vercel-labs/json-render (Apache-2.0).
 This integration does not import the monorepo's separate framework/platform,
 3D, video, email, PDF or server adapters.
+
+## Google ADK Recipes · Gemini Aurora
+
+Copyright 2026 Google LLC. Apache License 2.0.
+Sources at revision `9472726a7eb239bc5e4bf1a5c6922286e658f5dc` are
+[`GeminiAuroraCanvas.tsx`](https://github.com/google/adk-recipes/blob/9472726a7eb239bc5e4bf1a5c6922286e658f5dc/core/python/adk-voice-agent/web/src/components/stage/GeminiAuroraCanvas.tsx)
+and [`base.css`](https://github.com/google/adk-recipes/blob/9472726a7eb239bc5e4bf1a5c6922286e658f5dc/core/python/adk-voice-agent/web/src/styles/base.css).
+Memora ports the four elliptical gradients, screen blending, palette and trigonometric drift to
+SwiftUI Canvas. The adaptation moves the light to the top, adjusts opacity for light/dark themes,
+and drives motion from elapsed active time and Ask AI's response state.
+The [license](https://github.com/google/adk-recipes/blob/9472726a7eb239bc5e4bf1a5c6922286e658f5dc/LICENSE)
+ships as `App/Resources/GoogleADKRecipes-LICENSE.txt` and appears in Settings' open-source licenses.

@@ -215,13 +215,14 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 - Ask AI is one assistant with no mode switch. New chats show locally prepared
   agent-action suggestions, personalized only from real cloud-permitted personal
   records/tasks and never from sample content. A selection revalidates sources
-  and stages an editable draft without sending; existing drafts/attachments win.
+  and sends the task-candidate suggestion immediately. Other suggestions stage
+  an editable draft. Existing drafts and attachments take precedence.
   Keep no random greeting or idle glow. The empty chat has a static, faint Memora
   mark above the suggestion chips. `AskAIHeader` is one compact row:
-  sidebar / Memora (history and search menu) / new chat. Replies remain plain
+  sidebar / history and search menu / new chat. Replies remain plain
   text with no bubble, only the person's messages in `aiBubble`. `AskAIGlow`
-  keeps its processing mesh only while an answer is being formed, still under
-  Reduce Motion. Tab navigation and system Ask AI links preserve the conversation;
+  shows a native upper-screen Aurora while waiting for the first answer text.
+  Reduce Motion and Low Power Mode use a static frame. Tab navigation and system Ask AI links preserve the conversation;
   only the explicit new-chat action clears it. A bounded SQLite resume document
   (`AIConversationSnapshot`, `MemoraModel+Conversation`) restores settled messages
   and delivered resident posts per workspace. Interrupted operations never resume
@@ -261,8 +262,8 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   会話/ワークスペース変更、バックグラウンド、ストア保護、録音の開始で停止する。
   Volocal原版の英語STT/TTSは採用しない。`docs/LIVE_CONVERSATION.md` を参照。
 - While a reply is being formed, `ThinkingTraceView` shows one live status line
-  (考えています / 記録を探しています / 回答を書いています / 作業しています /
-  確認を待っています) with elapsed time. Actual `agentSteps` are available in a
+  (考えています / 記録を探しています / 回答を書いています / Webを検索しています /
+  確認を待っています). Actual `agentSteps` are available in a
   compact disclosure, retained after completion; ordinary answers need no fake
   steps. Show recorded tool events/results only, never private `reasoning` or an
   invented count/progress stage. Ask AI 2.0 follows `docs/ASK_AI_2_IMPLEMENTATION.md`.
