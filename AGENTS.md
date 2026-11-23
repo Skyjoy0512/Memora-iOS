@@ -220,9 +220,8 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Keep no random greeting or idle glow. The empty chat has a static, faint Memora
   mark above the suggestion chips. `AskAIHeader` is one compact row:
   sidebar / history and search menu / new chat. Replies remain plain
-  text with no bubble, only the person's messages in `aiBubble`. `AskAIGlow`
-  shows a native upper-screen Aurora while waiting for the first answer text.
-  Reduce Motion and Low Power Mode use a static frame. Tab navigation and system Ask AI links preserve the conversation;
+  text with no bubble, only the person's messages in `aiBubble`. Tab navigation
+  and system Ask AI links preserve the conversation;
   only the explicit new-chat action clears it. A bounded SQLite resume document
   (`AIConversationSnapshot`, `MemoraModel+Conversation`) restores settled messages
   and delivered resident posts per workspace. Interrupted operations never resume

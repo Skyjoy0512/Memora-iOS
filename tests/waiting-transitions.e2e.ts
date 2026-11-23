@@ -14,7 +14,6 @@ test('waiting text yields to streaming, stops for approval and terminal states',
   await expect(status).toHaveCount(2);
   await expect(screen.getByLabel('考えています', { exact: true }).first()).toBeVisible();
   await expect(screen.getByText(/^\d+(\.\d+)?s$/)).not.toBeVisible();
-  await app.screenshot('waiting-aurora');
   await expect(screen.getByRole('progressbar')).not.toBeVisible();
   const history = screen.getByLabel('実行状況 · 操作1件', { exact: true }).first();
   await tapControl(history);
