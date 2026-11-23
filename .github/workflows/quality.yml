@@ -1,9 +1,19 @@
 name: Host quality checks
 
-# GitHub Actions の予算上限に達したため、当面は手動実行のみ。
+# GitHub Actions の予算上限に達したため、完整スイートは手動実行のみ。
 # 予算が回復したら pull_request / push を戻す。
+# pull_request では、変更された入力に依存する軽い検査だけを回す。
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "App/**"
+      - "Shared/**"
+      - "tools/checks/check-motion-policy.py"
+      - "tools/checks/test_design_tokens.py"
+      - "tools/checks/ui-surface-audit.mjs"
+      - "tools/checks/run-leak-scan.sh"
+      - ".github/workflows/quality.yml"
 
 permissions:
   contents: read
@@ -13,6 +23,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  pull-request-gates:
+    # 予算を使わず、secret と design token / motion policy だけを検査する。
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Report the toolchain
+        run: |
+          python3 --version
+      - name: Scan for leaked credentials
+        run: bash tools/checks/run-leak-scan.sh
+      - name: Check the design tokens and the motion policy
+        run: |
+          python3 -B tools/checks/test_design_tokens.py
+          python3 -B tools/checks/check-motion-policy.py
+
   host-checks:
     # https://github.blog/changelog/2026-10-15-xcode-27-runner-image-generally-available/
     runs-on: xcode-27
