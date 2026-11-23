@@ -78,6 +78,7 @@ final class ChatGPTLoopbackCallbackServer: @unchecked Sendable {
   private var listener: NWListener?
   private var connections: [ObjectIdentifier: NWConnection] = [:]
   private var continuation: CheckedContinuation<(callback: ChatGPTLoopbackCallback, redirectURI: URL), Error>?
+  private var portContinuation: CheckedContinuation<UInt16, Error>?
   private var expectedState: String?
   private var port: UInt16?
   private var redirectURI: URL?
@@ -85,21 +86,90 @@ final class ChatGPTLoopbackCallbackServer: @unchecked Sendable {
   private var finished = false
   private var terminalError: ChatGPTLoopbackError?
 
-  /// Starts the listener and waits for the callback that matches `state`.
+  /// Waits for the callback that matches `state`.
+  ///
+  /// `start()` must have been called first, so the redirect URI carried by
+  /// the authorization request is the one this listener answers on, and
+  /// `expect(state:)` must have set the state the request carries.
+  ///
+  /// Returns the callback and the redirect URI that was used, so the
+  /// caller can send the same redirect URI with the code exchange.
+  ///
+  /// Throws `ChatGPTLoopbackError.unavailable` when the listener is not
+  /// running, and `ChatGPTLoopbackError.cancelled` when `cancel()` is
+  /// called before the callback arrives.
   func waitForCallback(state: String) async throws -> (callback: ChatGPTLoopbackCallback, redirectURI: URL) {
     guard !state.isEmpty else { throw ChatGPTLoopbackError.invalidCallback }
+    return try await withCheckedThrowingContinuation { continuation in
+      lock.lock()
+      guard !finished, self.continuation == nil, listener != nil else {
+        let error = terminalError ?? ChatGPTLoopbackError.unavailable
+        lock.unlock()
+        continuation.resume(throwing: error)
+        return
+      }
+      self.continuation = continuation
+      lock.unlock()
+    }
+  }
+
+  /// Binds the listener and returns the redirect URI it answers on.
+  ///
+  /// The authorization request must carry this exact URI, so the port has to
+  /// be known before the browser is opened. The listener waits for the
+  /// callback that matches the state afterwards.
+  func start() async throws -> URL {
     if Task.isCancelled {
       cancel()
       throw ChatGPTLoopbackError.cancelled
     }
 
-    return try await withTaskCancellationHandler {
-      try await withCheckedThrowingContinuation { continuation in
-        startWaiting(state: state, continuation: continuation)
+    let port = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<UInt16, Error>) in
+      lock.lock()
+      if finished {
+        let error = terminalError ?? ChatGPTLoopbackError.unavailable
+        lock.unlock()
+        continuation.resume(throwing: error)
+        return
       }
-    } onCancel: {
-      cancel()
+      guard !started else {
+        lock.unlock()
+        continuation.resume(throwing: ChatGPTLoopbackError.unavailable)
+        return
+      }
+      started = true
+      portContinuation = continuation
+      lock.unlock()
+
+      let listener: NWListener
+      do {
+        listener = try Self.makeListener()
+      } catch {
+        finish(.failure(.unavailable))
+        return
+      }
+
+      lock.lock()
+      guard !finished, self.listener == nil else {
+        lock.unlock()
+        listener.cancel()
+        return
+      }
+      self.listener = listener
+      listener.stateUpdateHandler = { [weak self] state in
+        self?.listenerStateChanged(state)
+      }
+      listener.newConnectionHandler = { [weak self] connection in
+        self?.accept(connection)
+      }
+      lock.unlock()
+      listener.start(queue: queue)
     }
+    guard let url = URL(string: "http://127.0.0.1:\(port)\(Self.callbackPath)") else {
+      cancel()
+      throw ChatGPTLoopbackError.unavailable
+    }
+    return url
   }
 
   /// Stops the listener and completes an outstanding wait as cancelled.
@@ -107,48 +177,16 @@ final class ChatGPTLoopbackCallbackServer: @unchecked Sendable {
     finish(.failure(.cancelled))
   }
 
-  private func startWaiting(state: String,
-    continuation: CheckedContinuation<(callback: ChatGPTLoopbackCallback, redirectURI: URL), Error>) {
+  /// Sets the state the callback must carry.
+  ///
+  /// The state belongs to the authorization request, so it is known only
+  /// after the request was built, which happens after the listener bound its
+  /// port. A callback with another state is refused and does not end the
+  /// wait.
+  func expect(state: String) {
     lock.lock()
-    if finished {
-      let error = terminalError ?? ChatGPTLoopbackError.unavailable
-      lock.unlock()
-      continuation.resume(throwing: error)
-      return
-    }
-    guard !started, self.continuation == nil, listener == nil else {
-      lock.unlock()
-      continuation.resume(throwing: ChatGPTLoopbackError.unavailable)
-      return
-    }
-    started = true
     expectedState = state
-    self.continuation = continuation
     lock.unlock()
-
-    let listener: NWListener
-    do {
-      listener = try Self.makeListener()
-    } catch {
-      finish(.failure(.unavailable))
-      return
-    }
-
-    lock.lock()
-    guard !finished, self.listener == nil else {
-      lock.unlock()
-      listener.cancel()
-      return
-    }
-    self.listener = listener
-    listener.stateUpdateHandler = { [weak self] state in
-      self?.listenerStateChanged(state)
-    }
-    listener.newConnectionHandler = { [weak self] connection in
-      self?.accept(connection)
-    }
-    lock.unlock()
-    listener.start(queue: queue)
   }
 
   private static func makeListener() throws -> NWListener {
@@ -174,7 +212,10 @@ final class ChatGPTLoopbackCallbackServer: @unchecked Sendable {
       }
       port = selectedPort
       redirectURI = url
+      let pendingPort = portContinuation
+      portContinuation = nil
       lock.unlock()
+      pendingPort?.resume(returning: selectedPort)
     case .failed(_), .cancelled:
       finish(.failure(.unavailable))
     default:
@@ -408,6 +449,7 @@ final class ChatGPTLoopbackCallbackServer: @unchecked Sendable {
     var stoppedListener: NWListener?
     var cancelledConnections: [NWConnection] = []
     var wait: CheckedContinuation<(callback: ChatGPTLoopbackCallback, redirectURI: URL), Error>?
+    var pendingPort: CheckedContinuation<UInt16, Error>?
 
     lock.lock()
     guard !finished else {
@@ -434,6 +476,8 @@ final class ChatGPTLoopbackCallbackServer: @unchecked Sendable {
     }
     wait = continuation
     continuation = nil
+    pendingPort = portContinuation
+    portContinuation = nil
     expectedState = nil
     redirectURI = nil
     lock.unlock()
@@ -446,6 +490,9 @@ final class ChatGPTLoopbackCallbackServer: @unchecked Sendable {
       connection.cancel()
     }
 
+    if let pendingPort {
+      pendingPort.resume(throwing: terminalError ?? ChatGPTLoopbackError.unavailable)
+    }
     if let wait = wait {
       switch result {
       case .success(let value):
