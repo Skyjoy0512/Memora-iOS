@@ -18,6 +18,7 @@ enum CloudTranscriptionService {
   /// so an oversized recording is explained rather than failing mid-upload.
   private static let openAILimit = 25 * 1024 * 1024
   private static let deepgramLimit = 2 * 1024 * 1024 * 1024
+  private static let session = CloudHTTPTransport.hardenedSession(timeoutInterval: 600)
 
   static func transcribe(
     fileURL: URL,
@@ -126,7 +127,8 @@ enum CloudTranscriptionService {
     guard await authorize() else { throw CancellationError() }
     let diagnostic = AudioProcessingDiagnostics.current
     let upload = diagnostic?.begin(.upload, audioSeconds: diagnostic?.snapshot.audioSeconds)
-    let (data, response) = try await URLSession.shared.upload(for: request, fromFile: bodyURL)
+    let (data, response) = try await session.upload(for: request, fromFile: bodyURL)
+    try CloudHTTPTransport.rejectRefusedRedirect(response)
     try validate(response)
     diagnostic?.end(upload, outcome: .success)
     let decode = diagnostic?.begin(.decode)
@@ -158,7 +160,8 @@ enum CloudTranscriptionService {
     guard await authorize() else { throw CancellationError() }
     let diagnostic = AudioProcessingDiagnostics.current
     let upload = diagnostic?.begin(.upload, audioSeconds: diagnostic?.snapshot.audioSeconds)
-    let (data, response) = try await URLSession.shared.upload(for: request, fromFile: fileURL)
+    let (data, response) = try await session.upload(for: request, fromFile: fileURL)
+    try CloudHTTPTransport.rejectRefusedRedirect(response)
     try validate(response)
     diagnostic?.end(upload, outcome: .success)
     let decode = diagnostic?.begin(.decode)

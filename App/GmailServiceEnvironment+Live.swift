@@ -1,5 +1,7 @@
 import Foundation
 
+private let gmailLiveSession = CloudHTTPTransport.hardenedSession()
+
 extension GmailServiceEnvironment {
   static var live: Self {
     let authorization = GmailAuthorizationSession()
@@ -16,7 +18,11 @@ extension GmailServiceEnvironment {
       setLocallyDisconnected: { UserDefaults.standard.set($0, forKey: "memora.gmail.disconnected") },
       authorize: { try await authorization.authorize(url: $0, scheme: $1) },
       cancelAuthorization: { authorization.cancel() },
-      transport: { try await URLSession.shared.data(for: $0) },
+      transport: { request in
+        let (data, response) = try await gmailLiveSession.data(for: request)
+        try CloudHTTPTransport.rejectRefusedRedirect(response)
+        return (data, response)
+      },
       now: { .now }
     )
   }

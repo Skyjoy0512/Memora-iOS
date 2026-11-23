@@ -1,6 +1,8 @@
 import Foundation
 
 struct FirebaseMarketplaceClient {
+  private static let session = CloudHTTPTransport.hardenedSession()
+
   static var endpoint: URL? {
     guard let raw = Bundle.main.object(forInfoDictionaryKey: "MemoraMarketplaceURL") as? String,
           let url = URL(string: raw), url.scheme == "https", url.host != nil,
@@ -18,7 +20,8 @@ struct FirebaseMarketplaceClient {
     if authenticated { request.setValue("Bearer \(try await FirebaseCommunitySession.shared.token())", forHTTPHeaderField: "Authorization") }
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
     guard !authenticated || generation == FirebaseCommunitySession.shared.generation else { throw CommunityError.loginRequired }
-    let (bytes,response) = try await URLSession.shared.data(for: request)
+    let (bytes,response) = try await Self.session.data(for: request)
+    try CloudHTTPTransport.rejectRefusedRedirect(response)
     guard !authenticated || generation == FirebaseCommunitySession.shared.generation else { throw CommunityError.loginRequired }
     guard bytes.count <= 2 * 1024 * 1024 else { throw CommunityError.invalidContent }
     guard let response = response as? HTTPURLResponse, (200...299).contains(response.statusCode) else {

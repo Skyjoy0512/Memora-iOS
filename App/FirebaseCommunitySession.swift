@@ -12,7 +12,8 @@ final class FirebaseCommunitySession {
   @ObservationIgnored private var refreshing: Task<String, Error>?
   var isSignedIn: Bool { accessToken != nil || (!Self.apiKey.isEmpty && KeychainStore.has(credentialKey)) }
   nonisolated static var apiKey: String { Bundle.main.object(forInfoDictionaryKey: "MemoraFirebaseAPIKey") as? String ?? "" }
-  private var credentialKey: String { "marketplace.firebase.refresh." + Self.apiKey }
+  private var credentialKey: String { "marketplace.firebase.refresh" }
+  private static let session = CloudHTTPTransport.hardenedSession(timeoutInterval: 20)
 
   func signIn(email: String, password: String, create: Bool) async throws {
     guard !Self.apiKey.isEmpty else { throw CommunityError.unconfigured }
@@ -44,7 +45,8 @@ final class FirebaseCommunitySession {
     request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
     var form = URLComponents(); form.queryItems = [URLQueryItem(name:"grant_type",value:"refresh_token"),URLQueryItem(name:"refresh_token",value:refresh)]
     request.httpBody = form.percentEncodedQuery?.data(using: .utf8)
-    let (bytes,response) = try await URLSession.shared.data(for: request)
+    let (bytes,response) = try await Self.session.data(for: request)
+    try CloudHTTPTransport.rejectRefusedRedirect(response)
     guard (response as? HTTPURLResponse)?.statusCode == 200, expected == generation,
           let object = try JSONSerialization.jsonObject(with: bytes) as? [String:Any],
           let token = object["id_token"] as? String, let replacement = object["refresh_token"] as? String,
@@ -69,7 +71,8 @@ final class FirebaseCommunitySession {
     request.httpMethod = "POST"; request.timeoutInterval = 20
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
-    let (bytes,response) = try await URLSession.shared.data(for: request)
+    let (bytes,response) = try await Self.session.data(for: request)
+    try CloudHTTPTransport.rejectRefusedRedirect(response)
     guard (response as? HTTPURLResponse)?.statusCode == 200,
           let result = try JSONSerialization.jsonObject(with: bytes) as? [String:Any] else {
       throw CommunityError.server("ログインできません。メールアドレス・パスワードと接続状態を確認してください。")

@@ -9,6 +9,7 @@ enum LLMModelListService {
     "embed", "tts", "whisper", "transcribe", "dall-e", "image", "moderation",
     "audio", "realtime", "speech", "search", "rerank", "ocr", "babbage", "davinci"
   ]
+  private static let session = CloudHTTPTransport.hardenedSession()
 
   static func fetchModels(for provider: LLMProvider) async throws -> [String] {
     guard let key = KeychainStore.string(forKey: provider.keychainAccount), !key.isEmpty else {
@@ -25,7 +26,8 @@ enum LLMModelListService {
       request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
     }
 
-    let (data, response) = try await URLSession.shared.data(for: request)
+    let (data, response) = try await session.data(for: request)
+    try CloudHTTPTransport.rejectRefusedRedirect(response)
     try CloudAIService.validate(response)
     let decoded = try JSONDecoder().decode(ModelList.self, from: data)
     let ids = decoded.data.map { id in

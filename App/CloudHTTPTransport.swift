@@ -43,6 +43,34 @@ final class CloudHTTPTransport: @unchecked Sendable {
 
   deinit { session.invalidateAndCancel() }
 
+  enum RefusedRedirectError: Error, Equatable {
+    /// A provider answered with a redirect. Following it could carry
+    /// credentials or source text to an origin the person never selected.
+    case refusedRedirect
+  }
+
+  /// One session for requests that carry a person's credentials. It keeps no
+  /// cookies, credential storage or cache, and its delegate never follows a
+  /// redirect.
+  static func hardenedSession(timeoutInterval: TimeInterval = 30) -> URLSession {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.timeoutIntervalForRequest = timeoutInterval
+    configuration.timeoutIntervalForResource = timeoutInterval
+    configuration.httpCookieStorage = nil
+    configuration.httpShouldSetCookies = false
+    configuration.urlCredentialStorage = nil
+    configuration.urlCache = nil
+    configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+    return URLSession(configuration: configuration, delegate: RedirectGuard(), delegateQueue: nil)
+  }
+
+  /// The delegate above refuses redirects; this turns the resulting 3xx into an
+  /// explicit error before a body reaches a decoder or a status check.
+  static func rejectRefusedRedirect(_ response: URLResponse) throws {
+    guard let http = response as? HTTPURLResponse, (300...399).contains(http.statusCode) else { return }
+    throw RefusedRedirectError.refusedRedirect
+  }
+
   func admit(_ request: URLRequest) async throws -> SummaryRequestAdmission.Permit? {
     _ = try bind(request, countRequest: false)
     let fields = [endpoint.absoluteString, request.value(forHTTPHeaderField: "Authorization") ?? "",
