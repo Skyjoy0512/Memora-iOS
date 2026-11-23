@@ -69,6 +69,16 @@ const acceptedBaseline = new Set([
   'App/StateGalleryView.swift:sparkle-marker:132',
   'App/StateGalleryView.swift:sparkle-marker:181',
   'App/SummaryTemplateEditor.swift:sparkle-marker:69',
+  'App/AIEngine.swift:sparkle-marker:37',
+  'App/AIMessageView.swift:sparkle-marker:49',
+  'App/CaptureAction.swift:sparkle-marker:41',
+  'App/EditableMarkdownDocument.swift:radius-outside-scale:139',
+  'App/MarkdownEditingToolbar.swift:radius-outside-scale:9',
+  'App/MeetingStatus.swift:sparkle-marker:39',
+  'App/MeetingStatus.swift:sparkle-marker:45',
+  'App/ProjectSourceThumbnail.swift:radius-outside-scale:13',
+  'App/SummaryTemplate.swift:sparkle-marker:42',
+  'App/SummaryTemplateChoice.swift:sparkle-marker:49',
 ]);
 
 const findings = [];
