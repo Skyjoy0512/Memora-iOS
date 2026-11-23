@@ -10,6 +10,8 @@ enum FeatureFlags {
   /// place; turning this on brings back ＋ › 電話をかける and its previews.
   static let isCallingEnabled = false
 
+  static let isOnlineMeetingCaptureEnabled = false
+
   /// Live conversation is built but only compiled into explicitly enabled
   /// debug builds. Both DEBUG and MEMORA_ENABLE_LIVE_CONVERSATION are required;
   /// ordinary Debug and Release builds keep it disabled with no runtime switch.

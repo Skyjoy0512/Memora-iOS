@@ -154,6 +154,12 @@ struct MeetingDetailView: View {
             applyPlaybackRequest(request.time, meeting: meeting, proxy: proxy, segmentID: request.segmentID)
             model.detailPlaybackRequest = nil
           }
+          .onChange(of: model.recordAIEditDestination) { _, destination in
+            guard let destination, destination.id == meeting.id, model.isActiveDetail(meeting.id) else { return }
+            selectedSection = destination.field == .summary ? .summary : .notes
+            proxy.scrollTo(ScrollTarget.top, anchor: .top)
+            model.recordAIEditDestination = nil
+          }
           .onDisappear {
             model.popActiveDetail(meeting.id, tab: detailTab)
             model.isDetailComposerVisible = true

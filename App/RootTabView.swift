@@ -9,6 +9,7 @@ struct RootTabView: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.scenePhase) private var scenePhase
   @State private var isComposing = false
+  @State private var recordAIEdit: RecordAIEdit.Destination?
   @State private var isSidebarOpen = false
   @State private var pendingSidebarAction: (() -> Void)?
   @State private var isKeyboardVisible = false
@@ -350,6 +351,26 @@ struct RootTabView: View {
           )
       }
 
+      if shouldShowComposer, !isComposing, !isKeyboardVisible,
+         model.currentTeamID == nil, !model.isRestoring, !model.isStoreProtected,
+         case .file(let id) = composerScope, model.isActiveDetail(id),
+         let meeting = model.meeting(id: id) {
+        Button {
+          let field: RecordAIEdit.Field = RecordAIEdit.Field.summary.isEditable(in: meeting) ? .summary : .notes
+          recordAIEdit = RecordAIEdit.Destination(id: id, field: field)
+        } label: {
+          Label("AIに編集を指示", icon: .sparkles)
+            .font(.subheadline.weight(.medium))
+            .padding(.horizontal, MemoraSpacing.lg)
+            .frame(minHeight: MemoraSpacing.touchTarget)
+            .memoraGlass(in: Capsule(), interactive: true)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("record.aiEdit.open")
+        .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
+        .padding(.horizontal, 12)
+      }
+
       // These controls are independent surfaces. A shared glass container can
       // intercept native menu rows where they overlap the composer's surface.
       Group {
@@ -382,9 +403,14 @@ struct RootTabView: View {
 
     }
     .padding(.top, 4)
+    .sheet(item: $recordAIEdit) { destination in
+      RecordAIEditSheet(recordID: destination.id, initialField: destination.field) { field in
+        model.recordAIEditDestination = RecordAIEdit.Destination(id: destination.id, field: field)
+      }
+    }
     // The tab row reserves the home inset whenever it is visible.
     .padding(.bottom, showsPrimaryTabs ? MemoraSpacing.xs : (isKeyboardVisible ? 14 : safeAreaInsets.bottom))
-    .animation(reduceMotion || model.selectedTab == .askAI ? nil : MemoraMotion.control, value: isComposing)
+    .animation(nil, value: isComposing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.activePlayback != nil)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isInlineEditing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)

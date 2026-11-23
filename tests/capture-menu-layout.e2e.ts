@@ -2,7 +2,7 @@ import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { launchMemora, openSettingsGallery, tapControl } from './ui-helpers';
 
-test('attachment menu retains the composer and capture sheet only shows four actions', { timeout: 150_000 }, async ({ app, device, screen }) => {
+test('attachment menu retains the composer and capture sheet shows three actions', { timeout: 150_000 }, async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   const composer = screen.getByTestId('ai.composer.input');
   await expect(composer).toBeVisible();
@@ -18,13 +18,13 @@ test('attachment menu retains the composer and capture sheet only shows four act
   await screen.tapAt({ x: 220, y: 95 });
   await expect(screen.getByRole('button', { name: 'ファイルを選択…', exact: true })).not.toBeVisible();
   await tapControl(screen.getByRole('button', { name: '追加メニュー', exact: true }));
-  for (const name of ['録音する', '音声を取り込む', 'オンライン会議を録音', 'ノートを追加']) {
+  for (const name of ['録音する', '音声を取り込む', 'ノートを追加']) {
     await expect(screen.getByRole('button', { name, exact: true })).toBeVisible();
   }
-  for (const name of ['カメラ', '写真', 'ファイル', 'リンク', '閉じる']) {
+  for (const name of ['オンライン会議を録音', 'カメラ', '写真', 'ファイル', 'リンク', '閉じる']) {
     await expect(screen.getByRole('button', { name, exact: true })).not.toBeVisible();
   }
-  await app.screenshot('capture-sheet-four-actions');
+  await app.screenshot('capture-sheet-three-actions');
   await tapControl(screen.getByRole('button', { name: 'ノートを追加', exact: true }));
   await expect(screen.getByRole('textbox', { name: 'タイトル', exact: true })).toBeVisible();
   await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }));

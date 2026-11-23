@@ -14,7 +14,6 @@ struct UpcomingEventsRow: View {
     VStack(alignment: .leading, spacing: 10) {
       Text("次のイベント")
         .font(.title3.bold())
-        .padding(.horizontal, MemoraSpacing.lg)
         .accessibilityAddTraits(.isHeader)
 
       ScrollView(.horizontal) {
@@ -27,19 +26,15 @@ struct UpcomingEventsRow: View {
             }
             .buttonStyle(.plain)
             .accessibilityHint("録音方法を選びます")
-            // One card fills most of the width, so the next one peeks in and
-            // shows there is more to swipe to.
-            .containerRelativeFrame(.horizontal) { width, _ in
-              meetings.count > 1 ? width * 0.86 : width
-            }
+            .containerRelativeFrame(.horizontal)
           }
         }
         .scrollTargetLayout()
       }
       .scrollIndicators(.hidden)
       .scrollTargetBehavior(.viewAligned)
-      .contentMargins(.horizontal, 18, for: .scrollContent)
     }
+    .padding(.horizontal, ProjectLayout.horizontalInset)
     .sheet(item: $chosenMeeting) { meeting in
       RecordingMethodSheet(meeting: meeting, onChoose: { method in
         chosenMeeting = nil

@@ -5,7 +5,8 @@ struct CaptureMenuSheet: View {
   @Environment(\.dynamicTypeSize) private var typeSize
   @Environment(\.verticalSizeClass) private var verticalSizeClass
 
-  private static let items: [CaptureSheetAction] = [.recording, .importAudio, .onlineMeeting, .newNote]
+  private static let items: [CaptureSheetAction] = FeatureFlags.isOnlineMeetingCaptureEnabled
+    ? [.recording, .importAudio, .onlineMeeting, .newNote] : [.recording, .importAudio, .newNote]
   private let cornerRadius: CGFloat = 32
 
   var body: some View {
@@ -40,7 +41,7 @@ struct CaptureMenuSheet: View {
     .presentationBackground(.regularMaterial)
     .presentationCornerRadius(cornerRadius)
     .presentationDetents(typeSize.isAccessibilitySize || verticalSizeClass == .compact
-      ? [.large] : [.height(300), .large])
+      ? [.large] : [.height(84 + CGFloat(Self.items.count) * 56), .large])
     .presentationDragIndicator(.visible)
     .presentationContentInteraction(.scrolls)
   }

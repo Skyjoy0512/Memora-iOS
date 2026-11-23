@@ -62,7 +62,8 @@ struct RecordingMethodSheet: View {
   }
 
   private var methods: [RecordingMethod] {
-    meeting.isOnline ? [.online, .inPerson] : [.inPerson, .online]
+    guard FeatureFlags.isOnlineMeetingCaptureEnabled else { return [.inPerson] }
+    return meeting.isOnline ? [.online, .inPerson] : [.inPerson, .online]
   }
 
   private func row(for method: RecordingMethod) -> some View {

@@ -236,8 +236,8 @@ struct AIComposerBar: View {
     .animation(reduceMotion ? nil : MemoraMotion.control, value: attachment)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: hasContent)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: speechInput.isListening)
-    // Keyboard movement owns the Ask AI transition; a second spring makes the glass lag behind.
-    .animation(isConversation || reduceMotion ? nil : MemoraMotion.control, value: isExpanded)
+    // Keyboard movement owns this transition on every tab.
+    .animation(nil, value: isExpanded)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isEditorTall)
     .interactionFeedback(.tap, trigger: speechInput.isListening)
     .onChange(of: hasContent) { _, hasContent in

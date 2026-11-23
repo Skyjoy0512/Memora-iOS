@@ -15,10 +15,7 @@ struct AIComposerAttachmentButton: View {
         onOpen()
         onPresentChatSheet?()
       } label: {
-        Image(icon: .paperclip, size: 20)
-          .frame(width: 36, height: 36)
-          .background(MemoraPalette.card, in: Circle())
-          .frame(width: 44, height: 44).contentShape(Circle())
+        attachmentIcon
       }
       .buttonStyle(.plain)
       .accessibilityLabel("チャットに追加")
@@ -35,14 +32,21 @@ struct AIComposerAttachmentButton: View {
           }
         }
       } label: {
-        ToolbarActionLabel("添付を追加", icon: .paperclip)
-          .environment(\.memoraToolbarControlSize, MemoraSpacing.touchTarget)
+        attachmentIcon
       }
       .buttonStyle(.plain)
-      .frame(width: MemoraSpacing.touchTarget, height: MemoraSpacing.touchTarget)
       .accessibilityLabel("添付を追加")
       .accessibilityHint(offersMentions ? "写真、ファイル、音声の添付やメンションを選びます" : "写真、ファイル、音声を添付します")
       .simultaneousGesture(TapGesture().onEnded { onOpen() })
     }
+  }
+
+  private var attachmentIcon: some View {
+    Image(icon: .paperclip, size: 20)
+      .frame(width: 36, height: 36)
+      .background(MemoraPalette.card, in: Circle())
+      .frame(width: 44, height: 44)
+      .contentShape(Circle())
+      .accessibilityHidden(true)
   }
 }

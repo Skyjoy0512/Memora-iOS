@@ -14,6 +14,7 @@ extension MemoraModel {
       startNewAIChat()
     case .phoneCall: openCalling()
     case .onlineMeeting:
+      guard FeatureFlags.isOnlineMeetingCaptureEnabled else { return }
       onlineMeetingCaptureSpaceID = projectID
       isOnlineMeetingCapturePresented = true
     case .importAudio: break

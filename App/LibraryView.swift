@@ -142,7 +142,7 @@ struct LibraryView: View {
       }
       .memoraAppear()
       .background(MemoraPalette.background)
-      .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : (isSearching ? "" : "ライブラリ"))
+      .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : "")
       .navigationBarTitleDisplayMode(.inline)
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: model.librarySection.searchPrompt,
         selection: isSelectionMode ? (selectedMeetingIDs.count, endSelection) : nil)
@@ -155,9 +155,9 @@ struct LibraryView: View {
         completedSourceRequest = request
       }
       .toolbar {
-        if !isSearching {
+        if isSelectionMode && !isSearching {
           ToolbarItem(placement: .principal) {
-            Text(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : "ライブラリ")
+            Text("\(selectedMeetingIDs.count)件を選択")
               .font(.headline)
               .lineLimit(1)
           }
@@ -332,7 +332,6 @@ struct LibraryView: View {
         Divider()
           .padding(.horizontal, MemoraSpacing.screen)
       }
-      // The row pages edge to edge; its own margins line the cards up.
       .disabled(isSelectionMode)
       .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 12, trailing: 0))
       .listRowSeparator(.hidden)
@@ -428,6 +427,8 @@ struct LibraryView: View {
               .font(MemoraTypography.secondary.weight(.medium))
               .foregroundStyle(MemoraPalette.textSecondary)
               .textCase(nil)
+              .listRowInsets(EdgeInsets(top: 0, leading: ProjectLayout.horizontalInset,
+                bottom: 0, trailing: ProjectLayout.horizontalInset))
           }
         }
 

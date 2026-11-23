@@ -15,7 +15,7 @@ struct CaptureMenuPopover: View {
     case .recording:
       action(.recording)
       action(.importAudio)
-      action(.onlineMeeting)
+      if FeatureFlags.isOnlineMeetingCaptureEnabled { action(.onlineMeeting) }
     case .all:
       action(.recording)
       Divider()

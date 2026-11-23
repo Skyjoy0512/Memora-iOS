@@ -10,9 +10,14 @@ enum CaptureAction: CaseIterable, Identifiable {
 
   var id: Self { self }
 
-  /// Full empty-state actions; calling waits behind its flag.
   static var available: [CaptureAction] {
-    allCases.filter { $0 != .phoneCall || FeatureFlags.isCallingEnabled }
+    allCases.filter { action in
+      switch action {
+      case .phoneCall: FeatureFlags.isCallingEnabled
+      case .onlineMeeting: FeatureFlags.isOnlineMeetingCaptureEnabled
+      default: true
+      }
+    }
   }
 
   var title: String {

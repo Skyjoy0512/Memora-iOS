@@ -437,6 +437,7 @@ final class MemoraModel {
   /// Asked by a source line to bring the open detail to its transcript at a
   /// time, instead of stacking a second copy of the same record.
   var detailPlaybackRequest: DetailPlaybackRequest?
+  var recordAIEditDestination: RecordAIEdit.Destination?
   /// The playback running for the detail on screen, so its transport can live in
   /// the floating controls above the composer instead of over them.
   var activePlayback: AudioPlayerService?
