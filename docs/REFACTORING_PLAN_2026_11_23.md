@@ -275,22 +275,22 @@ AGENTS.md は「Both Ask AI paths capture `askAIConfiguration` once per question
 `bitrig preview -platform iOS` を実行して表示を確認する**。
 
 ### Phase 1: リークと死んだコードの解消（低リスク・効果確実）
-- [ ] **H2**: `SpeechInputService` / `AudioPlayerService` の stopper 解除
-- [ ] **H3**: `projectTaskCounts` の削除
+- [x] **H2**: `SpeechInputService` / `AudioPlayerService` の stopper 解除
+- [x] **H3**: `projectTaskCounts` の削除
 - [ ] **H4**: `isDetailComposerVisible` の扱い決定（実装 or 削除）
-- [ ] **M8**: モデル層の `Task { }` 30 箇所の `[weak self]`
+- [x] **M8**: モデル層の `Task { }` の `[weak self]`（長命な常駐エージェント実行のみ。他はタスクの所有権管理があり意図的な保持のため対象外）
 - [ ] **M4**: `SheetCloseButton` 共通化（2 箇所の不整合も修正）
 - [ ] 検証: ビルド成功、`SelfChecks` 実行、録音→停止→録音の再繰り返しで stopper が貯まらないことを確認
 
 ### Phase 2: 一時更新の副作用分離（性能の中核）
-- [ ] **H1**: `meetings.didSet` の副作用を構造的変更と一時的更新で分離
+- [x] **H1**: `meetings.didSet` の副作用を構造的変更と一時的更新で分離
 - [ ] 検証: 要約生成・文字起こしの進捗表示中に、FTS インデックスが
       破棄されないことをデバッグ計測で確認。**画面表示は一切変えない**
 
 ### Phase 3: 派生値のキャッシュ
-- [ ] **M1**: `toolRegistry()` のキャッシュ
-- [ ] **M2**: `allSummaryChoices` のキャッシュ
-- [ ] `recordAccessRevision(for:)` / `recordAccessRevision` のキャッシュ検討
+- [x] **M1**: `toolRegistry()` のキャッシュ
+- [x] **M2**: `allSummaryChoices` のキャッシュ
+- [x] `recordAccessRevision(for:)` のキャッシュ検討 → **.keyの構築自体が元の計算と同コスト**（全件走査+フィルタ+ソート+hashing）のため効果なし。スキップ
 - [ ] 検証: エージェント 1 ターンの `toolRegistry()` 呼び出し回数が減ることを計測
 
 ### Phase 4: ility の一貫性（挙動不変の整理）
