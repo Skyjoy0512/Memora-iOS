@@ -31,6 +31,7 @@ struct AIComposerBar: View {
   var removeMention: ((ComposerMention) -> Void)?
   var mentionScope: AIQueryScope = .global
   var dismissMentionMenu: (() -> Void)?
+  var recordEditControls: RecordEditControls?
   @State private var textSelection: TextSelection?
   @State private var fallbackInput = ComposerInputState()
   @State private var isEditorTall = false
@@ -65,6 +66,12 @@ struct AIComposerBar: View {
   @FocusState private var isFieldFocused: Bool
   @Namespace private var controlsNamespace
 
+  struct RecordEditControls {
+    var field: Binding<RecordAIEdit.Field>
+    var fields: [RecordAIEdit.Field]
+    var close: () -> Void
+  }
+
   /// The capsule's height while collapsed; its corners make it fully round.
   private static let collapsedHeight: CGFloat = 56
   /// The focused field grows above the controls without replacing its editor.
@@ -72,7 +79,7 @@ struct AIComposerBar: View {
 
   /// Open while typing, or while there is text or an attachment to send.
   private var isExpanded: Bool {
-    isFieldFocused || hasContent || speechInput.isListening || restoresAttachmentFocus || restoresModelFocus
+    recordEditControls != nil || isFieldFocused || hasContent || speechInput.isListening || restoresAttachmentFocus || restoresModelFocus
   }
 
   // A waiting draft is not active editing: keep navigation available after blur.
@@ -110,9 +117,9 @@ struct AIComposerBar: View {
       .submitLabel(.send)
       .onSubmit(submit)
       .focused($isFieldFocused)
-      .accessibilityLabel("メッセージ")
+      .accessibilityLabel(recordEditControls == nil ? "メッセージ" : "AIへの編集指示")
       .accessibilityHint(contextHint)
-      .accessibilityIdentifier("ai.composer.input")
+      .accessibilityIdentifier(recordEditControls == nil ? "ai.composer.input" : "record.aiEdit.instruction")
       .accessibilityHidden(isDictating || isVoiceConversation)
       .padding(.vertical, MemoraSpacing.sm)
       // The field takes the width it needs and grows as text is added; the
@@ -123,7 +130,8 @@ struct AIComposerBar: View {
         ComposerInputObserver(state: mentionInput ?? fallbackInput, isActive: isFieldFocused)
       }
       .onChange(of: model.composerMentionCursorRequest) { _, request in
-        guard let request, let range = Range(NSRange(location: request.offset, length: 0), in: text) else { return }
+        guard recordEditControls == nil, let request,
+              let range = Range(NSRange(location: request.offset, length: 0), in: text) else { return }
         textSelection = TextSelection(insertionPoint: range.lowerBound)
       }
   }
@@ -193,6 +201,9 @@ struct AIComposerBar: View {
             if isConversation {
               modelButton
             }
+            if let controls = recordEditControls {
+              recordEditFieldPicker(controls)
+            }
             if isEditorTall || AIComposerLayoutPolicy.offersExpansion(for: text) {
               MemoraIconButton(isEditorTall ? "入力欄を小さくする" : "入力欄を広げる",
                 icon: isEditorTall ? .chevronDown : .chevronUp) {
@@ -219,7 +230,7 @@ struct AIComposerBar: View {
       .memoraGlass(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous),
         interactive: true, backed: false)
       .overlay(alignment: usesStackedLayout ? .bottomLeading : .leading) {
-        attachmentMenu
+        leadingControl
           .padding(.leading, usesStackedLayout ? MemoraSpacing.sm : MemoraSpacing.xs)
           .padding(.bottom, usesStackedLayout ? MemoraSpacing.sm : 0)
       }
@@ -265,13 +276,12 @@ struct AIComposerBar: View {
         isFieldFocused = true
       }
     }
-    .onAppear {
+    .task {
       guard autofocus else { return }
-      Task { @MainActor in
-        // Give the field a moment to join the window before focusing it.
-        try? await Task.sleep(for: .milliseconds(350))
-        isFieldFocused = true
-      }
+      // Give the field a moment to join the window before focusing it.
+      try? await Task.sleep(for: .milliseconds(350))
+      guard !Task.isCancelled else { return }
+      isFieldFocused = true
     }
     .onDisappear {
       externalFocusTask?.cancel()
@@ -416,6 +426,41 @@ struct AIComposerBar: View {
     .foregroundStyle(.secondary)
   }
 
+  @ViewBuilder
+  private var leadingControl: some View {
+    if let controls = recordEditControls {
+      Button(action: controls.close) {
+        Image(icon: .xmark, size: 18)
+          .frame(width: 36, height: 36)
+          .background(MemoraPalette.card, in: Circle())
+          .frame(width: 44, height: 44)
+          .contentShape(Circle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel("AI編集を閉じる")
+      .accessibilityIdentifier("record.aiEdit.close")
+    } else {
+      attachmentMenu
+    }
+  }
+
+  @ViewBuilder
+  private func recordEditFieldPicker(_ controls: RecordEditControls) -> some View {
+    if controls.fields.count > 1 {
+      Picker("編集する内容", selection: controls.field) {
+        ForEach(controls.fields) { field in Text(field.title).tag(field) }
+      }
+      .pickerStyle(.menu)
+      .tint(MemoraPalette.textPrimary)
+      .accessibilityIdentifier("record.aiEdit.field")
+    } else {
+      Text(controls.field.wrappedValue.title)
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+        .accessibilityLabel("編集する内容：\(controls.field.wrappedValue.title)")
+    }
+  }
+
   private var attachmentMenu: some View {
     AIComposerAttachmentButton(offersMentions: onMentionMenu != nil,
       usesChatSheet: isConversation, onPresentChatSheet: {
@@ -476,44 +521,46 @@ struct AIComposerBar: View {
   }
 
   private var actionButton: some View {
-    Button {
+    let showsFilledAction = recordEditControls != nil || isConversation || onStop != nil || canSend || isBusy || speechInput.isListening
+    return Button {
       if let onStop { onStop() }
       else if canSend {
         submit()
-      } else if !isBusy {
+      } else if recordEditControls == nil && !isBusy {
         if isConversation { startVoiceConversation() }
         else { toggleSpeechInput() }
       }
     } label: {
       Group {
-        if onStop == nil, !canSend, !isBusy, !speechInput.isListening {
+        if recordEditControls == nil, onStop == nil, !canSend, !isBusy, !speechInput.isListening {
           Image(icon: isConversation ? .waveform : .mic, size: MemoraIconMetrics.glyph)
         } else {
           Image(icon: actionSymbol)
         }
       }
-        .foregroundStyle(isConversation || onStop != nil || canSend || isBusy || speechInput.isListening
-          ? MemoraPalette.actionLabel : MemoraPalette.textPrimary)
+        .foregroundStyle(showsFilledAction ? MemoraPalette.actionLabel : MemoraPalette.textPrimary)
         .contentTransition(.opacity)
         .frame(width: 36, height: 36)
-        .background(Circle().fill(isConversation || onStop != nil || canSend || isBusy || speechInput.isListening
-          ? MemoraPalette.action : .clear))
+        .background(Circle().fill(showsFilledAction ? MemoraPalette.action : .clear))
+        .opacity(recordEditControls != nil && !canSend ? 0.35 : 1)
         // The circle stays small; the target around it does not.
         .frame(width: 44, height: 44)
         .contentShape(Circle())
     }
     .buttonStyle(.plain)
-    .disabled(onStop == nil && (isBusy || (!canSend && model.isRecording)))
+    .disabled(onStop == nil && (isBusy || (!canSend && (recordEditControls != nil || model.isRecording))))
     .accessibilityLabel(actionLabel)
+    .accessibilityIdentifier("record.aiEdit.generate", isEnabled: recordEditControls != nil)
   }
 
   private var actionSymbol: MemoraIcon {
     if onStop != nil { return .stopFill }
     if isBusy { return .ellipsis }
-    return canSend ? .arrowUp : .waveform
+    return canSend || recordEditControls != nil ? .arrowUp : .waveform
   }
 
   private var actionLabel: String {
+    if recordEditControls != nil { return "変更案を作成" }
     if onStop != nil { return "回答を停止" }
     if canSend { return "送信" }
     if model.isRecording { return "録音中は音声入力を使用できません" }
@@ -705,8 +752,10 @@ struct AIComposerBar: View {
     speechInput.stop()
     guard onSubmit(attachment) else { return }
     InteractionFeedback.shared.send(.tap)
-    text = ""
-    attachment = nil
+    if recordEditControls == nil {
+      text = ""
+      attachment = nil
+    }
     // The Ask AI chat keeps the keyboard up for the next turn; a sheet does not.
     isFieldFocused = keepsFocusAfterSubmit && !isVoiceConversation
   }

@@ -87,6 +87,7 @@ struct RootTabView: View {
       if open { model.composerDismissRequests += 1 }
     }
     .onChange(of: model.selectedTab) { _, _ in
+      recordAIEdit = nil
       closeSidebar()
       // The composer belongs to the screen that was left; a new tab starts with
       // its content visible rather than behind a keyboard carried over.
@@ -97,6 +98,9 @@ struct RootTabView: View {
       // A search belongs to the tab it was opened on.
       model.isSearchActive = false
     }
+    .onChange(of: model.activeNavigationPath) { _, _ in recordAIEdit = nil }
+    .onChange(of: composerScope) { _, _ in recordAIEdit = nil }
+    .onChange(of: shouldShowComposer) { _, visible in if !visible { recordAIEdit = nil } }
     .onGeometryChange(for: CGSize.self) { $0.size } action: { _ in refreshSafeAreaInsets() }
     .onChange(of: scenePhase) { _, phase in
       model.updateRecordingResources(isForeground: phase == .active)
@@ -188,6 +192,7 @@ struct RootTabView: View {
       }
     }
     .onChange(of: model.aiWorkspaceGeneration) { _, _ in
+      recordAIEdit = nil
       dismissCaptureMenu()
       isCameraPresented = false
       cameraContext = nil
@@ -351,7 +356,7 @@ struct RootTabView: View {
           )
       }
 
-      if shouldShowComposer, !isComposing, !isKeyboardVisible,
+      if shouldShowComposer, recordAIEdit == nil, !isComposing, !isKeyboardVisible,
          model.currentTeamID == nil, !model.isRestoring, !model.isStoreProtected,
          case .file(let id) = composerScope, model.isActiveDetail(id),
          let meeting = model.meeting(id: id) {
@@ -376,16 +381,20 @@ struct RootTabView: View {
       Group {
         HStack(alignment: .bottom, spacing: 0) {
           if shouldShowComposer {
-            QuickAIComposer(
-              scope: composerScope,
-              isComposing: $isComposing,
-              keepsFocusAfterSubmit: model.selectedTab == .askAI || model.activeProjectChatID != nil,
-              compactIdle: true
-            )
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.trailing, showsCaptureButtons ? 60 : 0)
-            // Keep the editor identity while the available width changes.
-            .transition(.opacity)
+            if let destination = recordAIEdit {
+              RecordAIEditComposer(destination: destination) { recordAIEdit = nil }
+            } else {
+              QuickAIComposer(
+                scope: composerScope,
+                isComposing: $isComposing,
+                keepsFocusAfterSubmit: model.selectedTab == .askAI || model.activeProjectChatID != nil,
+                compactIdle: true
+              )
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .padding(.trailing, showsCaptureButtons ? 60 : 0)
+              // Keep the editor identity while the available width changes.
+              .transition(.opacity)
+            }
           }
         }
         .frame(maxWidth: MemoraSpacing.readingWidth)
@@ -403,11 +412,6 @@ struct RootTabView: View {
 
     }
     .padding(.top, 4)
-    .sheet(item: $recordAIEdit) { destination in
-      RecordAIEditSheet(recordID: destination.id, initialField: destination.field) { field in
-        model.recordAIEditDestination = RecordAIEdit.Destination(id: destination.id, field: field)
-      }
-    }
     // The tab row reserves the home inset whenever it is visible.
     .padding(.bottom, showsPrimaryTabs ? MemoraSpacing.xs : (isKeyboardVisible ? 14 : safeAreaInsets.bottom))
     .animation(nil, value: isComposing)

@@ -2,7 +2,7 @@ import Foundation
 import FoundationModels
 
 @MainActor
-struct RecordAIEdit {
+struct RecordAIEdit: Identifiable {
   enum Field: String, CaseIterable, Identifiable {
     case summary, notes
 
@@ -24,6 +24,7 @@ struct RecordAIEdit {
     var field: Field
   }
 
+  let id = UUID()
   let recordID: UUID
   let field: Field
   let original: String
