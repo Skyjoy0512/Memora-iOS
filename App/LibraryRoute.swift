@@ -14,7 +14,6 @@ enum LibraryRoute: Hashable {
   case tasks
   case allMeetings
   case settings
-  case stateGallery
   case documents
   case document(UUID)
   case people

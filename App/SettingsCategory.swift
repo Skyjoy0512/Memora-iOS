@@ -1,6 +1,9 @@
 /// Top-level destinations are topics; individual switches live one level below.
 enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
-  case account, workspace, plan, recording, ai, journal, integrations, appearance, privacy, data, about, diagnostics
+  case account, workspace, plan, recording, ai, journal, integrations, appearance, privacy, data, about
+  #if DEBUG
+  case diagnostics
+  #endif
 
   var id: String { rawValue }
   static var groups: [String] { ["アカウント", "アプリ", "データ", "その他"] }
@@ -10,7 +13,10 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
     case .account, .workspace, .plan: "アカウント"
     case .recording, .ai, .journal, .integrations, .appearance: "アプリ"
     case .privacy, .data: "データ"
-    case .about, .diagnostics: "その他"
+    case .about: "その他"
+    #if DEBUG
+    case .diagnostics: "その他"
+    #endif
     }
   }
 
@@ -27,7 +33,9 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
     case .privacy: "プライバシー"
     case .data: "データ管理"
     case .about: "ヘルプと情報"
+    #if DEBUG
     case .diagnostics: "診断とプレビュー"
+    #endif
     }
   }
 
@@ -44,7 +52,9 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
     case .privacy: .lockShield
     case .data: .internaldrive
     case .about: .questionmarkCircle
+    #if DEBUG
     case .diagnostics: .rectangleStack
+    #endif
     }
   }
 }

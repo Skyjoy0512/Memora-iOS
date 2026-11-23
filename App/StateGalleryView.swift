@@ -1,3 +1,4 @@
+#if DEBUG
 import SwiftUI
 
 struct StateGalleryView: View {
@@ -285,3 +286,4 @@ extension StateGalleryView {
     return message
   }()
 }
+#endif

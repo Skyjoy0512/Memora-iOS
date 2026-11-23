@@ -44,7 +44,9 @@ struct SettingsCategoryView: View {
           case .privacy: privacySections
           case .data: dataSections
           case .about: aboutSections
+          #if DEBUG
           case .diagnostics: diagnosticsSections
+          #endif
           case .integrations, .workspace: EmptyView()
           }
         }
@@ -484,6 +486,7 @@ struct SettingsCategoryView: View {
           }
         }
         Section("表示と動作") {
+          #if DEBUG
           Button("画面確認用のサンプルを追加", icon: .rectangleStackFill) {
             summarySampleFailure = nil
             if model.handlingPersistenceFailureLocally({ model.addScreenReviewSamples() }) {
@@ -496,6 +499,7 @@ struct SettingsCategoryView: View {
           .accessibilityIdentifier("screenReview.samples.add")
           Text("文字起こし前・要約前・処理中・失敗・完了の記録と、ジャーナル・タスク・資料・質問履歴を追加します。既存のデータは残り、繰り返し押しても重複しません。")
             .font(.footnote).foregroundStyle(.secondary)
+          #endif
           Button("要約済み音声のサンプルを見る", icon: .docText) {
             summarySampleFailure = nil
             if model.handlingPersistenceFailureLocally({ model.openSummarizedAudioSample() }) {
@@ -512,11 +516,13 @@ struct SettingsCategoryView: View {
               .accessibilityIdentifier("summary.sample.failure")
           }
 
+          #if DEBUG
           NavigationLink {
             StateGalleryView()
           } label: {
             SettingsLabel("状態と復旧UIを確認", icon: .rectangleStackFill)
           }
+          #endif
 
           #if DEBUG
           NavigationLink {

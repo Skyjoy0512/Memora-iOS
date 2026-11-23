@@ -27,7 +27,6 @@ struct LibraryDestinationView: View {
     case .tasks: TasksView()
     case .allMeetings: AllMeetingsView()
     case .settings: SettingsView()
-    case .stateGallery: StateGalleryView()
     case .documents: DocumentsView()
     case .document(let id): DocumentDetailView(documentID: id)
     case .people: PeopleView()
