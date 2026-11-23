@@ -177,12 +177,6 @@ struct AIMessageView: View {
     message.sources.filter { !$0.excerpts.isEmpty }
   }
 
-  private func accessibilityLabel(for source: AIChatSource) -> String {
-    var parts = ["AIに渡した参考資料: \(source.title)"]
-    parts.append(contentsOf: source.excerpts.map { MemoraFormat.duration($0.start) + "、" + $0.text })
-    return parts.joined(separator: "、")
-  }
-
   /// The records the answer was built from, each opening the record; each stored
   /// excerpt in it plays from its own time.
   private var sourceList: some View {
@@ -192,17 +186,27 @@ struct AIMessageView: View {
           NavigationLink {
             MeetingDetailView(meetingID: source.meetingID)
           } label: {
-            sourceHeader(source)
+            AIAnswerSourceViews.Header(
+              source: source,
+              icon: .docText,
+              iconSize: 12,
+              spacing: 8,
+              fontWeight: .regular,
+              lineLimit: 1,
+              spacerMinLength: 4,
+              trailingIcon: .chevronRight,
+              trailingIconSize: 11
+            )
           }
           .buttonStyle(.plain)
-          .accessibilityLabel(accessibilityLabel(for: source))
+          .accessibilityLabel(AIAnswerSourceViews.spokenLabel(for: source))
           .accessibilityHint("記録を開きます")
 
           ForEach(Array(source.excerpts.enumerated()), id: \.offset) { _, excerpt in
             NavigationLink {
               MeetingDetailView(meetingID: source.meetingID, initialPlaybackStart: excerpt.start)
             } label: {
-              excerptRow(excerpt)
+              AIAnswerSourceViews.ExcerptRow(excerpt: excerpt)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("\(MemoraFormat.duration(excerpt.start))、\(excerpt.text)")
@@ -219,32 +223,5 @@ struct AIMessageView: View {
         .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous))
       }
     }
-  }
-
-  private func sourceHeader(_ source: AIChatSource) -> some View {
-    HStack(spacing: 8) {
-      Image(icon: .docText, size: 12)
-      Text(source.title)
-        .font(.subheadline)
-        .lineLimit(1)
-      Spacer(minLength: 4)
-      Image(icon: .chevronRight, size: 11)
-        .foregroundStyle(.primary)
-    }
-    .foregroundStyle(.primary)
-  }
-
-  private func excerptRow(_ excerpt: AIChatSource.Excerpt) -> some View {
-    HStack(alignment: .top, spacing: 8) {
-      Text(MemoraFormat.duration(excerpt.start))
-        .font(.caption.monospacedDigit())
-        .foregroundStyle(.secondary)
-      Text(excerpt.text)
-        .font(.caption)
-        .foregroundStyle(.secondary)
-        .lineLimit(2)
-      Spacer(minLength: 0)
-    }
-    .frame(maxWidth: .infinity, alignment: .leading)
   }
 }

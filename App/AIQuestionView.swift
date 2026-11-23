@@ -189,19 +189,39 @@ struct AIQuestionView: View {
             Button {
               openInExistingDetail(source.meetingID, time: nil)
             } label: {
-              sourceHeader(source)
+              AIAnswerSourceViews.Header(
+                source: source,
+                icon: .quoteBubble,
+                iconSize: 17,
+                spacing: MemoraSpacing.md,
+                fontWeight: .semibold,
+                lineLimit: nil,
+                spacerMinLength: nil,
+                trailingIcon: .arrowUpRight,
+                trailingIconSize: 12
+              )
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(sourceAccessibilityLabel(source))
+            .accessibilityLabel(AIAnswerSourceViews.spokenLabel(for: source))
             .accessibilityHint("開いている記録の文字起こしへ戻ります")
           } else {
             NavigationLink {
               TranscriptView(meetingID: source.meetingID)
             } label: {
-              sourceHeader(source)
+              AIAnswerSourceViews.Header(
+                source: source,
+                icon: .quoteBubble,
+                iconSize: 17,
+                spacing: MemoraSpacing.md,
+                fontWeight: .semibold,
+                lineLimit: nil,
+                spacerMinLength: nil,
+                trailingIcon: .arrowUpRight,
+                trailingIconSize: 12
+              )
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(sourceAccessibilityLabel(source))
+            .accessibilityLabel(AIAnswerSourceViews.spokenLabel(for: source))
             .accessibilityHint("参考資料の文字起こしを開きます")
           }
 
@@ -210,7 +230,7 @@ struct AIQuestionView: View {
               Button {
                 openInExistingDetail(source.meetingID, time: excerpt.start)
               } label: {
-                excerptRow(excerpt)
+                AIAnswerSourceViews.ExcerptRow(excerpt: excerpt)
               }
               .buttonStyle(.plain)
               .accessibilityLabel("\(MemoraFormat.duration(excerpt.start))、\(excerpt.text)")
@@ -223,7 +243,7 @@ struct AIQuestionView: View {
                   showsLocalPlaybackBar: true
                 )
               } label: {
-                excerptRow(excerpt)
+                AIAnswerSourceViews.ExcerptRow(excerpt: excerpt)
               }
               .buttonStyle(.plain)
               .accessibilityLabel("\(MemoraFormat.duration(excerpt.start))、\(excerpt.text)")
@@ -237,45 +257,12 @@ struct AIQuestionView: View {
     }
   }
 
-  private func sourceHeader(_ source: AIChatSource) -> some View {
-    HStack(spacing: MemoraSpacing.md) {
-      Image(icon: .quoteBubble, size: 17)
-        .foregroundStyle(.primary)
-      Text(source.title)
-        .font(.subheadline.weight(.semibold))
-        .foregroundStyle(.primary)
-      Spacer()
-      Image(icon: .arrowUpRight, size: 12)
-        .foregroundStyle(.primary)
-    }
-  }
-
-  private func excerptRow(_ excerpt: AIChatSource.Excerpt) -> some View {
-    HStack(alignment: .top, spacing: 8) {
-      Text(MemoraFormat.duration(excerpt.start))
-        .font(.caption.monospacedDigit())
-        .foregroundStyle(.secondary)
-      Text(excerpt.text)
-        .font(.caption)
-        .foregroundStyle(.secondary)
-        .lineLimit(2)
-      Spacer(minLength: 0)
-    }
-    .frame(maxWidth: .infinity, alignment: .leading)
-  }
-
   /// Closes the sheet and asks the record already on screen to move to its
   /// transcript, so a second copy of it is never stacked and the open player is
   /// the one that seeks.
   private func openInExistingDetail(_ meetingID: UUID, time: TimeInterval?) {
     dismiss()
     model.detailPlaybackRequest = DetailPlaybackRequest(meetingID: meetingID, time: time)
-  }
-
-  private func sourceAccessibilityLabel(_ source: AIChatSource) -> String {
-    var parts = [source.title]
-    parts.append(contentsOf: source.excerpts.map { MemoraFormat.duration($0.start) + "、" + $0.text })
-    return parts.joined(separator: "、")
   }
 
   private var suggestions: some View {
