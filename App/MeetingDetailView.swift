@@ -189,7 +189,7 @@ struct MeetingDetailView: View {
                 saveToNotion(meeting)
               }
               .disabled(!NotionService.isConfigured || isSavingToNotion)
-              Button(meeting.summary.isEmpty ? "要約する" : "要約し直す", icon: .sparkles) {
+              Button(meeting.summary.isEmpty ? "要約する" : "要約し直す", icon: .docText) {
                 isSummaryGenerationPresented = true
               }
               .disabled(meeting.transcript.isEmpty)

@@ -9,7 +9,7 @@ struct AuthView: View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading, spacing: 0) {
-          Text("Memoraで始める")
+          Text("アカウント連携")
             .font(MemoraTypography.display)
             .accessibilityAddTraits(.isHeader)
 

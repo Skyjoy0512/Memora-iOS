@@ -45,7 +45,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
     case .workspace: .person2
     case .plan: .creditcard
     case .recording: .waveform
-    case .ai: .sparkles
+    case .ai: .docText
     case .journal: .calendar
     case .integrations: .plugsConnected
     case .appearance: .sliderHorizontal3

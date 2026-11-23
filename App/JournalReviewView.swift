@@ -47,7 +47,7 @@ struct JournalReviewView: View {
                     .font(.caption).foregroundStyle(.secondary)
                 }
               }
-              Text("場所の記録はこの画面で確認するためのものです。滞在の目的や気分は推測しません。")
+              Text("場所は確認用です。滞在の目的や気分は推測しません。")
                 .font(.footnote).foregroundStyle(.secondary)
             }
           }
@@ -58,7 +58,7 @@ struct JournalReviewView: View {
             Text("会議・録音 \(statistics.meetingCount)件 / 前回 \(previousStatistics.meetingCount)件")
             Text("完了タスク \(statistics.completedTaskCount)件 / 前回 \(previousStatistics.completedTaskCount)件")
             if period.end > .now {
-              Text("選んだ期間はまだ終わっていません。全期間の比較ではありません。")
+              Text("選んだ期間は途中のため、全期間の比較ではありません。")
                 .font(.footnote).foregroundStyle(.secondary)
             }
           }
@@ -69,13 +69,16 @@ struct JournalReviewView: View {
 
           VStack(alignment: .leading, spacing: 12) {
             Text("自分に問いかける").font(.headline)
-            Text("よかったことは？\n気になったことは？\n次に続けたいことは？")
-              .lineSpacing(7)
+            VStack(alignment: .leading, spacing: 7) {
+              Text("よかったことは？")
+              Text("気になったことは？")
+              Text("次に続けたいことは？")
+            }
             Button("\(weekly ? "週" : "日")の振り返りを資料に保存", icon: .docText) {
               save(statistics)
             }
             .buttonStyle(.bordered)
-            Text("健康データと位置情報は資料に含めません。自分のメモは保存した資料で追記できます。")
+            Text("健康データと位置情報は資料に保存しません。メモは保存後の資料に追記できます。")
               .font(.footnote).foregroundStyle(.secondary)
             if let saveError { Text(saveError).foregroundStyle(.secondary) }
           }
@@ -113,11 +116,11 @@ struct JournalReviewView: View {
   private var healthSection: some View {
     VStack(alignment: .leading, spacing: 12) {
       Toggle("健康データを振り返りに使う", isOn: $healthEnabled)
-      Text("歩数・睡眠・ワークアウトを読み取り専用で使います。この画面内だけで表示し、AI・チーム・Webhook・バックアップには渡しません。")
+      Text("歩数・睡眠・ワークアウトを読み取り専用で、この画面だけに使います。AI・チーム・Webhook・バックアップには渡しません。")
         .font(.footnote).foregroundStyle(.secondary)
       if healthEnabled {
         HealthReviewStatusView(loader: healthLoader, period: period) { healthRefreshID += 1 }
-        Text("睡眠・運動の重複した時間は1回として集計します。運動の記録時間は休止を含む場合があります。健康状態の診断や原因の判定は行いません。")
+        Text("睡眠・運動の重複時間は1回で集計し、運動時間は休止を含む場合があります。健康状態の診断や原因判定はしません。")
           .font(.footnote).foregroundStyle(.secondary)
       }
     }

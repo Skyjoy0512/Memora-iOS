@@ -9,11 +9,11 @@ struct ShareInboxView: View {
       if ShareInboxConfiguration.root == nil {
         Section {
           Text("共有拡張はまだ接続されていません。App Groupsと署名の設定が必要です。")
-            .foregroundStyle(.secondary)
+            .foregroundStyle(MemoraPalette.danger)
         }
       } else {
         if model.currentTeamID != nil { Text("共有からの取り込みは個人ワークスペースで利用できます。") }
-        if let failure = model.shareInboxFailure { Text(failure).foregroundStyle(.secondary) }
+        if let failure = model.shareInboxFailure { Text(failure).foregroundStyle(MemoraPalette.danger) }
         if model.isImportingShareInbox { ProgressView("取り込んでいます") }
         if model.shareInboxRequests.isEmpty && model.shareInboxRejectedIDs.isEmpty { Text("未取り込みの共有はありません").foregroundStyle(.secondary) }
         else {
@@ -34,7 +34,8 @@ struct ShareInboxView: View {
           Section("読み込めない共有") {
             Text("元のアプリから共有し直してください。正常な共有の取り込みは継続します。")
               .foregroundStyle(.secondary)
-            Text(id.uuidString).font(.caption).foregroundStyle(.secondary)
+            Text("\(id.uuidString.prefix(8))…").font(.caption).foregroundStyle(.secondary)
+              .accessibilityValue(id.uuidString)
             Button("この共有を削除", role: .destructive) { deleting = id }
               .disabled(model.isImportingShareInbox)
           }

@@ -131,7 +131,7 @@ struct ProjectSourceDetailView: View {
               }
             }
             if source.canProvideText {
-              Button("この資料について聞く", icon: .sparkles) { isAsking = true }
+              Button("この資料について聞く", icon: .questionmarkBubble) { isAsking = true }
                 .buttonStyle(.plain).font(.subheadline)
                 .foregroundStyle(MemoraPalette.textPrimary)
                 .frame(minHeight: MemoraSpacing.touchTarget, alignment: .leading)
