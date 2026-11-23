@@ -75,7 +75,18 @@ final class MemoraModel {
   @ObservationIgnored var isApplyingTransientMeetingUpdate = false
   var meetings: [Meeting] {
     didSet {
-      guard !isApplyingTransientMeetingUpdate else { return }
+      if isApplyingTransientMeetingUpdate {
+        // A progress label changes nothing the stored-change side effects read:
+        // the record keeps its identity, its title, its place and its people.
+        // A pending webhook or share, though, holds the whole record, so those
+        // two still have to notice the change. The index is dropped first, as
+        // it is for a stored change, so both of them read the record as it is
+        // now rather than as it was.
+        meetingIndex.invalidate()
+        invalidatePendingWebhookDeliveries()
+        invalidatePendingCloudShare()
+        return
+      }
       invalidateSummaryArtifacts(previous: oldValue)
       MemoryRetrievalOrchestrator.invalidate()
       meetingIndex.invalidate()
@@ -173,8 +184,10 @@ final class MemoraModel {
   /// Per-project counts and previews, and per-person record counts.
   private(set) var spaceAggregates: [UUID: SpaceAggregate] = [:]
   private(set) var personMeetingCounts: [UUID: Int] = [:]
-  /// Records tagged with each person, newest first.
-  private(set) var meetingsByPerson: [UUID: [Meeting]] = [:]
+  /// Records tagged with each person, newest first. The records are held by
+  /// their position in `meetings`, not as copies, so a record that changes in
+  /// place is always read in its current form.
+  private(set) var meetingIndicesByPerson: [UUID: [Int]] = [:]
   /// Each record's title, for rows that only name their source record (a
   /// task's). Reading this instead of the record keeps those rows from
   /// redrawing whenever any record changes, such as a progress update.
@@ -909,25 +922,28 @@ final class MemoraModel {
   }
 
   private func rebuildMeetingAggregates() {
-    // Sorted once, so every group below is already newest first.
-    let newestFirst = meetings.sorted { $0.createdAt > $1.createdAt }
-    assignIfChanged(\.markedMeetingDays, Set(newestFirst.map { Calendar.current.startOfDay(for: $0.createdAt) }))
-    var bySpace: [UUID: [Meeting]] = [:]
-    var byPerson: [UUID: [Meeting]] = [:]
-    for meeting in newestFirst {
+    // Sorted once, so every group below is already newest first. The groups
+    // hold positions in `meetings`, not copies, so the record a group names is
+    // read in its current form and a progress tick needs no rebuild.
+    let positions = meetings.indices.sorted { meetings[$0].createdAt > meetings[$1].createdAt }
+    assignIfChanged(\.markedMeetingDays, Set(positions.map { Calendar.current.startOfDay(for: meetings[$0].createdAt) }))
+    var bySpace: [UUID: [Int]] = [:]
+    var byPerson: [UUID: [Int]] = [:]
+    for position in positions {
+      let meeting = meetings[position]
       if let spaceID = meeting.spaceID {
-        bySpace[spaceID, default: []].append(meeting)
+        bySpace[spaceID, default: []].append(position)
       }
       for personID in meeting.participantIDs ?? [] {
-        byPerson[personID, default: []].append(meeting)
+        byPerson[personID, default: []].append(position)
       }
     }
 
     let aggregates = bySpace.mapValues { group in
       SpaceAggregate(
         meetingCount: group.count,
-        icons: group.prefix(4).map { $0.source.icon },
-        latestDate: group.first?.createdAt
+        icons: group.prefix(4).map { meetings[$0].source.icon },
+        latestDate: group.first.map { meetings[$0].createdAt }
       )
     }
     // Every assignment redraws each screen that reads the value, and most edits
@@ -935,7 +951,7 @@ final class MemoraModel {
     // these, so they are only replaced when they differ.
     assignIfChanged(\.spaceAggregates, aggregates)
     assignIfChanged(\.personMeetingCounts, byPerson.mapValues(\.count))
-    assignIfChanged(\.meetingsByPerson, byPerson)
+    assignIfChanged(\.meetingIndicesByPerson, byPerson)
     assignIfChanged(
       \.meetingTitles,
       Dictionary(meetings.map { ($0.id, $0.title) }, uniquingKeysWith: { first, _ in first })

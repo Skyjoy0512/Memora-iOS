@@ -18,7 +18,11 @@ import Foundation
   var personIndex = IdentifiableIndex<Person>()
   var taskIndex = IdentifiableIndex<MemoraTask>()
   var personMeetingCounts: [UUID: Int] { Dictionary(uniqueKeysWithValues: people.map { ($0.id, meetings(withPerson: $0.id).count) }) }
-  var meetingsByPerson: [UUID: [Meeting]] { Dictionary(uniqueKeysWithValues: people.map { person in (person.id, meetings.filter { $0.participantIDs?.contains(person.id) == true }) }) }
+  var meetingIndicesByPerson: [UUID: [Int]] {
+    Dictionary(uniqueKeysWithValues: people.map { person in
+      (person.id, meetings.indices.filter { meetings[$0].participantIDs?.contains(person.id) == true })
+    })
+  }
   var aiPersonScopeID: UUID?
   var currentTeamID: String?
   var aiWorkspaceGeneration = UUID()

@@ -150,7 +150,9 @@ extension MemoraModel {
   }
 
   func meetings(withPerson personID: UUID) -> [Meeting] {
-    meetingsByPerson[personID] ?? []
+    (meetingIndicesByPerson[personID] ?? []).compactMap { position in
+      meetings.indices.contains(position) ? meetings[position] : nil
+    }
   }
 
   /// Participant tags establish a relationship; speaker-name similarity alone cannot.
