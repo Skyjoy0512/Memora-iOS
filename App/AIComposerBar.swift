@@ -42,6 +42,7 @@ struct AIComposerBar: View {
   @State private var restoresAttachmentFocus = false
   @State private var attachmentFocusOrigin: (workspace: UUID, conversation: UUID)?
   @State private var pendingAttachmentAction: AIComposerAttachmentAction?
+  @State private var pendingPasteReading: PasteboardIntake.Reading?
   @State private var isCameraPresented = false
   @State private var capturedPhoto: Data?
   @State private var attachmentImportContext: AIComposerRequestContext?
@@ -283,6 +284,9 @@ struct AIComposerBar: View {
       guard !Task.isCancelled else { return }
       isFieldFocused = true
     }
+    .task(id: pendingPasteReading?.changeCount) {
+      await attachPastedReading()
+    }
     .onDisappear {
       externalFocusTask?.cancel()
       endVoiceInput()
@@ -314,7 +318,8 @@ struct AIComposerBar: View {
       }
     }) {
       AIChatAttachmentSheet(researchSelected: researchSelected,
-        onResearch: onResearch, onSelect: { pendingAttachmentAction = $0 })
+        onResearch: onResearch, onSelect: { pendingAttachmentAction = $0 },
+        onPaste: pasteFromClipboard)
     }
     .sheet(isPresented: $isModelSheetPresented, onDismiss: {
       if restoresModelFocus { isFieldFocused = true }
@@ -496,6 +501,84 @@ struct AIComposerBar: View {
       attachmentImportContext = AIComposerRequestContext(scope: mentionScope, in: model)
       isImporterPresented = true
     }
+  }
+
+  private func pasteFromClipboard() {
+    guard let context = AIComposerRequestContext(scope: mentionScope, in: model) else {
+      importErrorMessage = "保存先や入力が変わりました。もう一度選択してください。"
+      return
+    }
+    guard (attachment?.files.count ?? 0) < 10 else {
+      importErrorMessage = "添付は10件までです。"
+      return
+    }
+    guard let reading = PasteboardIntake.read() else {
+      importErrorMessage = "コピーした内容を追加できませんでした。対応しているテキスト、URL、画像をコピーしてからお試しください。"
+      return
+    }
+    attachmentImportContext = context
+    pendingPasteReading = reading
+  }
+
+  private func attachPastedReading() async {
+    guard let reading = pendingPasteReading else { return }
+    defer { pendingPasteReading = nil }
+    guard let context = attachmentImportContext,
+          context.isCurrent(in: model, scope: mentionScope) else {
+      importErrorMessage = "保存先や入力が変わりました。もう一度選択してください。"
+      return
+    }
+    let previous = attachment
+    guard (previous?.files.count ?? 0) < 10 else {
+      importErrorMessage = "添付は10件までです。"
+      return
+    }
+    let generation = model.aiWorkspaceGeneration
+    let conversationID = model.aiConversationID
+    let created: AIAttachment
+    do {
+      if let url = reading.url {
+        created = try await ConversationSourceIntake.prepare(url)
+      } else if let text = reading.text {
+        let data = Data(text.utf8)
+        let reference = try await AIAttachmentFiles.shared.write(data, extension: "txt")
+        guard let fileURL = try? AIAttachmentFiles.url(reference) else {
+          await AIAttachmentFiles.shared.remove([reference])
+          throw ProjectSourceFiles.Failure.invalidFile
+        }
+        created = AIAttachment(id: UUID(), name: reading.title, url: fileURL)
+      } else if let imageData = reading.imageData {
+        created = try await model.importAIPhoto(data: imageData, fileExtension: "jpg")
+      } else {
+        importErrorMessage = "コピーした内容を追加できませんでした。対応しているテキスト、URL、画像をコピーしてからお試しください。"
+        return
+      }
+    } catch is CancellationError {
+      PasteboardIntake.release(reading)
+      return
+    } catch {
+      PasteboardIntake.release(reading)
+      importErrorMessage = error.localizedDescription
+      return
+    }
+    guard (previous?.files.count ?? 0) + created.files.count <= 10 else {
+      for file in created.files { try? FileManager.default.removeItem(at: file.url) }
+      PasteboardIntake.release(reading)
+      importErrorMessage = "添付は10件までです。"
+      return
+    }
+    guard context.isCurrent(in: model, scope: mentionScope),
+          model.aiWorkspaceGeneration == generation,
+          model.currentTeamID == nil,
+          model.aiConversationID == conversationID,
+          !model.isRestoring, !model.isStoreProtected,
+          attachment == previous else {
+      for file in created.files { try? FileManager.default.removeItem(at: file.url) }
+      PasteboardIntake.release(reading)
+      importErrorMessage = "保存先や入力が変わりました。もう一度選択してください。"
+      return
+    }
+    if attachment == nil { attachment = created } else { attachment?.append(created) }
   }
 
   private var researchButton: some View {

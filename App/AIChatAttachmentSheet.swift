@@ -6,6 +6,7 @@ struct AIChatAttachmentSheet: View {
   var researchSelected = false
   var onResearch: (() -> Void)?
   var onSelect: (AIComposerAttachmentAction) -> Void
+  var onPaste: () -> Void
 
   var body: some View {
     NavigationStack {
@@ -35,6 +36,15 @@ struct AIChatAttachmentSheet: View {
           Divider()
           Button { select(.photo) } label: {
             Label("最近の写真を表示", icon: .photoOnRectangle)
+              .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget, alignment: .leading)
+              .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+          Button {
+            onPaste()
+            dismiss()
+          } label: {
+            Label("コピーした内容を追加", icon: .docOnDoc)
               .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget, alignment: .leading)
               .contentShape(Rectangle())
           }
