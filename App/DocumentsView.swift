@@ -57,6 +57,7 @@ struct DocumentsView: View {
       }
     }
     .navigationTitle("資料")
+    .accessibilityAddTraits(.isHeader)
     .navigationBarTitleDisplayMode(.inline)
     .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "タイトル・本文を検索")
     .toolbar {

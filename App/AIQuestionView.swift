@@ -121,9 +121,14 @@ struct AIQuestionView: View {
 
   private func askedQuestion(_ request: AIQuestionRequest) -> some View {
     VStack(alignment: .leading, spacing: 8) {
-      Text("\(engineLabel) · \(label(for: request.scope))")
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(.secondary)
+      VStack(alignment: .leading, spacing: MemoraSpacing.xxs) {
+        Text(engineLabel)
+          .font(.caption.weight(.semibold))
+          .foregroundStyle(.secondary)
+        Text(label(for: request.scope))
+          .font(.caption.weight(.semibold))
+          .foregroundStyle(.secondary)
+      }
       AIUserMessageView(text: request.effectiveQuestion, attachmentName: request.attachment?.displayName) {
         question = request.question
         attachment = request.attachment
@@ -180,7 +185,7 @@ struct AIQuestionView: View {
   private var sourceList: some View {
     VStack(alignment: .leading, spacing: MemoraSpacing.md) {
       Text("AIに渡した参考資料")
-        .font(.caption.weight(.semibold))
+        .font(MemoraTypography.sectionHeading)
         .foregroundStyle(.secondary)
 
       ForEach(sources) { source in
@@ -269,7 +274,7 @@ struct AIQuestionView: View {
     VStack(alignment: .leading, spacing: 12) {
       Text("たとえば")
         .font(.headline)
-      ForEach(focusedSourceID == nil ? Self.suggestedQuestions : ["要約して", "詳しく説明して"], id: \.self) { suggestion in
+      ForEach(focusedSourceID == nil ? Self.suggestedQuestions : ["要約して", "この資料の要点を詳しく説明して"], id: \.self) { suggestion in
         SuggestionButton(title: suggestion) {
           question = suggestion
           ask()

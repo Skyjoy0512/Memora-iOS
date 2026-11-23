@@ -90,6 +90,7 @@ struct TasksView: View {
     }
       .background(MemoraPalette.background)
       .navigationTitle("タスク")
+      .accessibilityAddTraits(.isHeader)
       .toolbar {
         if model.hasTeamPlan {
           ToolbarActionItem(usesSystemBackground: true) {

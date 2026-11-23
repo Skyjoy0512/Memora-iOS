@@ -104,8 +104,14 @@ struct ProjectsView: View {
                 VStack(alignment: .leading, spacing: 4) {
                   Text(project.name).font(MemoraTypography.body.weight(.medium)).lineLimit(2)
                   SharedOwnerBadge(ownerName: project.ownerName)
-                  Text("記録 \(project.records.count)件 · 閲覧のみ")
-                    .font(MemoraTypography.metadata).foregroundStyle(.secondary)
+                  VStack(alignment: .leading, spacing: MemoraSpacing.xxs) {
+                    Text("記録 \(project.records.count)件")
+                      .font(MemoraTypography.metadata)
+                      .foregroundStyle(.secondary)
+                    Text("閲覧のみ")
+                      .font(MemoraTypography.metadata)
+                      .foregroundStyle(.secondary)
+                  }
                 }
               }
               .foregroundStyle(.primary)

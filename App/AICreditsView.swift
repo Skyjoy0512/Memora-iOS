@@ -11,6 +11,9 @@ struct AICreditsView: View {
         LabeledContent("プラン", value: model.planName)
         LabeledContent("利用状況", value: model.memoraCreditStatus)
         LabeledContent("文字起こし", value: "端末内（無制限）")
+      } header: {
+        Text("利用状況")
+          .accessibilityAddTraits(.isHeader)
       } footer: {
         if let blocker = model.memoraIntelligenceBlocker {
           Text(blocker)

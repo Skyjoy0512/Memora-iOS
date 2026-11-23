@@ -341,7 +341,7 @@ struct LibraryView: View {
     if model.isRecording {
       ActiveRecordingStrip()
         .disabled(isSelectionMode)
-        .listRowInsets(EdgeInsets(top: 0, leading: 18, bottom: 10, trailing: 18))
+        .listRowInsets(EdgeInsets(top: 0, leading: MemoraSpacing.screen, bottom: MemoraSpacing.md, trailing: MemoraSpacing.screen))
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
     }
@@ -378,7 +378,7 @@ struct LibraryView: View {
         if model.hasSampleContent {
           SampleNoticeRow()
             .disabled(isSelectionMode)
-            .listRowInsets(EdgeInsets(top: 0, leading: 18, bottom: 10, trailing: 18))
+            .listRowInsets(EdgeInsets(top: 0, leading: MemoraSpacing.screen, bottom: MemoraSpacing.md, trailing: MemoraSpacing.screen))
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
         }
@@ -457,8 +457,8 @@ struct LibraryView: View {
               }
                 .disabled(isSelectionMode)
                 .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset,
-                  bottom: 8, trailing: ProjectLayout.horizontalInset))
+                .listRowInsets(EdgeInsets(top: MemoraSpacing.sm, leading: ProjectLayout.horizontalInset,
+                  bottom: MemoraSpacing.sm, trailing: ProjectLayout.horizontalInset))
             }
           } header: {
             Text("参考資料").font(.subheadline.weight(.semibold)).textCase(nil)
@@ -507,7 +507,7 @@ struct LibraryView: View {
           .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget)
       }
     }
-    .listRowInsets(EdgeInsets(top: 0, leading: 18, bottom: 8, trailing: 18))
+    .listRowInsets(EdgeInsets(top: 0, leading: MemoraSpacing.screen, bottom: MemoraSpacing.sm, trailing: MemoraSpacing.screen))
     .listRowSeparator(.hidden)
     .listRowBackground(Color.clear)
     .accessibilityElement(children: .contain)
