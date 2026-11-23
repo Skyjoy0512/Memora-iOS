@@ -82,53 +82,39 @@ extension MemoraModel {
     case .failed: throw ShareInboxQueue.Failure.invalid
     case .missing: break
     }
-    var source = ProjectSource(projectID: projectID, kind: .note, title: item.title)
-    source.id = item.id
-    source.metadata = ["shareRequestID": requestID.uuidString]
-    var created: [String] = []
-    do {
-      switch item.kind {
-      case .link:
-        let link = try ProjectSourceURL.normalized(item.value)
-        if projectSources.contains(where: { $0.projectID == projectID && $0.originalURL == link.url }) { return }
-        source.kind = link.kind
-        source.originalURL = link.url
-        if source.title.isEmpty { source.title = link.url.host ?? "Webリンク" }
-      case .text:
-        let text = try JSONEncoder().encode([ProjectSourceText(text: item.value)])
-        let name = try await ProjectSourceFiles.shared.write(text, extension: "json")
-        created.append(name)
-        source.extractedTextReference = name
-        source.processingStatus = .ready
-        source.textCoverage = .complete
-        source.acquiredAt = .now
-      case .file:
-        let file = try await queue.file(item.value, requestID: requestID)
-        if try PDFSourcePartitioning.requiresPartition(file) {
-          let partition = try await PDFSourcePartitioning.prepare(file)
-          defer { partition.cleanup() }
-          guard let ids = try await importPDFParts(partition, context: context,
-            sourceTitle: item.title.isEmpty ? nil : item.title, registrationReceipt: { ids in
-              (key: self.sharedPDFReceiptKey(item.id), data: try JSONEncoder().encode(
-                ["requestID": requestID.uuidString, "itemID": item.id.uuidString,
-                 "sourceIDs": ids.map(\.uuidString).joined(separator: ",")]))
-            }), !ids.isEmpty else {
-            throw ShareInboxQueue.Failure.invalid
-          }
-          return
+    let intent: CaptureIntent
+    switch item.kind {
+    case .link:
+      guard let url = URL(string: item.value) else { throw ShareInboxQueue.Failure.invalid }
+      intent = .url(url)
+    case .text:
+      intent = .note(item.value)
+    case .file:
+      let file = try await queue.file(item.value, requestID: requestID)
+      if try PDFSourcePartitioning.requiresPartition(file) {
+        let partition = try await PDFSourcePartitioning.prepare(file)
+        defer { partition.cleanup() }
+        guard let ids = try await importPDFParts(partition, context: context,
+          sourceTitle: item.title.isEmpty ? nil : item.title, registrationReceipt: { ids in
+            (key: self.sharedPDFReceiptKey(item.id), data: try JSONEncoder().encode(
+              ["requestID": requestID.uuidString, "itemID": item.id.uuidString,
+               "sourceIDs": ids.map(\.uuidString).joined(separator: ",")]))
+          }), !ids.isEmpty else {
+          throw ShareInboxQueue.Failure.invalid
         }
-        let receipt = try await ProjectSourceFiles.shared.copy(file)
-        created.append(receipt.reference)
-        if projectSources.contains(where: { $0.projectID == projectID && $0.contentFingerprint == receipt.fingerprint }) {
-          await ProjectSourceFiles.shared.remove(created); return
-        }
-        source.kind = SourceIntake.kind(for: file)
-        source.localFileReference = receipt.reference
-        source.contentFingerprint = receipt.fingerprint
+        return
       }
-      guard context.isCurrent(in: self), storeProjectSource(source) else { throw ShareInboxQueue.Failure.invalid }
-      scheduleProjectSourcePreparation(source.id)
-    } catch { await ProjectSourceFiles.shared.remove(created); throw error }
+      intent = .file(file)
+    }
+    let outcome = await capture(intent, context: context, sourceID: item.id,
+      metadata: ["shareRequestID": requestID.uuidString], title: item.title)
+    switch outcome {
+    case .imported, .duplicate:
+      return
+    case .refused(let message):
+      if message.isEmpty { throw ShareInboxQueue.Failure.invalid }
+      throw NSError(domain: "Memora.ShareInbox", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
+    }
   }
 
   private func sharedPDFReceiptKey(_ itemID: UUID) -> String {
