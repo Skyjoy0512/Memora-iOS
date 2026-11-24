@@ -12,9 +12,24 @@ enum CloudTranscriptDecoder {
       throw Failure.invalidResponse
     }
     return try parts.compactMap { part in
-      try segment(text: part.text, start: part.start, end: part.end, speaker: nil,
-        confidence: nil, engine: "openAI", model: "whisper-1", language: language)
+      guard let validated = try segment(text: part.text, start: part.start, end: part.end,
+                                        speaker: nil, confidence: nil, engine: "openAI",
+                                        model: "whisper-1", language: language) else { return nil }
+      guard !isSilence(noSpeechProbability: part.noSpeechProbability,
+                       averageLogProbability: part.averageLogProbability) else { return nil }
+      return validated
     }
+  }
+
+  /// Whisper reports both scores per segment; either alone is too noisy to drop
+  /// speech, so only a segment past both thresholds is treated as silence.
+  private static func isSilence(noSpeechProbability: Double?,
+                                averageLogProbability: Double?) -> Bool {
+    guard let noSpeechProbability, let averageLogProbability,
+          noSpeechProbability.isFinite, averageLogProbability.isFinite,
+          (0...1).contains(noSpeechProbability),
+          noSpeechProbability > 0.6, averageLogProbability < -1.0 else { return false }
+    return true
   }
 
   static func deepgram(_ data: Data, language: String) throws -> [TranscriptSegment] {
@@ -51,7 +66,19 @@ enum CloudTranscriptDecoder {
   private struct OpenAIResponse: Decodable {
     var text: String
     var segments: [Part]?
-    struct Part: Decodable { var text: String; var start: Double; var end: Double }
+    struct Part: Decodable {
+      var text: String
+      var start: Double
+      var end: Double
+      var noSpeechProbability: Double?
+      var averageLogProbability: Double?
+
+      private enum CodingKeys: String, CodingKey {
+        case text, start, end
+        case noSpeechProbability = "no_speech_prob"
+        case averageLogProbability = "avg_logprob"
+      }
+    }
   }
 
   private struct DeepgramResponse: Decodable {
