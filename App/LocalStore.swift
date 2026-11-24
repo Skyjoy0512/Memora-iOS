@@ -72,6 +72,14 @@ final class LocalStore {
   private func protectFiles() throws {
     let manager = FileManager.default
     var folder = fileURL.deletingLastPathComponent()
+    // Data protection is a device contract: on the Mac the same attribute
+    // leaves the folder SQLite cannot open, which would break host test
+    // harnesses. Backup exclusion applies everywhere.
+    #if os(iOS)
+    let protection: [FileAttributeKey: Any] = [.protectionKey: FileProtectionType.complete]
+    #else
+    let protection: [FileAttributeKey: Any] = [:]
+    #endif
     do {
       var isDirectory: ObjCBool = false
       if manager.fileExists(atPath: folder.path, isDirectory: &isDirectory) {
@@ -80,28 +88,25 @@ final class LocalStore {
         try manager.createDirectory(
           at: folder,
           withIntermediateDirectories: true,
-          attributes: [.protectionKey: FileProtectionType.complete]
+          attributes: protection.isEmpty ? nil : protection
         )
       }
 
-      try manager.setAttributes(
-        [.protectionKey: FileProtectionType.complete],
-        ofItemAtPath: folder.path
-      )
+      if !protection.isEmpty {
+        try manager.setAttributes(protection, ofItemAtPath: folder.path)
+      }
 
       var values = URLResourceValues()
       values.isExcludedFromBackup = true
       try folder.setResourceValues(values)
 
+      guard !protection.isEmpty else { return }
       for path in [
         fileURL.path,
         fileURL.path + "-wal",
         fileURL.path + "-shm",
       ] where manager.fileExists(atPath: path) {
-        try manager.setAttributes(
-          [.protectionKey: FileProtectionType.complete],
-          ofItemAtPath: path
-        )
+        try manager.setAttributes(protection, ofItemAtPath: path)
       }
     } catch let error as StoreError {
       throw error
