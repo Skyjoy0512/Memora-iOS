@@ -26,7 +26,8 @@ swiftc App/SummaryKnowledge.swift \
   App/MeetingStatus.swift App/RecordPrivacy.swift App/RecordAccessPolicy.swift App/AIAnswerFailure.swift \
   App/MeetingSummary.swift App/SummaryArtifactScope.swift App/MeetingSummaryInput.swift App/GeneratedSummaryEvidence.swift \
   App/SummaryActionItem.swift App/SummaryResponseParser.swift App/MarkdownSummaryExtractor.swift \
-  App/MemoraTask.swift App/TaskRelationships.swift App/TaskProgress.swift \
+  App/MemoraTask.swift App/TaskRelationships.swift App/TaskProgress.swift App/TaskOwnership.swift \
+  App/ActionSpeakerMatch.swift App/ActionTaskOwner.swift \
   App/SummaryDiagnostics.swift App/LocalStore.swift App/ProcessingService.swift App/SummaryBackgroundScheduling.swift App/SummaryJobFingerprint.swift \
   App/MemoraModel+BackgroundSummary.swift App/MemoraModel+SummaryGeneration.swift App/MemoraModel+SummaryTasks.swift \
   App/SummaryModeClassifier.swift App/SummaryModeBreadcrumb.swift App/MemoraModel+SummaryMode.swift \

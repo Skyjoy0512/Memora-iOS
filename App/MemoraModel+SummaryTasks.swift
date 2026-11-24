@@ -22,18 +22,21 @@ extension MemoraModel {
       let title = action.title.trimmingCharacters(in: .whitespacesAndNewlines)
       guard !title.isEmpty, existing.insert(SummaryResponseParser.taskKey(title)).inserted else { continue }
       let spokenOwner = SummaryActionItem.normalized(action.owner)
-      let ownedByMe = record.flatMap {
+      let ownership = record.flatMap {
         speakerActionOwnership(owner: spokenOwner, title: title, in: $0)
       }
+      let ownedByMe = ownership?.ownedByMe
+      let needsConfirmation = ownership == .needsConfirmation
       added.append(MemoraTask(
         id: UUID(),
         title: title,
         meetingID: meetingID,
-        assignee: ownedByMe == true ? nil : spokenOwner,
+        assignee: ownedByMe == true || needsConfirmation ? nil : spokenOwner,
         dueDate: action.dueDate(relativeTo: meetingDate),
         isCompleted: false,
         detail: action.detail,
-        ownedByMe: ownedByMe
+        ownedByMe: ownedByMe,
+        ownerNeedsConfirmation: needsConfirmation ? true : nil
       ))
     }
     // Newest first, like a task added by hand, keeping the meeting's order.

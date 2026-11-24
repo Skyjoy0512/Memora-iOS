@@ -3,6 +3,8 @@ import Foundation
 enum TaskOwnership {
   static func isMine(_ task: MemoraTask, names: [String]) -> Bool {
     if let owned = task.ownedByMe { return owned }
+    // An owner the person has not settled yet is never counted as theirs.
+    if task.ownerNeedsConfirmation == true { return false }
     if task.relationships.assigneePersonID != nil { return false }
     let owner = normalized(task.assignee ?? "")
     if owner.isEmpty { return task.meetingID == nil }
@@ -36,6 +38,7 @@ enum TaskOwnership {
 
   private static func isMine(_ task: MemoraTask, identities: Set<String>) -> Bool {
     if let owned = task.ownedByMe { return owned }
+    if task.ownerNeedsConfirmation == true { return false }
     if task.relationships.assigneePersonID != nil { return false }
     let owner = normalized(task.assignee ?? "")
     if owner.isEmpty { return task.meetingID == nil }

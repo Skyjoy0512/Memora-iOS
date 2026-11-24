@@ -4,6 +4,9 @@ struct MemoraTask: Identifiable, Hashable, Codable {
   var id: UUID
   var title: String
   var ownedByMe: Bool?
+  /// Set when a verified voice left the action's owner open: the person decides
+  /// before the name rule counts it as theirs.
+  var ownerNeedsConfirmation: Bool?
   var relationships = TaskRelationships()
   var detail: String = ""
   var workDate: Date?
@@ -37,11 +40,13 @@ struct MemoraTask: Identifiable, Hashable, Codable {
     reminderTime: Date? = nil,
     ownedByMe: Bool? = nil,
     relationships: TaskRelationships = TaskRelationships(),
+    ownerNeedsConfirmation: Bool? = nil,
     privacy: RecordPrivacy? = nil
   ) {
     self.id = id
     self.title = title
     self.ownedByMe = ownedByMe
+    self.ownerNeedsConfirmation = ownerNeedsConfirmation
     self.relationships = relationships
     self.detail = detail
     self.workDate = workDate
@@ -57,7 +62,7 @@ struct MemoraTask: Identifiable, Hashable, Codable {
   }
 
   private enum CodingKeys: String, CodingKey {
-    case id, title, detail, workDate, progress, meetingID, assignee, dueDate, isCompleted, completedAt, remindsAtDue, reminderTime, ownedByMe, relationships, privacy
+    case id, title, detail, workDate, progress, meetingID, assignee, dueDate, isCompleted, completedAt, remindsAtDue, reminderTime, ownedByMe, ownerNeedsConfirmation, relationships, privacy
   }
 
   init(from decoder: Decoder) throws {
@@ -65,6 +70,7 @@ struct MemoraTask: Identifiable, Hashable, Codable {
     id = try container.decode(UUID.self, forKey: .id)
     title = try container.decode(String.self, forKey: .title)
     ownedByMe = try container.decodeIfPresent(Bool.self, forKey: .ownedByMe)
+    ownerNeedsConfirmation = try container.decodeIfPresent(Bool.self, forKey: .ownerNeedsConfirmation)
     relationships = try container.decodeIfPresent(TaskRelationships.self, forKey: .relationships) ?? TaskRelationships()
     detail = try container.decodeIfPresent(String.self, forKey: .detail) ?? ""
     workDate = try container.decodeIfPresent(Date.self, forKey: .workDate)
@@ -84,6 +90,7 @@ struct MemoraTask: Identifiable, Hashable, Codable {
     try container.encode(id, forKey: .id)
     try container.encode(title, forKey: .title)
     try container.encodeIfPresent(ownedByMe, forKey: .ownedByMe)
+    try container.encodeIfPresent(ownerNeedsConfirmation, forKey: .ownerNeedsConfirmation)
     try container.encode(relationships, forKey: .relationships)
     try container.encode(detail, forKey: .detail)
     try container.encodeIfPresent(workDate, forKey: .workDate)

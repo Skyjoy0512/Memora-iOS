@@ -72,9 +72,9 @@ extension MemoraModel {
   /// Whether an action the summary credited to the person was said by the
   /// cluster the registered voice matched. Nil leaves the name-based rule in
   /// charge, which is also what happens before a voice analysis has run.
-  func speakerActionOwnership(owner: String?, title: String, in record: Meeting) -> Bool? {
+  func speakerActionOwnership(owner: String?, title: String, in record: Meeting) -> ActionTaskOwner.Ownership? {
     guard let evidence = currentSpeakerTaskEvidence(for: record) else { return nil }
-    return ActionTaskOwner.ownedByMe(
+    return ActionTaskOwner.ownership(
       owner: owner, names: [profile.name, account?.displayName ?? ""],
       actionTitle: title, transcript: record.transcript, ownSpeakerID: evidence.speakerID)
   }

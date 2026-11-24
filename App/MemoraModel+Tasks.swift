@@ -11,6 +11,21 @@ extension MemoraModel {
     TaskOwnership.isMine(task, names: [profile.name, account?.displayName ?? ""])
   }
 
+  /// Records the person's decision on an owner the summary could not confirm, so
+  /// the name rule does not decide it later.
+  @discardableResult
+  func confirmTaskOwner(_ id: UUID, isMine: Bool) -> Bool {
+    guard !isRestoring, currentTeamID == nil, isStoreWritable(),
+          let index = tasks.firstIndex(where: { $0.id == id }) else { return false }
+    var candidate = tasks
+    candidate[index].ownedByMe = isMine
+    candidate[index].ownerNeedsConfirmation = nil
+    if isMine { candidate[index].assignee = nil }
+    guard persistNow(candidate, forKey: StorageKey.tasks) else { return false }
+    tasks = candidate
+    return true
+  }
+
   func toggleTask(_ id: UUID) {
     guard !isRestoring, currentTeamID == nil, isStoreWritable(), let index = tasks.firstIndex(where: { $0.id == id }) else { return }
     var candidate = tasks
@@ -60,8 +75,11 @@ extension MemoraModel {
     }
     if let ownedByMe {
       candidate[index].ownedByMe = ownedByMe
+      // Editing the owner settles whatever the summary left open.
+      candidate[index].ownerNeedsConfirmation = nil
     } else if trimmedAssignee != (candidate[index].assignee ?? "") {
       candidate[index].ownedByMe = nil
+      candidate[index].ownerNeedsConfirmation = nil
     }
     if let relationships { candidate[index].relationships = relationships }
     if relationships == nil, trimmedAssignee != (tasks[index].assignee ?? "") {

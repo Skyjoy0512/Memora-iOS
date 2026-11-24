@@ -144,17 +144,38 @@ struct TasksView: View {
   }
 
   private func taskRow(_ task: MemoraTask, depth: Int) -> some View {
-    HStack(alignment: .top, spacing: 8) {
-      TaskRow(task: task, showsSource: true) {
-        editingTask = task
+    VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
+      HStack(alignment: .top, spacing: 8) {
+        TaskRow(task: task, showsSource: true) {
+          editingTask = task
+        }
+
+        if let meetingID = task.meetingID, model.meetingTitles[meetingID] != nil {
+          ToolbarIconButton("元の記録を開く", icon: .chevronRight) {
+            model.homePath.append(.meeting(meetingID))
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel("「\(model.meetingTitles[meetingID] ?? "記録")」を開く")
+        }
       }
 
-      if let meetingID = task.meetingID, model.meetingTitles[meetingID] != nil {
-        ToolbarIconButton("元の記録を開く", icon: .chevronRight) {
-          model.homePath.append(.meeting(meetingID))
+      if task.ownerNeedsConfirmation == true {
+        HStack(spacing: MemoraSpacing.lg) {
+          Button("自分のタスクにする") {
+            InteractionFeedback.shared.send(.selection)
+            model.confirmTaskOwner(task.id, isMine: true)
+          }
+          Button("他の人にする") {
+            InteractionFeedback.shared.send(.tap)
+            model.confirmTaskOwner(task.id, isMine: false)
+          }
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("「\(model.meetingTitles[meetingID] ?? "記録")」を開く")
+        .font(MemoraTypography.secondary.weight(.medium))
+        .buttonStyle(MemoraQuietButtonStyle())
+        .foregroundStyle(AnyShapeStyle(.tint))
+        .padding(.leading, MemoraSpacing.touchTarget + 12)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("担当を確認")
       }
     }
     .padding(.leading, CGFloat(min(depth, 4)) * 12)
@@ -210,7 +231,7 @@ struct TasksView: View {
 
   private var visibleTasks: [MemoraTask] {
     model.tasks.filter {
-      model.isOwnTask($0) && $0.isCompleted == showsCompleted
+      (model.isOwnTask($0) || $0.ownerNeedsConfirmation == true) && $0.isCompleted == showsCompleted
         && (!todayOnly || $0.workDate.map { Calendar.current.isDateInToday($0) } == true)
         && (!waitingOnly || $0.progress == .waiting)
     }
@@ -243,8 +264,10 @@ struct TasksView: View {
     let ordered = tasks.sorted {
       ($0.dueDate ?? .distantFuture) < ($1.dueDate ?? .distantFuture)
     }
-    let grouped = Dictionary(grouping: ordered) { task in
-      TaskDueBucket(task.dueDate, today: today, tomorrow: tomorrow, weekEnd: weekEnd, calendar: calendar)
+    let grouped = Dictionary(grouping: ordered) { task -> TaskDueBucket in
+      // An owner the person has not settled is asked about before any date.
+      guard task.ownerNeedsConfirmation != true else { return .needsConfirmation }
+      return TaskDueBucket(task.dueDate, today: today, tomorrow: tomorrow, weekEnd: weekEnd, calendar: calendar)
     }
     // A fixed order, so 期限切れ stays on top even when sorting hid it.
     return TaskDueBucket.allCases.compactMap { bucket in
@@ -266,7 +289,7 @@ private struct TaskDueSection: Identifiable {
 /// When a task is due, relative to today. Declared in the order the sections
 /// read.
 private enum TaskDueBucket: CaseIterable {
-  case overdue, today, tomorrow, week, later, undated
+  case needsConfirmation, overdue, today, tomorrow, week, later, undated
 
   init(_ due: Date?, today: Date, tomorrow: Date, weekEnd: Date, calendar: Calendar) {
     guard let due else {
@@ -289,6 +312,7 @@ private enum TaskDueBucket: CaseIterable {
 
   var title: String {
     switch self {
+    case .needsConfirmation: "要確認"
     case .overdue: "期限切れ"
     case .today: "今日"
     case .tomorrow: "明日"

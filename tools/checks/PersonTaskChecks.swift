@@ -28,6 +28,7 @@ struct PersonTaskChecks {
     legacyJSON["relationships"] = ["documentIDs": []]
     let decoded = try JSONDecoder().decode(MemoraTask.self, from: JSONSerialization.data(withJSONObject: legacyJSON))
     precondition(decoded.relationships.assigneePersonID == nil && decoded.assignee == legacy.assignee)
+    precondition(decoded.ownerNeedsConfirmation == nil)
 
     // A verified voice decides only actions the summary already credited to the
     // person, and only when the wording points at one speaker clearly.
@@ -47,16 +48,25 @@ struct PersonTaskChecks {
       timestamp: 6, text: "資料は来週共有します", endTime: 9, speakerID: "S2",
       identificationStatus: .anonymous)
     let quoted = [ownQuote, otherQuote]
-    precondition(ActionTaskOwner.ownedByMe(owner: "自分", names: [], actionTitle: "見積書を金曜までに送付",
-      transcript: quoted, ownSpeakerID: "S1") == true)
-    precondition(ActionTaskOwner.ownedByMe(owner: "自分", names: [], actionTitle: "見積書を金曜までに送付",
-      transcript: quoted, ownSpeakerID: "S2") == false)
-    precondition(ActionTaskOwner.ownedByMe(owner: "他の人", names: [], actionTitle: "見積書を金曜までに送付",
+    precondition(ActionTaskOwner.ownership(owner: "自分", names: [], actionTitle: "見積書を金曜までに送付",
+      transcript: quoted, ownSpeakerID: "S1") == .mine)
+    precondition(ActionTaskOwner.ownership(owner: "自分", names: [], actionTitle: "見積書を金曜までに送付",
+      transcript: quoted, ownSpeakerID: "S2") == .other)
+    precondition(ActionTaskOwner.ownership(owner: "他の人", names: [], actionTitle: "見積書を金曜までに送付",
       transcript: quoted, ownSpeakerID: "S1") == nil)
-    precondition(ActionTaskOwner.ownedByMe(owner: "自分", names: [], actionTitle: "見積書を金曜までに送付",
+    precondition(ActionTaskOwner.ownership(owner: "自分", names: [], actionTitle: "見積書を金曜までに送付",
       transcript: quoted, ownSpeakerID: nil) == nil)
-    precondition(ActionTaskOwner.ownedByMe(owner: "自分", names: [], actionTitle: "予算の確認をお願いします",
-      transcript: quoted, ownSpeakerID: "S1") == nil)
+    // The voice is in the record but the wording fits no speaker: the person
+    // decides, and the name rule must not quietly call it theirs.
+    precondition(ActionTaskOwner.ownership(owner: "自分", names: [], actionTitle: "予算の確認をお願いします",
+      transcript: quoted, ownSpeakerID: "S1") == .needsConfirmation)
+    precondition(ActionTaskOwner.Ownership.mine.ownedByMe == true)
+    precondition(ActionTaskOwner.Ownership.other.ownedByMe == false)
+    precondition(ActionTaskOwner.Ownership.needsConfirmation.ownedByMe == nil)
+    let unconfirmed = MemoraTask(id: UUID(), title: "要確認のタスク", meetingID: UUID(), isCompleted: false,
+      ownerNeedsConfirmation: true)
+    precondition(!TaskOwnership.isMine(unconfirmed, names: []))
+    precondition(!TaskOwnership.ownedTasks([unconfirmed], names: []).contains { $0.id == unconfirmed.id })
 
     precondition(model.addTask(title: "IDで担当", assignee: "別の表記", dueDate: nil, ownedByMe: false, assigneePersonID: first.id))
     let assigned = model.tasks[0]
@@ -67,6 +77,16 @@ struct PersonTaskChecks {
     precondition(!model.addTask(title: "不明なID", assignee: first.name, dueDate: nil, assigneePersonID: UUID()))
     precondition(!model.addTask(title: "自分と別担当の矛盾", assignee: first.name, dueDate: nil, ownedByMe: true, assigneePersonID: first.id))
     precondition(model.tasks.count == count)
+    let unconfirmedID = UUID()
+    model.tasks.append(MemoraTask(id: unconfirmedID, title: "要確認", meetingID: nil, isCompleted: false,
+      ownerNeedsConfirmation: true))
+    precondition(!model.isOwnTask(model.task(id: unconfirmedID)!))
+    precondition(model.confirmTaskOwner(unconfirmedID, isMine: true))
+    precondition(model.task(id: unconfirmedID)?.ownedByMe == true)
+    precondition(model.task(id: unconfirmedID)?.ownerNeedsConfirmation == nil)
+    precondition(model.confirmTaskOwner(unconfirmedID, isMine: false))
+    precondition(!model.isOwnTask(model.task(id: unconfirmedID)!))
+    model.tasks.removeAll { $0.id == unconfirmedID }
     precondition(model.addTask(title: "旧形式を保持", assignee: first.name, dueDate: nil, ownedByMe: false))
     let unboundID = model.tasks[0].id
     precondition(model.tasks[0].relationships.assigneePersonID == nil)
