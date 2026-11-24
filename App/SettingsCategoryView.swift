@@ -318,6 +318,9 @@ struct SettingsCategoryView: View {
           NavigationLink { OccupationSelectionView() } label: {
             SettingsValue(title: "仕事・活動", value: model.occupationSummary, icon: .briefcase)
           }
+          NavigationLink { JobsStatusView() } label: {
+            SettingsValue(title: "処理の状況", value: jobsStatusValue, icon: .checklist)
+          }
         }
         Section("Ask AI") {
           NavigationLink { SkillsView() } label: { SettingsLabel("スキル", icon: .docRichtext) }
@@ -329,6 +332,14 @@ struct SettingsCategoryView: View {
           }
         }
     }
+  }
+
+  /// Stopped work is named as such; a quiet queue stays quiet.
+  private var jobsStatusValue: String {
+    let rows = model.jobStatusRows
+    let needsAction = rows.filter(\.needsUserAction).count
+    if needsAction > 0 { return "要確認 \(needsAction)件" }
+    return rows.isEmpty ? "なし" : "\(rows.count)件"
   }
 
   private var journalSections: some View {
