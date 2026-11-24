@@ -116,7 +116,7 @@ enum AgentTool: String, CaseIterable {
     case .createSlides:
       "スライド資料を作成して保存する（利用者の承認後に実行）。PowerPointとPDFで書き出せる。1枚目は箇条書きなしの表紙にできる。"
     case .addTasks:
-      "タスクを追加する（利用者の承認後に実行）。"
+      "タスクを追加する（利用者の承認後に実行）。会議では発言した本人が引き受けた場合だけ担当にし、メールから起こすときは依頼された自分（利用者）を担当にする。"
     case .createProject:
       "プロジェクトを作成してidを返す（利用者の承認後に実行）。"
     case .moveRecordsToProject:
@@ -235,7 +235,7 @@ enum AgentTool: String, CaseIterable {
           "items": object([
             "title": string("タスクの内容"),
             "detail": string("根拠や詳細。資料に記載された内容のみ（任意、4,000字以内）"),
-            "assignee": string("担当者（記録で明言された場合のみ）"),
+            "assignee": string("担当者（記録で明言された場合のみ）。メールから起こしたタスクは、依頼された自分（利用者）の担当とし、差出人を担当にしない"),
             "due_date": string("期限 yyyy-MM-dd（記録で明言された場合のみ）"),
             "meeting_id": string("元になった会議のid（任意）")
           ], required: ["title"])
