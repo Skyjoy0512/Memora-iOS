@@ -160,22 +160,8 @@ struct TasksView: View {
       }
 
       if task.ownerNeedsConfirmation == true {
-        HStack(spacing: MemoraSpacing.lg) {
-          Button("自分のタスクにする") {
-            InteractionFeedback.shared.send(.selection)
-            model.confirmTaskOwner(task.id, isMine: true)
-          }
-          Button("他の人にする") {
-            InteractionFeedback.shared.send(.tap)
-            model.confirmTaskOwner(task.id, isMine: false)
-          }
-        }
-        .font(MemoraTypography.secondary.weight(.medium))
-        .buttonStyle(MemoraQuietButtonStyle())
-        .foregroundStyle(AnyShapeStyle(.tint))
-        .padding(.leading, MemoraSpacing.touchTarget + 12)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("担当を確認")
+        TaskOwnerConfirmation(task: task)
+          .padding(.leading, MemoraSpacing.touchTarget + 12)
       }
     }
     .padding(.leading, CGFloat(min(depth, 4)) * 12)

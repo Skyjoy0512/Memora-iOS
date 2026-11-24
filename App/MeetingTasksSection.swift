@@ -15,8 +15,14 @@ struct MeetingTasksSection: View {
           .foregroundStyle(.secondary)
       } else {
         ForEach(meetingTasks) { task in
-          TaskRow(task: task, showsMetadata: false) {
-            editingTask = task
+          VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
+            TaskRow(task: task, showsMetadata: false) {
+              editingTask = task
+            }
+            if task.ownerNeedsConfirmation == true {
+              TaskOwnerConfirmation(task: task)
+                .padding(.leading, MemoraSpacing.touchTarget + 12)
+            }
           }
         }
       }
