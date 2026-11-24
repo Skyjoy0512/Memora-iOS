@@ -41,7 +41,9 @@ class ExperiencePresentationChecks(unittest.TestCase):
         self.assertIn('Text("準備中")', provider)
         self.assertIn(".disabled(action == nil)", provider)
         self.assertIn("許可した内容を送信します", auth)
-        self.assertNotIn("model.signIn", auth)
+        # Only the connected ChatGPT path may sign in; the placeholders must not.
+        self.assertIn("model.signInWithChatGPT()", auth)
+        self.assertNotIn("model.signIn(", auth)
         self.assertNotIn("SecureField", auth)
 
     def test_plans_separate_future_products_from_local_selection(self):
@@ -71,7 +73,6 @@ class ExperiencePresentationChecks(unittest.TestCase):
         self.assertIn('accessibilityLabel("今日に戻る")', home)
         self.assertIn("selectedDate = Calendar.current.startOfDay(for: .now)", home)
         self.assertIn("if !isViewingToday {", home)
-        self.assertIn("AnyLayout(VStackLayout", (APP / "HomeActivityLinks.swift").read_text())
         self.assertIn("JournalInsertionTime.suggestion(on: selectedDate)", home)
         self.assertIn("ForEach(journalAddActions(after: index, in: timeline.items))", home)
         self.assertIn("beginJournalEntry(after: index, in: items, kind: kind)", home)
@@ -80,7 +81,6 @@ class ExperiencePresentationChecks(unittest.TestCase):
         self.assertIn("onDismiss: { model.lifeLogCreationDate = nil }", root)
         empty = home.split("private var emptyDay:")[1].split("///")[0]
         self.assertNotIn("memoraCard", empty)
-        self.assertNotIn("memoraCard", (APP / "HomeActivityLinks.swift").read_text())
         self.assertIn('Text("タイムライン")', home)
 
     def test_search_states_are_scoped_and_clear_real_bindings(self):

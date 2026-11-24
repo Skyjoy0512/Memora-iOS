@@ -11,6 +11,7 @@ import SQLite3
   var currentTeamID: String?
   var isRestoring = false
   var isStoreProtected = false
+  var isApplyingTransientMeetingUpdate = false
   var persistenceFailureMessage: String?
   var activeDetailMeetingID: UUID?
   var activeDetailTabs = [0]

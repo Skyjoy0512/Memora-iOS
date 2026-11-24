@@ -32,6 +32,9 @@ def sections(source, name):
     # section equality, membership/order, and independent Japanese-label checks
     # remain mandatory. Never change the app back to match a historical label.
     value = value.replace('return date.formatted(.dateTime.year().month())', 'return MemoraFormat.monthTitle(date)')
+    # The screen's sort control is not part of the grouping under test; both
+    # candidates get the same default and only the date grouping is compared.
+    value = '  enum FileListSort { case newest, oldest, longest }\n  var sort = FileListSort.newest\n' + value
     return f'struct {name} {{\n{value}\n}}\n'
 
 with tempfile.TemporaryDirectory(prefix='memora-perf-', dir=os.environ.get('MEMORA_CHECK_TMPDIR')) as folder:
@@ -48,7 +51,8 @@ with tempfile.TemporaryDirectory(prefix='memora-perf-', dir=os.environ.get('MEMO
         ranking = folder/'Ranking.swift'
         ranking.write_text('import Foundation\nenum MeetingRanking {\n' + source[begin:end] + '}\n')
     binary = folder/'collections'
-    subprocess.run(['swiftc', '-O', str(ranking), str(legacy), str(current), 'App/MemoraFormat.swift', 'tools/checks/CollectionPerformanceChecks.swift', '-o', str(binary)], check=True)
+    subprocess.run(['swiftc', '-O', str(ranking), str(legacy), str(current), 'App/MemoraFormat.swift',
+                    'tools/checks/CollectionPerformanceChecks.swift', '-o', str(binary)], check=True)
     for locale in [args.locale] if args.locale else ['en_US', 'ja_JP']:
         subprocess.run([str(binary), '-AppleLocale', locale], check=True, timeout=120,
                        env={**os.environ, 'TZ': 'UTC'})

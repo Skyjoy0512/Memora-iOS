@@ -27,7 +27,8 @@ class ChatSurfacePresentationChecks(unittest.TestCase):
         self.assertIn(".buttonStyle(MemoraQuietButtonStyle())", header)
         for action in ("onOpenSidebar", "onNewChat", "onHistory", "onSearch"):
             self.assertIn(action, header)
-        self.assertIn("Image(icon: .chevronDown, size: MemoraIconMetrics.accessory)", header)
+        self.assertIn("Text(scopeTitle)", header)
+        self.assertIn('accessibilityLabel("\\(scopeTitle)、検索")', header)
         self.assertIn(".disabled(model.aiMessages.isEmpty)", header)
 
     def test_response_actions_have_consistent_glyphs_and_reflow(self):
@@ -81,7 +82,11 @@ class ChatSurfacePresentationChecks(unittest.TestCase):
                          "!SampleContent.isSample", "agentPromptSuggestions.contains(suggestion)", "composerDraft.isEmpty",
                          "composerAttachment == nil", "composerFocusRequest = UUID()"):
             self.assertIn(contract, source)
-        self.assertNotIn("sendAIChat(", source)
+        # A task-candidate suggestion that asks to run at once sends only after
+        # the same revalidation the staged path uses; nothing is deferred.
+        self.assertIn("if suggestion.sendsOnSelection { return sendAIChat(suggestion.prompt) }", source)
+        self.assertLess(source.index("agentPromptSuggestions.contains(suggestion)"),
+                        source.index("sendAIChat(suggestion.prompt)"))
         self.assertNotIn("Task {", source)
 
     def test_workspace_selection_and_recorder_paths_are_direct_and_honest(self):
@@ -93,8 +98,9 @@ class ChatSurfacePresentationChecks(unittest.TestCase):
             self.assertIn(contract, row)
         self.assertIn("ExternalRecorderSettingsView()", (APP / "RootTabView.swift").read_text())
         importer = (APP / "RecorderAudioImportView.swift").read_text()
-        for contract in ("LocalImportContext(in: model)", "importInformationFile(url, context: context)",
-                         "context.isCurrent(in: model)", 'value: "未対応"', "showsFailure = true"):
+        for contract in ("LocalImportContext(in: model)",
+                         "importInformationSources(url, context: context, presentsErrorsLocally: true)",
+                         "context.isCurrent(in: model)", "showsFailure = true"):
             self.assertIn(contract, importer)
 
 

@@ -45,7 +45,7 @@ struct AIComposerAttachmentButton: View {
     Image(icon: .paperclip, size: 20)
       .frame(width: 36, height: 36)
       .background(MemoraPalette.card, in: Circle())
-      .frame(width: 44, height: 44)
+      .frame(width: MemoraSpacing.touchTarget, height: MemoraSpacing.touchTarget)
       .contentShape(Circle())
       .accessibilityHidden(true)
   }

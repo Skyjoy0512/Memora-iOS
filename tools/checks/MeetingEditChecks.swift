@@ -11,6 +11,7 @@ final class MemoraModel {
   var meetingSearchTexts: [UUID: String] = [:]
   var isRestoring = false
   var isStoreProtected = false
+  var isApplyingTransientMeetingUpdate = false
   var currentTeamID: String?
   var aiWorkspaceGeneration = UUID()
   var persistenceFailureMessage: String?

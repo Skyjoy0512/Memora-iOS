@@ -36,7 +36,7 @@ swiftc -D MEMORA_SUMMARY_EVALUATION -enable-bare-slash-regex \
   App/SummaryRequestAdmission.swift App/SummaryRetryDelay.swift App/CloudHTTPTransport.swift App/LocalStore.swift \
   App/SummaryArtifactCache.swift App/SummaryArtifactIdentity.swift App/SummaryPartArtifact.swift App/SummaryCompositionPlan.swift \
   App/SummaryOptimizationGate.swift App/MeetingSummarizer+ParallelComposition.swift App/MeetingSummarizer.swift \
-  App/CloudAIService.swift App/CloudSummaryResponse.swift App/CloudTurnStreaming.swift App/CloudTurnStreamReader.swift \
+  App/JSONRenderPrompt.swift App/CloudAIService.swift App/CloudSummaryResponse.swift App/CloudTurnStreaming.swift App/CloudTurnStreamReader.swift \
   App/CloudSSEEventDecoder.swift App/CloudStreamAccumulator.swift App/CloudAgentTurnDecoder.swift App/CloudTokenUsage.swift \
   App/AgentGenerationPolicy.swift App/AgentSessionBudget.swift App/AgentTurn.swift App/AgentToolCall.swift App/AIAnswerPrompt.swift \
   tools/evaluation/NativeSummaryEvaluation.swift tools/evaluation/NativeSummaryWire.swift \

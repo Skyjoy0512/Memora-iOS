@@ -7,8 +7,8 @@ struct ProjectSourceStorageChecks {
     let root = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
     let project = MemoraSpace(id: UUID(), name: "架空の保存先", symbol: "folder")
     try draftReads(root: root)
-    try linkDraftCommit(root: root, project: project)
-    try failedLinkRetry(root: root, project: project)
+    try await linkDraftCommit(root: root, project: project)
+    try await failedLinkRetry(root: root, project: project)
     try await noteDraftCommit(root: root, project: project)
     try await noteAttachments(root: root, project: project)
     let model = try MemoraModel(storeURL: root.appendingPathComponent("sources.sqlite"))
@@ -164,13 +164,13 @@ struct ProjectSourceStorageChecks {
     print("Draft reads: absent/empty/legacy/reopen, read failure and malformed UTF-8 preserved")
   }
 
-  @MainActor private static func linkDraftCommit(root: URL, project: MemoraSpace) throws {
+  @MainActor private static func linkDraftCommit(root: URL, project: MemoraSpace) async throws {
     for duplicate in [false, true] {
       let url = root.appendingPathComponent("link-draft-\(duplicate).sqlite")
       let model = try MemoraModel(storeURL: url)
       model.spaces = [project]
       RecordStore.store = model.store
-      if duplicate { _ = try model.addProjectLink("https://example.org/page?utm_source=old", projectID: project.id) }
+      if duplicate { _ = try await model.addProjectLink("https://example.org/page?utm_source=old", projectID: project.id) }
       let previous = model.projectSources
       let preparations = model.linkPreparationIDs
       let bodyKey = "workspace.newMemo.\(project.id)"
@@ -180,7 +180,7 @@ struct ProjectSourceStorageChecks {
       try DraftStore.saveAndWait(link, key: bodyKey)
       try DraftStore.saveAndWait("残すタイトル", key: titleKey)
       try sql("CREATE TRIGGER fail_link_draft BEFORE DELETE ON documents WHEN OLD.key = '\(keys[1])' BEGIN SELECT RAISE(ABORT, 'link draft'); END;", url: url)
-      expect(try model.addProjectLink(link, projectID: project.id, removing: keys) == nil)
+      expect(try await model.addProjectLink(link, projectID: project.id, removing: keys) == nil)
       precondition(model.projectSources == previous && model.linkPreparationIDs == preparations)
       precondition(DraftStore.read(bodyKey) == .text(link) && DraftStore.read(titleKey) == .text("残すタイトル"))
       if previous.isEmpty {
@@ -189,7 +189,7 @@ struct ProjectSourceStorageChecks {
         }
       } else { expect(try reload(model) == previous) }
       try sql("DROP TRIGGER fail_link_draft;", url: url)
-      let id = try model.addProjectLink(link, projectID: project.id, removing: keys)!
+      let id = try await model.addProjectLink(link, projectID: project.id, removing: keys)!
       precondition(model.projectSources.count == previous.count + (duplicate ? 0 : 1))
       precondition(model.linkPreparationIDs.count == preparations.count + (duplicate ? 0 : 1))
       if duplicate { precondition(model.projectSources == previous && previous[0].id == id) }
@@ -199,25 +199,25 @@ struct ProjectSourceStorageChecks {
     print("URL drafts: new/deduplicated source, atomic removal, rollback and no duplicate preparation passed")
   }
 
-  @MainActor private static func failedLinkRetry(root: URL, project: MemoraSpace) throws {
+  @MainActor private static func failedLinkRetry(root: URL, project: MemoraSpace) async throws {
     let model = try MemoraModel(storeURL: root.appendingPathComponent("link-retry.sqlite"))
     model.spaces = [project]
     RecordStore.store = model.store
     let link = "https://example.org/retry-\(UUID().uuidString)"
-    let id = try model.addProjectLink(link, projectID: project.id)!
+    let id = try await model.addProjectLink(link, projectID: project.id)!
     let afterAdd = model.linkPreparationIDs.count
     var failed = model.source(id: id)!
     failed.processingStatus = .failed
     failed.errorInformation = "取得できませんでした"
     expect(model.storeProjectSource(failed))
-    let retried = try model.addProjectLink(link, projectID: project.id)!
+    let retried = try await model.addProjectLink(link, projectID: project.id)!
     precondition(retried == id && model.projectSources.count == 1, "a retry must reuse the same record")
     precondition(model.linkPreparationIDs.count == afterAdd + 1, "re-adding a failed source must retry preparation")
     var ready = model.source(id: id)!
     ready.processingStatus = .ready
     ready.extractedTextReference = "retained-text.json"
     expect(model.storeProjectSource(ready))
-    _ = try model.addProjectLink(link, projectID: project.id)
+    _ = try await model.addProjectLink(link, projectID: project.id)
     precondition(model.linkPreparationIDs.count == afterAdd + 1, "a readable duplicate must not be re-fetched")
     print("URL retry: failed source re-added retries the same id; readable duplicate is not re-fetched")
   }

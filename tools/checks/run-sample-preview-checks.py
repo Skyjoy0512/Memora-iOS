@@ -8,7 +8,8 @@ os.chdir(Path(__file__).resolve().parents[2])
 names = ['RecordingAudioPart', 'RecordingAudioManifest', 'Meeting', 'MeetingSource', 'MeetingStatus', 'RecordingMarker', 'TranscriptSegment',
          'SpeakerIdentificationStatus', 'RecordPrivacy', 'SummarySensitivity', 'SummaryKnowledge', 'TemplateSummary',
          'SummarySection', 'SummaryEvidence', 'SummaryEvidenceLink', 'GeneratedSummaryEvidence',
-         'SummaryLength', 'SummaryPreferences', 'SummaryProcessingMode', 'LocalStore',
+         'SummaryLength', 'SummaryPreferences', 'SummaryProcessingMode', 'SummaryModeClassifier',
+         'SummaryModeBreadcrumb', 'LocalStore',
          'SummaryPreviewCache', 'MarkdownBlockParser', 'MarkdownBlock', 'SourcedMarkdownBlock', 'MarkdownFence',
          'SummarizedAudioSample', 'MemoraModel+SamplePreview']
 with tempfile.TemporaryDirectory(prefix='memora-sample-preview-', dir=os.environ.get('MEMORA_CHECK_TMPDIR')) as directory:
