@@ -8,6 +8,20 @@ extension MemoraModel {
     return .adaptive
   }
 
+  /// The template an automatic summary uses, when the mode of the record
+  /// and what the person has asked for agree.
+  ///
+  /// The mode never overrides a template the person chose for this record,
+  /// and it never overrides a fixed preference: a fixed template is the
+  /// person's own choice for every record. The mode only chooses between the
+  /// adaptive summary and the template the person has come to expect for
+  /// this kind of input.
+  func automaticSummaryChoice(for meeting: Meeting, mode: SummaryMode) -> SummaryTemplateChoice {
+    if summaryPreferences.method == .fixed { return defaultSummaryChoice }
+    guard let id = preferredSummaryTemplateID(for: mode), let choice = summaryChoice(id) else { return .adaptive }
+    return choice
+  }
+
   func automaticSummaryCandidates(for meeting: Meeting, fallback: SummaryTemplateChoice) -> [SummaryTemplateChoice] {
     let available = [SummaryTemplateChoice.adaptive] + allSummaryChoices
     if fallback.id == VideoSummaryTemplate.template.id { return [fallback] }

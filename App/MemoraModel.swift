@@ -293,6 +293,22 @@ final class MemoraModel {
   var summaryPreferences: SummaryPreferences = SummaryPreferences.loadOrMigrate() {
     didSet { MemoraModel.storeSetting(summaryPreferences, forKey: "memora.summaryPreferences") }
   }
+  /// What the person has taught the app about each kind of input.
+  var summaryModePreference: SummaryModePreference = MemoraModel.storedSetting(SummaryModePreference.self, forKey: "memora.summaryModePreference") ?? SummaryModePreference() {
+    didSet { MemoraModel.storeSetting(summaryModePreference, forKey: "memora.summaryModePreference") }
+  }
+  /// What was decided about each record, so a later correction can be
+  /// compared with the first decision. Bounded, so it never grows without
+  /// limit.
+  var summaryModeBreadcrumbs: [UUID: SummaryModeBreadcrumb] = [:] {
+    didSet {
+      if summaryModeBreadcrumbs.count > 256 {
+        let keep = Set(summaryModeBreadcrumbs.values
+          .sorted { $0.decidedAt > $1.decidedAt }.prefix(256).map(\.recordID))
+        summaryModeBreadcrumbs = summaryModeBreadcrumbs.filter { keep.contains($0.key) }
+      }
+    }
+  }
   var automaticallyAnalyzesSpeakers = UserDefaults.standard.bool(forKey: "memora.automaticallyAnalyzesSpeakers") {
     didSet { UserDefaults.standard.set(automaticallyAnalyzesSpeakers, forKey: "memora.automaticallyAnalyzesSpeakers") }
   }
