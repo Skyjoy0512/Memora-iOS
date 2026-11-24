@@ -138,6 +138,161 @@ struct SpeakerProcessingChecks {
     invalidProfile = profile
     invalidProfile.enrollmentSamples = []
     precondition(!invalidProfile.isValid)
-    print("SpeakerProcessingChecks: passed (math, compatibility, intervals, manual edits, legacy codec, multi-sample enrollment)")
+
+    var matchAxis = [Float](repeating: 0, count: 256)
+    matchAxis[0] = 1
+    let matchProfile = SpeakerProfile(embeddingData: matchAxis, embeddingModelID: "match256",
+      embeddingModelVersion: "v1", embeddingDimension: 256, enrollmentDuration: 20, consentAt: .now,
+      qualityMetadata: profile.qualityMetadata)
+    func matchVector(_ similarity: Double) -> [Float] {
+      var vector = [Float](repeating: 0, count: 256)
+      let angle = acos(max(-1, min(1, similarity)))
+      vector[0] = Float(cos(angle))
+      vector[1] = Float(sin(angle))
+      return vector
+    }
+    func match(_ result: SpeakerAnalysisResult, similarity: Double = 0.8,
+               lead: Double = 0.1, speech: Double = 1.5) throws -> SpeakerIdentificationService.SelfMatch? {
+      try SpeakerIdentificationService.selfMatch(profile: matchProfile, result: result,
+        minimumSimilarity: similarity, minimumLead: lead, minimumEligibleSpeech: speech)
+    }
+    func requireNoMatch(_ result: SpeakerAnalysisResult, similarity: Double = 0.8,
+                        lead: Double = 0.1, speech: Double = 1.5) throws {
+      let matched = try match(result, similarity: similarity, lead: lead, speech: speech)
+      precondition(matched == nil, "unexpected self-match")
+    }
+    func requireSendable<T: Sendable>(_ value: T) -> T { value }
+
+    let successMatchResult = SpeakerAnalysisResult(
+      intervals: [SpeakerInterval(speakerID: "S1", start: 0, end: 3),
+                  SpeakerInterval(speakerID: "S2", start: 3, end: 5)],
+      embeddings: ["S1": matchVector(0.9), "S2": matchVector(0.55)],
+      modelID: "match256", modelVersion: "v1",
+      eligibleSpeechDurations: ["S1": 2.5, "S2": 1.8])
+    if let matchedSelf = try match(successMatchResult) {
+      precondition(matchedSelf.speakerID == "S1")
+      precondition(abs(matchedSelf.similarity - 0.9) < 0.0001)
+      precondition(matchedSelf == SpeakerIdentificationService.SelfMatch(speakerID: "S1",
+        similarity: matchedSelf.similarity))
+      _ = requireSendable(matchedSelf)
+    } else {
+      preconditionFailure("valid top candidate was not matched")
+    }
+
+    var missingWinnerDuration = successMatchResult
+    missingWinnerDuration.eligibleSpeechDurations = ["S2": 1.8]
+    try requireNoMatch(missingWinnerDuration)
+
+    var shortWinnerDuration = successMatchResult
+    shortWinnerDuration.eligibleSpeechDurations = ["S1": 0.5, "S2": 1.8]
+    try requireNoMatch(shortWinnerDuration)
+
+    var belowThreshold = successMatchResult
+    belowThreshold.embeddings = ["S1": matchVector(0.7), "S2": matchVector(0.4)]
+    try requireNoMatch(belowThreshold)
+
+    var durationCannotWin = successMatchResult
+    durationCannotWin.embeddings = ["S1": matchVector(0.6), "S2": matchVector(0.9)]
+    durationCannotWin.eligibleSpeechDurations = ["S1": 100, "S2": 0.2]
+    try requireNoMatch(durationCannotWin, similarity: 0.5, lead: 0.1, speech: 1)
+
+    var tiedWinner = successMatchResult
+    tiedWinner.embeddings = ["S1": matchVector(0.9), "S2": matchVector(0.9)]
+    tiedWinner.eligibleSpeechDurations = ["S1": 2.5, "S2": 2.5]
+    try requireNoMatch(tiedWinner)
+
+    var nearTieMissingRivalDuration = successMatchResult
+    nearTieMissingRivalDuration.embeddings = ["S1": matchVector(0.9), "S2": matchVector(0.87)]
+    nearTieMissingRivalDuration.eligibleSpeechDurations = ["S1": 2.5]
+    try requireNoMatch(nearTieMissingRivalDuration, similarity: 0.8, lead: 0.05, speech: 1.5)
+
+    var nearTieShortRivalDuration = nearTieMissingRivalDuration
+    nearTieShortRivalDuration.eligibleSpeechDurations = ["S1": 2.5, "S2": 0.2]
+    try requireNoMatch(nearTieShortRivalDuration, similarity: 0.8, lead: 0.05, speech: 1.5)
+
+    var nearTieBelowThresholdRival = successMatchResult
+    nearTieBelowThresholdRival.embeddings = ["S1": matchVector(0.82), "S2": matchVector(0.8)]
+    nearTieBelowThresholdRival.eligibleSpeechDurations = ["S1": 2.5, "S2": 0.2]
+    try requireNoMatch(nearTieBelowThresholdRival, similarity: 0.81, lead: 0.05, speech: 1.5)
+
+    var separatedWinner = successMatchResult
+    separatedWinner.embeddings = ["S1": matchVector(0.9), "S2": matchVector(0.84)]
+    separatedWinner.eligibleSpeechDurations = ["S1": 2.5, "S2": 0.2]
+    let separatedMatch = try match(separatedWinner, similarity: 0.8, lead: 0.05, speech: 1.5)
+    precondition(separatedMatch?.speakerID == "S1")
+
+    var disabledMatchProfile = matchProfile
+    disabledMatchProfile.isEnabled = false
+    let disabledMatch = try SpeakerIdentificationService.selfMatch(profile: disabledMatchProfile,
+      result: successMatchResult, minimumSimilarity: 0.8, minimumLead: 0.1,
+      minimumEligibleSpeech: 1.5)
+    precondition(disabledMatch == nil)
+
+    var invalidMatchProfile = matchProfile
+    invalidMatchProfile.isCurrentUser = false
+    do {
+      _ = try SpeakerIdentificationService.selfMatch(profile: invalidMatchProfile, result: successMatchResult,
+        minimumSimilarity: 0.8, minimumLead: 0.1, minimumEligibleSpeech: 1.5)
+      preconditionFailure("invalid match profile accepted")
+    } catch SpeakerProcessingFailure.invalidEmbedding { }
+
+    var mismatchedMatchResult = successMatchResult
+    mismatchedMatchResult.modelVersion = "v2"
+    do {
+      _ = try match(mismatchedMatchResult)
+      preconditionFailure("incompatible match model accepted")
+    } catch SpeakerProcessingFailure.modelMismatch { }
+
+    var emptyMatchResult = successMatchResult
+    emptyMatchResult.embeddings = [:]
+    try requireNoMatch(emptyMatchResult)
+    var malformedMatchResult = successMatchResult
+    malformedMatchResult.embeddings = ["S1": [1, 0]]
+    try requireNoMatch(malformedMatchResult)
+    var mixedMalformedMatchResult = successMatchResult
+    mixedMalformedMatchResult.embeddings["S2"] = [1, 0]
+    try requireNoMatch(mixedMalformedMatchResult)
+    var emptyKeyMatchResult = successMatchResult
+    emptyKeyMatchResult.embeddings[""] = matchVector(0.5)
+    try requireNoMatch(emptyKeyMatchResult)
+    var nonFiniteMatchResult = successMatchResult
+    nonFiniteMatchResult.embeddings["S2"] = [Float.nan] + [Float](repeating: 0, count: 255)
+    try requireNoMatch(nonFiniteMatchResult)
+
+    var missingWinnerInterval = successMatchResult
+    missingWinnerInterval.intervals = [SpeakerInterval(speakerID: "S2", start: 0, end: 3)]
+    try requireNoMatch(missingWinnerInterval)
+    var invalidWinnerInterval = successMatchResult
+    invalidWinnerInterval.intervals = [SpeakerInterval(speakerID: "S1", start: 3, end: 3)]
+    try requireNoMatch(invalidWinnerInterval)
+
+    func expectInvalidMatchLimits(_ similarity: Double, _ lead: Double, _ speech: Double) {
+      do {
+        _ = try SpeakerIdentificationService.selfMatch(profile: matchProfile, result: successMatchResult,
+          minimumSimilarity: similarity, minimumLead: lead, minimumEligibleSpeech: speech)
+        preconditionFailure("invalid self-match limits accepted")
+      } catch SpeakerProcessingFailure.invalidEmbedding {
+      } catch {
+        preconditionFailure("unexpected self-match limit failure")
+      }
+    }
+    expectInvalidMatchLimits(0, 0.1, 1.5)
+    expectInvalidMatchLimits(1.01, 0.1, 1.5)
+    expectInvalidMatchLimits(.nan, 0.1, 1.5)
+    expectInvalidMatchLimits(.infinity, 0.1, 1.5)
+    expectInvalidMatchLimits(0.8, 0, 1.5)
+    expectInvalidMatchLimits(0.8, 1.01, 1.5)
+    expectInvalidMatchLimits(0.8, .nan, 1.5)
+    expectInvalidMatchLimits(0.8, .infinity, 1.5)
+    expectInvalidMatchLimits(0.8, 0.1, 0)
+    expectInvalidMatchLimits(0.8, 0.1, -1)
+    expectInvalidMatchLimits(0.8, 0.1, .nan)
+    expectInvalidMatchLimits(0.8, 0.1, .infinity)
+    let boundaryMatch = try match(successMatchResult, similarity: 1, lead: 1, speech: 2.5)
+    precondition(boundaryMatch == nil)
+
+    precondition(matchProfile.embeddingData == matchAxis)
+    precondition(successMatchResult.embeddings["S1"] == matchVector(0.9))
+    print("SpeakerProcessingChecks: passed (math, compatibility, intervals, manual edits, legacy codec, multi-sample enrollment, self-match)")
   }
 }
