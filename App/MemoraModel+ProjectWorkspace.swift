@@ -29,4 +29,17 @@ extension MemoraModel {
       .map(ProjectWorkspaceItem.source)
       .sorted { $0.date == $1.date ? $0.id < $1.id : $0.date > $1.date }
   }
+
+  /// Photos the project's records hold, newest first. The record owns the file;
+  /// this is only a reading of it, so a removed record takes its photos along.
+  func projectPhotos(projectID: UUID) -> [ProjectPhoto] {
+    var photos: [ProjectPhoto] = []
+    for record in meetings where record.spaceID == projectID {
+      for name in record.photoFileNames ?? [] {
+        photos.append(ProjectPhoto(name: name, date: record.createdAt,
+                                   recordID: record.id, recordTitle: record.displayTitle))
+      }
+    }
+    return photos.sorted { $0.date == $1.date ? $0.id < $1.id : $0.date > $1.date }
+  }
 }

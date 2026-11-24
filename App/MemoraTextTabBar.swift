@@ -8,6 +8,8 @@ struct MemoraTextTabBar<Item: Hashable>: View {
   @Binding var selection: Item
   var horizontalPadding: CGFloat = MemoraSpacing.screen
   var title: (Item) -> String
+  /// Tightens the row for screens whose titles would otherwise run off the edge.
+  var compact = false
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.dynamicTypeSize) private var typeSize
   @Namespace private var selectionNamespace
@@ -40,11 +42,12 @@ struct MemoraTextTabBar<Item: Hashable>: View {
                 }
               } label: {
                 Text(title(item))
-                  .font(MemoraTypography.body.weight(selection == item ? .semibold : .regular))
+                  .font(compact ? MemoraTypography.secondary.weight(selection == item ? .semibold : .regular)
+                        : MemoraTypography.body.weight(selection == item ? .semibold : .regular))
                   .foregroundStyle(selection == item ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
                   .lineLimit(1)
                   .fixedSize(horizontal: true, vertical: false)
-                  .padding(.horizontal, MemoraSpacing.lg)
+                  .padding(.horizontal, compact ? MemoraSpacing.sm : MemoraSpacing.lg)
                   .frame(minHeight: MemoraSpacing.touchTarget)
                   .background {
                     if selection == item {

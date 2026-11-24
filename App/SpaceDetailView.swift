@@ -7,7 +7,7 @@ struct SpaceDetailView: View {
   var spaceID: UUID
   var zoomNamespace: Namespace.ID?
   @State private var selectedTab = ProjectWorkspaceTab.files
-  @State private var isAskingAI = false
+  @State private var aiPrompt: ProjectAIPrompt?
   @State private var isRenaming = false
   @State private var isDeleting = false
   @State private var isAddingFiles = false
@@ -18,10 +18,15 @@ struct SpaceDetailView: View {
         .filter { $0.projectID == spaceID }
         .sorted { $0.updatedAt > $1.updatedAt }
       let files = model.workspaceFiles(projectID: spaceID)
+        .filter { if case .recording = $0 { true } else { false } }
+      let documents = model.documents
+        .filter { $0.spaceID == spaceID }
+        .sorted { $0.updatedAt > $1.updatedAt }
       let sources = model.workspaceSources(projectID: spaceID)
+      let photos = model.projectPhotos(projectID: spaceID)
 
       VStack(spacing: 0) {
-        MemoraSectionPicker(items: ProjectWorkspaceTab.allCases, selection: $selectedTab, title: \.title)
+        MemoraSectionPicker(items: ProjectWorkspaceTab.allCases, selection: $selectedTab, title: \.title, compact: true)
           .padding(.horizontal, MemoraSpacing.screen)
           .padding(.vertical, MemoraSpacing.sm)
           .accessibilityIdentifier("project.workspace.sections")
@@ -53,6 +58,21 @@ struct SpaceDetailView: View {
                 }
               }
             }
+          case .documents:
+            if documents.isEmpty {
+              workspaceEmpty(.documents) {
+                aiPrompt = ProjectAIPrompt(
+                  id: "documents",
+                  question: "このプロジェクトの記録から資料を作って")
+              }
+            } else {
+              workspaceScroll {
+                ForEach(documents) { document in
+                  ProjectWorkspaceRow(item: .document(document), zoomNamespace: zoomNamespace)
+                    .padding(.vertical, MemoraSpacing.sm)
+                }
+              }
+            }
           case .sources:
             if sources.isEmpty {
               workspaceEmpty(.sources) { model.sourceAddProjectID = spaceID }
@@ -62,6 +82,15 @@ struct SpaceDetailView: View {
                   ProjectWorkspaceRow(item: item, zoomNamespace: zoomNamespace)
                     .padding(.vertical, MemoraSpacing.sm)
                 }
+              }
+            }
+          case .images:
+            if photos.isEmpty {
+              workspaceEmpty(.images) { selectedTab = .files }
+            } else {
+              workspaceScroll {
+                ProjectPhotoGrid(photos: photos)
+                  .padding(.vertical, MemoraSpacing.sm)
               }
             }
           }
@@ -89,7 +118,11 @@ struct SpaceDetailView: View {
             }
             .disabled(model.isRestoring || model.isStoreProtected)
             Button("既存記録を移動", icon: .folder) { isAddingFiles = true }
-            Button("未決事項を質問", icon: .sparkles) { isAskingAI = true }
+            Button("未決事項を質問", icon: .sparkles) {
+              aiPrompt = ProjectAIPrompt(
+                id: "open-questions",
+                question: "このプロジェクトでまだ決まっていないことは？")
+            }
             NavigationLink("関連タスク", value: LibraryRoute.projectTasks(spaceID))
             Button("チームで共有", icon: .personBadgePlus) {
               Task { await model.shareSpaceWithTeam(space.id) }
@@ -104,8 +137,8 @@ struct SpaceDetailView: View {
       }
       .sheet(isPresented: $isAddingFiles) { ProjectFilePickerSheet(spaceID: spaceID) }
       .interactionFeedback(.tap, trigger: isAddingFiles) { _, presented in presented }
-      .sheet(isPresented: $isAskingAI) {
-        AIQuestionView(scope: .space(space.id), askingQuestion: "このプロジェクトでまだ決まっていないことは？")
+      .sheet(item: $aiPrompt) { prompt in
+        AIQuestionView(scope: .space(space.id), askingQuestion: prompt.question)
       }
       .sheet(isPresented: $isRenaming) { RenameSpaceSheet(space: space) }
       .confirmationDialog("このプロジェクトを削除しますか？", isPresented: $isDeleting, titleVisibility: .visible) {
@@ -152,4 +185,10 @@ struct SpaceDetailView: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 
+}
+
+/// One question the workspace hands to Ask AI, fixed before the sheet opens.
+private struct ProjectAIPrompt: Identifiable {
+  var id: String
+  var question: String
 }
