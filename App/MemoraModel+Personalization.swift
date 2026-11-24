@@ -1,6 +1,11 @@
 import Foundation
 
 extension MemoraModel {
+  /// Conservative candidate limits; device calibration is pending.
+  static var speakerTaskMatchLimits: (similarity: Double, lead: Double, speech: Double) {
+    (similarity: 0.92, lead: 0.08, speech: 8.0)
+  }
+
   func automaticSummaryChoice(for meeting: Meeting, useCaseID: String?) -> SummaryTemplateChoice {
     if let useCase = OccupationCatalog.useCases.first(where: { $0.id == useCaseID }),
        let choice = useCase.templateIDs.compactMap(summaryChoice).first { return choice }

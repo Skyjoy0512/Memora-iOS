@@ -221,6 +221,124 @@ struct SpeakerProcessingChecks {
     let separatedMatch = try match(separatedWinner, similarity: 0.8, lead: 0.05, speech: 1.5)
     precondition(separatedMatch?.speakerID == "S1")
 
+    let evidenceRecordID = UUID()
+    let evidenceFingerprint = "aligned-transcript-fingerprint"
+    let evidence = SpeakerTaskOwnershipEvidence(recordID: evidenceRecordID, speakerID: "S1",
+      profileID: matchProfile.id, profileUpdatedAt: matchProfile.updatedAt,
+      transcriptFingerprint: evidenceFingerprint, similarity: 0.93)
+    func matchesEvidence(_ candidate: SpeakerTaskOwnershipEvidence, recordID: UUID,
+                         profile: SpeakerProfile, fingerprint: String,
+                         minimumSimilarity: Double) -> Bool {
+      candidate.matches(recordID: recordID, profile: profile,
+        transcriptFingerprint: fingerprint, minimumSimilarity: minimumSimilarity)
+    }
+    func requireEvidenceMatch(_ candidate: SpeakerTaskOwnershipEvidence, recordID: UUID,
+                              profile: SpeakerProfile, fingerprint: String,
+                              minimumSimilarity: Double) {
+      precondition(matchesEvidence(candidate, recordID: recordID, profile: profile,
+        fingerprint: fingerprint, minimumSimilarity: minimumSimilarity), "valid evidence rejected")
+    }
+    func requireEvidenceRejection(_ candidate: SpeakerTaskOwnershipEvidence, recordID: UUID,
+                                  profile: SpeakerProfile, fingerprint: String,
+                                  minimumSimilarity: Double) {
+      precondition(!matchesEvidence(candidate, recordID: recordID, profile: profile,
+        fingerprint: fingerprint, minimumSimilarity: minimumSimilarity), "invalid evidence accepted")
+    }
+
+    requireEvidenceMatch(evidence, recordID: evidenceRecordID, profile: matchProfile,
+      fingerprint: evidenceFingerprint, minimumSimilarity: 0.92)
+    _ = requireSendable(evidence)
+    let evidenceData = try JSONEncoder().encode(evidence)
+    let decodedEvidence = try JSONDecoder().decode(SpeakerTaskOwnershipEvidence.self, from: evidenceData)
+    precondition(decodedEvidence == evidence)
+
+    var tamperedRecord = evidence
+    tamperedRecord.recordID = UUID()
+    requireEvidenceRejection(tamperedRecord, recordID: evidenceRecordID, profile: matchProfile,
+      fingerprint: evidenceFingerprint, minimumSimilarity: 0.92)
+    requireEvidenceRejection(evidence, recordID: UUID(), profile: matchProfile,
+      fingerprint: evidenceFingerprint, minimumSimilarity: 0.92)
+
+    var emptySpeaker = evidence
+    emptySpeaker.speakerID = ""
+    requireEvidenceRejection(emptySpeaker, recordID: evidenceRecordID, profile: matchProfile,
+      fingerprint: evidenceFingerprint, minimumSimilarity: 0.92)
+    var blankSpeaker = evidence
+    blankSpeaker.speakerID = "   "
+    requireEvidenceRejection(blankSpeaker, recordID: evidenceRecordID, profile: matchProfile,
+      fingerprint: evidenceFingerprint, minimumSimilarity: 0.92)
+
+    var changedProfile = evidence
+    changedProfile.profileID = UUID()
+    requireEvidenceRejection(changedProfile, recordID: evidenceRecordID, profile: matchProfile,
+      fingerprint: evidenceFingerprint, minimumSimilarity: 0.92)
+    var otherProfile = matchProfile
+    otherProfile.id = UUID()
+    requireEvidenceRejection(evidence, recordID: evidenceRecordID, profile: otherProfile,
+      fingerprint: evidenceFingerprint, minimumSimilarity: 0.92)
+
+    var changedRevision = evidence
+    changedRevision.profileUpdatedAt = matchProfile.updatedAt.addingTimeInterval(1)
+    requireEvidenceRejection(changedRevision, recordID: evidenceRecordID, profile: matchProfile,
+      fingerprint: evidenceFingerprint, minimumSimilarity: 0.92)
+    var newerProfile = matchProfile
+    newerProfile.updatedAt = matchProfile.updatedAt.addingTimeInterval(1)
+    requireEvidenceRejection(evidence, recordID: evidenceRecordID, profile: newerProfile,
+      fingerprint: evidenceFingerprint, minimumSimilarity: 0.92)
+
+    var changedTranscript = evidence
+    changedTranscript.transcriptFingerprint = "changed-fingerprint"
+    requireEvidenceRejection(changedTranscript, recordID: evidenceRecordID, profile: matchProfile,
+      fingerprint: evidenceFingerprint, minimumSimilarity: 0.92)
+    requireEvidenceRejection(evidence, recordID: evidenceRecordID, profile: matchProfile,
+      fingerprint: "changed-fingerprint", minimumSimilarity: 0.92)
+    requireEvidenceRejection(evidence, recordID: evidenceRecordID, profile: matchProfile,
+      fingerprint: "", minimumSimilarity: 0.92)
+
+    var disabledEvidenceProfile = matchProfile
+    disabledEvidenceProfile.isEnabled = false
+    requireEvidenceRejection(evidence, recordID: evidenceRecordID, profile: disabledEvidenceProfile,
+      fingerprint: evidenceFingerprint, minimumSimilarity: 0.92)
+
+    var invalidEvidenceProfile = matchProfile
+    invalidEvidenceProfile.isCurrentUser = false
+    requireEvidenceRejection(evidence, recordID: evidenceRecordID, profile: invalidEvidenceProfile,
+      fingerprint: evidenceFingerprint, minimumSimilarity: 0.92)
+
+    for malformedSimilarity in [Double.nan, .infinity, -Double.infinity, -0.01, 1.01] {
+      var malformedEvidence = evidence
+      malformedEvidence.similarity = malformedSimilarity
+      requireEvidenceRejection(malformedEvidence, recordID: evidenceRecordID, profile: matchProfile,
+        fingerprint: evidenceFingerprint, minimumSimilarity: 0.92)
+    }
+    for invalidThreshold in [Double.nan, .infinity, -Double.infinity, -0.01, 1.01] {
+      requireEvidenceRejection(evidence, recordID: evidenceRecordID, profile: matchProfile,
+        fingerprint: evidenceFingerprint, minimumSimilarity: invalidThreshold)
+    }
+    requireEvidenceRejection(evidence, recordID: evidenceRecordID, profile: matchProfile,
+      fingerprint: evidenceFingerprint, minimumSimilarity: 0.95)
+
+    var blankStoredFingerprint = evidence
+    blankStoredFingerprint.transcriptFingerprint = "   "
+    requireEvidenceRejection(blankStoredFingerprint, recordID: evidenceRecordID, profile: matchProfile,
+      fingerprint: evidenceFingerprint, minimumSimilarity: 0.92)
+    requireEvidenceRejection(evidence, recordID: evidenceRecordID, profile: matchProfile,
+      fingerprint: "   ", minimumSimilarity: 0.92)
+
+    var boundaryEvidence = evidence
+    boundaryEvidence.similarity = 0.92
+    requireEvidenceMatch(boundaryEvidence, recordID: evidenceRecordID, profile: matchProfile,
+      fingerprint: evidenceFingerprint, minimumSimilarity: 0.92)
+
+    var fullSimilarityEvidence = evidence
+    fullSimilarityEvidence.similarity = 1
+    requireEvidenceMatch(fullSimilarityEvidence, recordID: evidenceRecordID, profile: matchProfile,
+      fingerprint: evidenceFingerprint, minimumSimilarity: 1)
+    var zeroSimilarityEvidence = evidence
+    zeroSimilarityEvidence.similarity = 0
+    requireEvidenceMatch(zeroSimilarityEvidence, recordID: evidenceRecordID, profile: matchProfile,
+      fingerprint: evidenceFingerprint, minimumSimilarity: 0)
+
     var disabledMatchProfile = matchProfile
     disabledMatchProfile.isEnabled = false
     let disabledMatch = try SpeakerIdentificationService.selfMatch(profile: disabledMatchProfile,
@@ -293,6 +411,6 @@ struct SpeakerProcessingChecks {
 
     precondition(matchProfile.embeddingData == matchAxis)
     precondition(successMatchResult.embeddings["S1"] == matchVector(0.9))
-    print("SpeakerProcessingChecks: passed (math, compatibility, intervals, manual edits, legacy codec, multi-sample enrollment, self-match)")
+    print("SpeakerProcessingChecks: passed (math, compatibility, intervals, manual edits, legacy codec, multi-sample enrollment, self-match, task-ownership evidence)")
   }
 }

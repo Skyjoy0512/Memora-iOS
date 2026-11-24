@@ -10,6 +10,7 @@ extension MemoraModel {
     }
     let revision = ProcessingService.inputRevision(record.transcript)
     let generation = aiWorkspaceGeneration
+    let enrollmentRevision = speakerEnrollmentRevision
     speakerAnalysisIDs.insert(id)
     speakerAnalysisMessages[id] = "端末内で話者を解析しています…"
     defer { speakerAnalysisIDs.remove(id) }
@@ -30,21 +31,77 @@ extension MemoraModel {
       }
       let matched = aligned.filter { $0.identificationStatus == .anonymous }.count
       var message = "\(matched)件の発言に匿名の話者を割り当てました。手動で確認・修正できます。"
-      if let profile = speakerProfile, profile.isEnabled {
-        do {
-          let similarities = try SpeakerIdentificationService.similarities(profile: profile, result: result)
-          if !similarities.isEmpty {
-            message += " 登録した声との類似度を計算しましたが、実機で本人判定の基準を検証するまでは『自分』と自動確定しません。"
-          }
-        } catch {
-          message += " 声のモデルが変わったため再登録が必要です。"
+      var storedCandidate = false
+      if currentTeamID == nil, isStoreWritable() {
+        var candidate: SpeakerTaskOwnershipEvidence?
+        if speakerEnrollmentRevision == enrollmentRevision,
+           let profile = speakerProfile, profile.isEnabled, profile.isValid {
+          do {
+            let limits = Self.speakerTaskMatchLimits
+            if let winner = try SpeakerIdentificationService.selfMatch(
+              profile: profile, result: result,
+              minimumSimilarity: limits.similarity, minimumLead: limits.lead,
+              minimumEligibleSpeech: limits.speech),
+               aligned.filter({ $0.identificationStatus == .anonymous && $0.speakerID == winner.speakerID }).count == 1,
+               let fingerprint = SummaryEvidence.fingerprint(aligned) {
+              candidate = SpeakerTaskOwnershipEvidence(
+                recordID: id, speakerID: winner.speakerID, profileID: profile.id,
+                profileUpdatedAt: profile.updatedAt, transcriptFingerprint: fingerprint,
+                similarity: winner.similarity)
+            }
+          } catch SpeakerProcessingFailure.modelMismatch {
+            message += " 声のモデルが変わったため再登録が必要です。"
+          } catch { }
+        }
+        if let entries = replacingSpeakerTaskEvidence(recordID: id, candidate: candidate),
+           persistNow(entries, forKey: SpeakerTaskOwnershipEvidence.storageKey) {
+          storedCandidate = candidate != nil
         }
       }
+      if storedCandidate { message += " 登録した声と一致する話者の候補があります。" }
       speakerAnalysisMessages[id] = message
     } catch is CancellationError {
       speakerAnalysisMessages[id] = "解析を中断しました。原音声・文字起こしは保持しています。"
     } catch {
       speakerAnalysisMessages[id] = "話者解析を完了できませんでした。\(error.localizedDescription)"
+    }
+  }
+
+  func currentSpeakerTaskEvidence(for record: Meeting) -> SpeakerTaskOwnershipEvidence? {
+    guard currentTeamID == nil, !isRestoring, !isStoreProtected,
+          let stored = meeting(id: record.id), stored == record,
+          let profile = speakerProfile, profile.isEnabled, profile.isValid,
+          let fingerprint = SummaryEvidence.fingerprint(record.transcript),
+          let entries = speakerTaskEvidenceEntries() else { return nil }
+    let limits = Self.speakerTaskMatchLimits
+    return entries.first { evidence in
+      evidence.matches(recordID: record.id, profile: profile,
+                       transcriptFingerprint: fingerprint,
+                       minimumSimilarity: limits.similarity)
+        && record.transcript.filter {
+          $0.identificationStatus == .anonymous && $0.speakerID == evidence.speakerID
+        }.count == 1
+    }
+  }
+
+  private func replacingSpeakerTaskEvidence(recordID: UUID,
+      candidate: SpeakerTaskOwnershipEvidence?) -> [SpeakerTaskOwnershipEvidence]? {
+    guard let entries = speakerTaskEvidenceEntries() else { return nil }
+    let retained = entries.filter { $0.recordID != recordID }
+    let updated = candidate.map { [$0] + retained } ?? retained
+    return Array(updated.prefix(SpeakerTaskOwnershipEvidence.maximumEntries))
+  }
+
+  private func speakerTaskEvidenceEntries() -> [SpeakerTaskOwnershipEvidence]? {
+    switch RecordStore.loadLatestData(SpeakerTaskOwnershipEvidence.storageKey) {
+    case .absent:
+      return []
+    case .failed:
+      return nil
+    case .data(let data):
+      // Unreadable bytes must fail closed, like a failed read: overwriting them
+      // with a new candidate would silently discard every prior entry.
+      return try? JSONDecoder().decode([SpeakerTaskOwnershipEvidence].self, from: data)
     }
   }
 }
