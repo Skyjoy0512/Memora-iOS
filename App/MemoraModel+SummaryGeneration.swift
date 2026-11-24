@@ -22,6 +22,8 @@ extension MemoraModel {
     guard let meeting = meeting(id: id), !meeting.transcript.isEmpty,
           currentTeamID == nil, !speakerAnalysisIDs.contains(id), !processing.isActive(id),
           !isRestoring, isStoreWritable() else { return false }
+    let mode = summaryMode(for: meeting)
+    let suggestedTemplateID = automaticSummaryChoice(for: meeting, useCaseID: useCaseID).id
     guard meeting.transcript.contains(where: { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
       announce("要約できる文字起こしがありません。原文を確認してください。")
       return false
@@ -222,6 +224,11 @@ extension MemoraModel {
           }
           candidateMeetings[index] = meeting
         }
+        // What was decided is kept, so a later correction can be compared with
+        // it. The mode is never a rule; it only records what the input looked
+        // like and which template was finally used.
+        recordSummaryModeBreadcrumb(recordID: id, mode: mode, templateID: choice.id,
+          suggestedTemplateID: suggestedTemplateID)
         let extracted = self.extractedTasks(summary.actions, meetingID: id, meetingDate: current.createdAt)
         let candidateTasks = extracted + self.tasks
         let candidateJobs = self.pendingSummaryJobs.filter { $0.id != job.id }

@@ -114,7 +114,10 @@ struct SummaryGenerationSheet: View {
           submission: SummarySubmissionIntent(meetingID: meetingID, inputFingerprint: fingerprint,
             workspaceGeneration: workspace, engine: configuration.engine, llm: configuration.llm)
         )
-        if started { dismiss() }
+        if started {
+          learnChoice()
+          dismiss()
+        }
         else {
           startFailure = unavailableReason ?? model.persistenceFailureMessage
             ?? "開始できませんでした。もう一度お試しください。"
@@ -128,6 +131,22 @@ struct SummaryGenerationSheet: View {
     }
     .padding(MemoraSpacing.screen)
     .background(.bar)
+  }
+
+  /// Remembers what the person chose, when it differs from the choice the app
+  /// would have made on its own.
+  ///
+  /// Only a choice the person made is learned. The automatic summary is never
+  /// counted as a correction, and a mode the app could not read is never
+  /// learned at all.
+  private func learnChoice() {
+    guard let chosen = template, let meeting = model.meeting(id: meetingID) else { return }
+    let mode = model.summaryMode(for: meeting)
+    guard mode != .unknown else { return }
+    let suggested = model.automaticSummaryChoice(for: meeting,
+      useCaseID: useCaseID.isEmpty ? nil : useCaseID).id
+    guard suggested != chosen.id else { return }
+    model.learnSummaryModePreference(mode: mode, templateID: chosen.id)
   }
 
   private var unavailableReason: String? {
