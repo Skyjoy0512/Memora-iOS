@@ -24,29 +24,12 @@ final class MemoraModel {
   var audioImportCalls = 0
   var discardedSourceExtractions: [ProjectSource] = []
   func discardSourceExtraction(for source: ProjectSource) { discardedSourceExtractions.append(source) }
-  #if MEMORA_PDF_PARTITION_CHECKS
+  var importErrorMessage: String?
   func performProjectSourcePreparation(_ id: UUID) async {
     preparedSourceIDs.append(id)
     await preparationHook?(id)
   }
   func recoverInterruptedProjectSources(includingPending: Bool = false) {}
-  #else
-  func prepareProjectSource(_ id: UUID) async {
-    preparedSourceIDs.append(id)
-    await preparationHook?(id)
-  }
-  @discardableResult
-  func scheduleProjectSourcePreparation(_ id: UUID, after predecessor: Task<Void, Never>? = nil) -> Task<Void, Never>? {
-    let attempt = UUID()
-    let job = Task {
-      await predecessor?.value
-      await prepareProjectSource(id)
-      if sourcePreparationJobs[id]?.id == attempt { sourcePreparationJobs.removeValue(forKey: id) }
-    }
-    sourcePreparationJobs[id] = (attempt, job)
-    return job
-  }
-  #endif
   #if !MEMORA_AUDIO_IMPORT_CHECKS
   func importAudio(from url: URL, spaceID: UUID?, importContext: LocalImportContext?) async -> UUID? {
     audioImportCalls += 1
@@ -68,7 +51,6 @@ final class MemoraModel {
   var tasks: [AudioImportTask] = []
   var isImporting = false
   var importProgress: Double?
-  var importErrorMessage: String?
   var deletionFailureMessage: String?
   var projectFilingNotice: String?
   var openedMeetingID: UUID?

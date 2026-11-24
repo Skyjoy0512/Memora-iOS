@@ -56,11 +56,10 @@ extension MemoraModel {
   /// workspace that changed while it was being built. A source is deduplicated
   /// only inside the context's project, by a non-nil content fingerprint, a
   /// non-nil original URL, or all four PDF partition values. A matched source
-  /// is returned as `.duplicate` only when its readable evidence is unchanged;
-  /// otherwise it is refused rather than replaced. `removing` holds the draft
-  /// keys settled in the same transaction as the record.
+  /// reuses the saved record and preserves its evidence. `removing` holds
+  /// the draft keys settled in the same transaction as the record.
   func capture(_ source: ProjectSource, context: LocalImportContext,
-               removing: [String] = []) async -> CaptureOutcome {
+               removing: [String] = []) -> CaptureOutcome {
     guard !isRestoring, !isStoreProtected, currentTeamID == nil else {
       return .refused("保存先が変更されたため取り込めませんでした。画面を開き直してください。")
     }

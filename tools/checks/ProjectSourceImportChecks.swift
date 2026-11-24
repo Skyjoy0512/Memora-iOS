@@ -278,9 +278,11 @@ struct ProjectSourceImportChecks {
     try sql("CREATE TRIGGER reject_import BEFORE INSERT ON documents BEGIN SELECT RAISE(ABORT, 'import check'); END;", model.storeURL)
     for local in [false, true] {
       model.persistenceFailureMessage = nil
+      model.importErrorMessage = nil
       expect(try await model.importProjectFile(url, projectID: projectID, presentsErrorsLocally: local) == nil)
       precondition(model.projectSources.isEmpty && model.preparedSourceIDs.isEmpty)
       precondition((model.persistenceFailureMessage == nil) == local)
+      precondition((model.importErrorMessage != nil) == local)
       expect(try files() == before)
       guard case .missing = model.store.readOutcome(MemoraModel.StorageKey.projectSources) else { preconditionFailure("Failed import persisted") }
     }

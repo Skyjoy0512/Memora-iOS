@@ -12,7 +12,7 @@ python3 tools/checks/test_chat_surface_presentation.py
 python3 -B tools/checks/test_waiting_audio_presentation.py
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-design-checks.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
-swiftc Shared/MemoraIcon.swift App/SettingsCategory.swift App/MemoraIconMetrics.swift \
+swiftc -D DEBUG Shared/MemoraIcon.swift App/SettingsCategory.swift App/MemoraIconMetrics.swift \
   tools/checks/SettingsNavigationChecks.swift -o "$check_dir/settings-navigation"
 "$check_dir/settings-navigation"
 swiftc App/AIPluginMenuCopy.swift tools/checks/AIPluginMenuCopyChecks.swift -o "$check_dir/plugin-menu-copy"

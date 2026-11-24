@@ -88,7 +88,7 @@ extension MemoraModel {
         extractedTextReference: name, processingStatus: .ready, textCoverage: .partial)
       source.acquiredAt = .now
       source.errorInformation = data.notice
-      switch await capture(source, context: context) {
+      switch capture(source, context: context) {
       case .imported(let id):
         guard context.isCurrent(in: self) else { return nil }
         return id

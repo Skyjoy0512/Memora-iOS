@@ -5,7 +5,8 @@ check_dir=$(mktemp -d "${MEMORA_CHECK_ROOT:-${TMPDIR:-/tmp}}/memora-pdf-partitio
 trap 'rm -rf "$check_dir"' EXIT
 export MEMORA_WORKSPACE_FILES_DIRECTORY="$check_dir/workspace"
 export SWIFT_BACKTRACE=enable=no
-swiftc App/SummaryKnowledge.swift -D MEMORA_HOST_CHECKS -D MEMORA_SOURCE_IMPORT_CHECKS -D MEMORA_PDF_PARTITION_CHECKS -D MEMORA_SHARE_PDF_CHECKS \
+swiftc App/SummaryKnowledge.swift -D MEMORA_HOST_CHECKS -D MEMORA_SOURCE_IMPORT_CHECKS -D MEMORA_SHARE_PDF_CHECKS \
+  App/CaptureIntent.swift App/CaptureOutcome.swift App/MemoraModel+CaptureCoordinator.swift \
   App/SourceSummaryOptions.swift App/SummaryLength.swift App/SummaryEngineChoice.swift Shared/MemoraIcon.swift \
   App/RecordPrivacy.swift App/SummarySensitivity.swift App/ProjectSource.swift App/ProjectSourceText.swift \
   App/ProjectSourceFiles.swift App/ProjectSourceTextReader.swift App/LocalStore.swift App/MemoraSpace.swift \

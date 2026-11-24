@@ -43,11 +43,12 @@ extension MemoraModel {
     let kind = SourceIntake.kind(for: URL(fileURLWithPath: receipt.reference))
     let value = ProjectSource(projectID: projectID, kind: kind, title: title, originalURL: originalURL,
       localFileReference: receipt.reference, contentFingerprint: receipt.fingerprint, metadata: sourceMetadata)
-    let outcome = await capture(value, context: context)
+    let outcome = presentsErrorsLocally
+      ? handlingPersistenceFailureLocally { capture(value, context: context) }
+      : capture(value, context: context)
     switch outcome {
     case .imported(let id):
-      if waitsForPreparation { await prepareProjectSource(id) }
-      else { scheduleProjectSourcePreparation(id) }
+      if waitsForPreparation { await sourcePreparationJobs[id]?.task.value }
       // Once registered, the original belongs to SQLite, even if a later analysis
       // is invalidated. Never remove it or report success in a different workspace.
       guard context.isCurrent(in: self), source(id: id)?.projectID == projectID else { return nil }
