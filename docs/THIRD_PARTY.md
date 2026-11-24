@@ -32,6 +32,12 @@ Project.json/Appのランタイム依存と混同しない。各候補とモデ�
 - 対象モデルはSegmentation/FBank/Embedding/PldaRhoとパラメータ。legacyのwespeakerや、ライセンス未確認の追加モデルを自動取得しない。SDK本体とモデルのライセンスは別に扱う。
 - 機能の制限・商用利用時の確認事項は `docs/PERSONALIZATION_IMPLEMENTATION.md` に記載。診療記録の適合性、本人識別精度、録音/共有の同意や法的有効性を保証しない。
 
+## 発話区間検出（無音剔除）
+
+- [Core ML Silero VAD](https://huggingface.co/FluidInference/silero-vad-coreml): 録音の無音区間を検出し、文字起こしに送る音声だけを短くする。モデルはSilero Teamが開発し、Fluid InferenceがCore MLへ変換したもの。ライセンスはMITで、`App/Resources/SileroVAD-LICENSE.txt` に全文を同梱する。
+- 使用的モデルは `silero-vad-unified-256ms-v6.2.1.mlmodelc` のみ。`App/Resources/VoiceActivity/` に同梱し、ファイルごとのサイズとSHA-256を `App/Resources/VoiceActivityModelManifest.json` に記録する。起動時に照合し、合わなければ発話検出を使わず元の音声のまま扱う。
+- 音声は端末内で処理し、外部に送信しない。変換用の16kHzモノラル化は解析専用で、保存する音声の品質は変えない。
+
 ## ジャーナルの背景写真
 
 背景用の写真4枚は[Unsplash License](https://unsplash.com/license)で配布される写真を同梱。背景は装飾であり、本人が訪れた場所や撮影した写真を示すものではない。ネット接続なしで表示する。添付のUnsplash+透かし入り画像は使用していない。
