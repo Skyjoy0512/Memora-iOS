@@ -42,7 +42,9 @@ extension MemoraModel {
               profile: profile, result: result,
               minimumSimilarity: limits.similarity, minimumLead: limits.lead,
               minimumEligibleSpeech: limits.speech),
-               aligned.filter({ $0.identificationStatus == .anonymous && $0.speakerID == winner.speakerID }).count == 1,
+               aligned.contains(where: {
+                 $0.identificationStatus == .anonymous && $0.speakerID == winner.speakerID
+               }),
                let fingerprint = SummaryEvidence.fingerprint(aligned) {
               candidate = SpeakerTaskOwnershipEvidence(
                 recordID: id, speakerID: winner.speakerID, profileID: profile.id,
@@ -67,6 +69,16 @@ extension MemoraModel {
     }
   }
 
+  /// Whether an action the summary credited to the person was said by the
+  /// cluster the registered voice matched. Nil leaves the name-based rule in
+  /// charge, which is also what happens before a voice analysis has run.
+  func speakerActionOwnership(owner: String?, title: String, in record: Meeting) -> Bool? {
+    guard let evidence = currentSpeakerTaskEvidence(for: record) else { return nil }
+    return ActionTaskOwner.ownedByMe(
+      owner: owner, names: [profile.name, account?.displayName ?? ""],
+      actionTitle: title, transcript: record.transcript, ownSpeakerID: evidence.speakerID)
+  }
+
   func currentSpeakerTaskEvidence(for record: Meeting) -> SpeakerTaskOwnershipEvidence? {
     guard currentTeamID == nil, !isRestoring, !isStoreProtected,
           let stored = meeting(id: record.id), stored == record,
@@ -78,9 +90,9 @@ extension MemoraModel {
       evidence.matches(recordID: record.id, profile: profile,
                        transcriptFingerprint: fingerprint,
                        minimumSimilarity: limits.similarity)
-        && record.transcript.filter {
+        && record.transcript.contains {
           $0.identificationStatus == .anonymous && $0.speakerID == evidence.speakerID
-        }.count == 1
+        }
     }
   }
 

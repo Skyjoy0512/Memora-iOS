@@ -409,8 +409,28 @@ struct SpeakerProcessingChecks {
     let boundaryMatch = try match(successMatchResult, similarity: 1, lead: 1, speech: 2.5)
     precondition(boundaryMatch == nil)
 
+    // An action is tied to a speaker only when its wording clearly matches one.
+    let quoteSegment = TranscriptSegment(id: UUID(), speaker: "話者A", speakerIsCertain: false,
+      timestamp: 1, text: "見積書は金曜までに送ります", endTime: 4, speakerID: "S1",
+      identificationStatus: .anonymous)
+    let planSegment = TranscriptSegment(id: UUID(), speaker: "話者B", speakerIsCertain: false,
+      timestamp: 6, text: "資料は来週共有します", endTime: 9, speakerID: "S2",
+      identificationStatus: .anonymous)
+    let quoted = [quoteSegment, planSegment]
+    precondition(ActionSpeakerMatch.speakerID(forAction: "見積書を金曜までに送付", in: quoted) == "S1")
+    precondition(ActionSpeakerMatch.speakerID(forAction: "資料を来週共有する", in: quoted) == "S2")
+    precondition(ActionSpeakerMatch.speakerID(forAction: "予算の確認をお願いします", in: quoted) == nil)
+    precondition(ActionSpeakerMatch.speakerID(forAction: "見積書", in: quoted) == nil)
+    let duplicateSegments = [quoteSegment, TranscriptSegment(id: UUID(), speaker: "話者C",
+      speakerIsCertain: false, timestamp: 10, text: "見積書は金曜までに送ります", endTime: 13,
+      speakerID: "S3", identificationStatus: .anonymous)]
+    precondition(ActionSpeakerMatch.speakerID(forAction: "見積書を金曜までに送付", in: duplicateSegments) == nil)
+    let unnamedSegment = TranscriptSegment(id: UUID(), speaker: "話者A", speakerIsCertain: false,
+      timestamp: 1, text: "見積書は金曜までに送ります", endTime: 4)
+    precondition(ActionSpeakerMatch.speakerID(forAction: "見積書を金曜までに送付", in: [unnamedSegment]) == nil)
+
     precondition(matchProfile.embeddingData == matchAxis)
     precondition(successMatchResult.embeddings["S1"] == matchVector(0.9))
-    print("SpeakerProcessingChecks: passed (math, compatibility, intervals, manual edits, legacy codec, multi-sample enrollment, self-match, task-ownership evidence)")
+    print("SpeakerProcessingChecks: passed (math, compatibility, intervals, manual edits, legacy codec, multi-sample enrollment, self-match, task-ownership evidence, action wording)")
   }
 }

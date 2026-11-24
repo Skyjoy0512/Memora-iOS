@@ -36,6 +36,8 @@ final class MemoraModel {
     llm: LLMSelection(provider: .openAI, modelID: "fixture-never-sent", displayName: "Fixture"))
   init(url: URL) throws { store = LocalStore(fileURL: url); try store.prepare() }
   func meeting(id: UUID) -> Meeting? { meetings.first { $0.id == id } }
+  /// Voice analysis is a fixture here; ownership falls back to names.
+  func speakerActionOwnership(owner: String?, title: String, in record: Meeting) -> Bool? { nil }
   func isStoreWritable() -> Bool { !isStoreProtected }
   func persistNow<T: Encodable>(_ value: T, forKey key: String) -> Bool {
     do { try store.write(key, data: JSONEncoder().encode(value)); return true }

@@ -29,6 +29,35 @@ struct PersonTaskChecks {
     let decoded = try JSONDecoder().decode(MemoraTask.self, from: JSONSerialization.data(withJSONObject: legacyJSON))
     precondition(decoded.relationships.assigneePersonID == nil && decoded.assignee == legacy.assignee)
 
+    // A verified voice decides only actions the summary already credited to the
+    // person, and only when the wording points at one speaker clearly.
+    precondition(TaskOwnership.namesSelf("自分", names: []))
+    precondition(TaskOwnership.namesSelf(" 私 ", names: []))
+    precondition(TaskOwnership.namesSelf("田中 太郎", names: ["田中 太郎"]))
+    precondition(!TaskOwnership.namesSelf("田中", names: ["田中 太郎"]))
+    precondition(!TaskOwnership.namesSelf("", names: ["田中 太郎"]))
+    precondition(TaskOwnership.speakerOwnership(speakerID: "S1", ownSpeakerID: "S1") == true)
+    precondition(TaskOwnership.speakerOwnership(speakerID: "S2", ownSpeakerID: "S1") == false)
+    precondition(TaskOwnership.speakerOwnership(speakerID: "S1", ownSpeakerID: nil) == nil)
+    precondition(TaskOwnership.speakerOwnership(speakerID: "", ownSpeakerID: "S1") == nil)
+    let ownQuote = TranscriptSegment(id: UUID(), speaker: "話者A", speakerIsCertain: false,
+      timestamp: 1, text: "見積書は金曜までに送ります", endTime: 4, speakerID: "S1",
+      identificationStatus: .anonymous)
+    let otherQuote = TranscriptSegment(id: UUID(), speaker: "話者B", speakerIsCertain: false,
+      timestamp: 6, text: "資料は来週共有します", endTime: 9, speakerID: "S2",
+      identificationStatus: .anonymous)
+    let quoted = [ownQuote, otherQuote]
+    precondition(ActionTaskOwner.ownedByMe(owner: "自分", names: [], actionTitle: "見積書を金曜までに送付",
+      transcript: quoted, ownSpeakerID: "S1") == true)
+    precondition(ActionTaskOwner.ownedByMe(owner: "自分", names: [], actionTitle: "見積書を金曜までに送付",
+      transcript: quoted, ownSpeakerID: "S2") == false)
+    precondition(ActionTaskOwner.ownedByMe(owner: "他の人", names: [], actionTitle: "見積書を金曜までに送付",
+      transcript: quoted, ownSpeakerID: "S1") == nil)
+    precondition(ActionTaskOwner.ownedByMe(owner: "自分", names: [], actionTitle: "見積書を金曜までに送付",
+      transcript: quoted, ownSpeakerID: nil) == nil)
+    precondition(ActionTaskOwner.ownedByMe(owner: "自分", names: [], actionTitle: "予算の確認をお願いします",
+      transcript: quoted, ownSpeakerID: "S1") == nil)
+
     precondition(model.addTask(title: "IDで担当", assignee: "別の表記", dueDate: nil, ownedByMe: false, assigneePersonID: first.id))
     let assigned = model.tasks[0]
     precondition(assigned.relationships.assigneePersonID == first.id && assigned.assignee == first.name)

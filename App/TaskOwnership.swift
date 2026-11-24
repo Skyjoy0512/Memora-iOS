@@ -10,6 +10,23 @@ enum TaskOwnership {
     return identities.map(normalized).filter { !$0.isEmpty }.contains(owner)
   }
 
+  /// Whether a spoken owner name is the person themselves. Used to decide which
+  /// actions a verified voice is allowed to speak for.
+  static func namesSelf(_ owner: String, names: [String]) -> Bool {
+    let owner = normalized(owner)
+    return !owner.isEmpty && normalizedIdentities(names).contains(owner)
+  }
+
+  /// `true` when the action came from the cluster the registered voice matched,
+  /// `false` when it came from another cluster, and `nil` when no voice was
+  /// matched, so the name-based rule stays in charge.
+  static func speakerOwnership(speakerID: String, ownSpeakerID: String?) -> Bool? {
+    let speakerID = speakerID.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard let ownSpeakerID = ownSpeakerID?.trimmingCharacters(in: .whitespacesAndNewlines),
+          !ownSpeakerID.isEmpty, !speakerID.isEmpty else { return nil }
+    return speakerID == ownSpeakerID
+  }
+
   /// Normalize the person's identities once for a list, retaining the same
   /// explicit ownership and unassigned-task rules as the individual lookup.
   static func ownedTasks(_ tasks: [MemoraTask], names: [String]) -> [MemoraTask] {
