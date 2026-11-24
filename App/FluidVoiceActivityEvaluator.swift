@@ -3,8 +3,11 @@ import AVFoundation
 import FluidAudio
 import Foundation
 
-/// Evaluation adapter for an explicitly supplied, locally verified Silero
-/// model. It neither downloads models nor uploads audio or enables trimming.
+/// Evaluation adapter for the bundled, locally verified Silero model.
+///
+/// It downloads nothing and uploads nothing. It reads a file and reports
+/// where speech was; removing the silence is `VoiceActivityTrim`'s work,
+/// and the stored recording is never replaced by what it produces.
 actor FluidVoiceActivityEvaluator {
   private let detector: VadManager
 
