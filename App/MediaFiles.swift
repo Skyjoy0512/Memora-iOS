@@ -1,5 +1,6 @@
 import AVFoundation
 import Foundation
+import ImageIO
 import UIKit
 
 /// Owns the app's media files. Everything lives inside the app's container, and
@@ -157,6 +158,23 @@ enum MediaFiles {
   /// built again from the original.
   static func requiredPhotoFiles(for name: String) -> [String] {
     [name]
+  }
+
+  /// A stored photo's size in bytes, read from the file itself.
+  static func byteCount(ofPhotoNamed name: String) -> Int? {
+    guard let url = photoURL(name) else { return nil }
+    return try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize
+  }
+
+  /// A stored photo's pixel size, read from its header without decoding it.
+  static func pixelSize(ofPhotoNamed name: String) -> (width: Int, height: Int)? {
+    guard let url = photoURL(name),
+          let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+          let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+          let width = properties[kCGImagePropertyPixelWidth] as? Int,
+          let height = properties[kCGImagePropertyPixelHeight] as? Int,
+          width > 0, height > 0 else { return nil }
+    return (width, height)
   }
 
   /// The small copies that can be regenerated, so a backup can carry them when

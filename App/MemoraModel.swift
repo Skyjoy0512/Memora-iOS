@@ -112,6 +112,9 @@ final class MemoraModel {
   }
   /// Documents and slides made from the records, newest first.
   var documents: [MemoraDocument] = []
+  /// What is known about the stored photos: sizes, their record, and the words
+  /// read from them on this device. Rebuilt from the files, never the reverse.
+  var mediaIndexEntries: [MediaIndexEntry] = []
   var projectSources: [ProjectSource] = [] {
     didSet {
       invalidateSummaryArtifacts(previous: oldValue)
@@ -728,6 +731,8 @@ final class MemoraModel {
     meetings = load([Meeting].self, forKey: StorageKey.meetings, fallback: [])
     spaces = load([MemoraSpace].self, forKey: StorageKey.spaces, fallback: [])
     documents = load([MemoraDocument].self, forKey: StorageKey.documents, fallback: [])
+    mediaIndexEntries = Array(load([MediaIndexEntry].self, forKey: MediaIndexEntry.storageKey,
+      fallback: []).prefix(MediaIndexEntry.maximumEntries))
     projectSources = load([ProjectSource].self, forKey: StorageKey.projectSources, fallback: [])
     projectChats = load([ProjectChatThread].self, forKey: StorageKey.projectChats, fallback: [])
     webResearchReports = load([WebResearchReport].self, forKey: "memora.webResearch.v1", fallback: [])
