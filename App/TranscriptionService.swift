@@ -75,14 +75,40 @@ enum TranscriptionService {
         rawValue: defaults.string(forKey: "memora.transcriptionProvider") ?? ""
       ) ?? .openAI
       do {
+        let stage = try? await SourceMediaStaging.shared.acquire()
+        defer { stage?.remove() }
+        let trim = if let stage {
+          await VoiceActivityTrimmer.trimmedAudio(for: fileURL, directory: stage.directory)
+        } else {
+          nil as VoiceActivityTrim?
+        }
+        try Task.checkCancellation()
         let segments = try await CloudTranscriptionService.transcribe(
-          fileURL: fileURL,
+          fileURL: trim?.url ?? fileURL,
           locale: locale,
           provider: provider,
           vocabulary: cloudVocabulary,
           authorize: authorizeCloud
         )
-        return .segments(segments)
+        guard let timeline = trim?.timeline else { return .segments(segments) }
+        let duration = timeline.duration
+        return try .segments(segments.map { segment in
+          // Providers can round the duration past the last encoded sample.
+          guard segment.timestamp <= duration + 0.25,
+                let timestamp = timeline.originalTime(for: min(segment.timestamp, duration)) else {
+            throw SourceMediaFailure.invalidTranscript
+          }
+          var mapped = segment
+          mapped.timestamp = timestamp
+          if let end = segment.endTime {
+            guard end <= duration + 0.25,
+                  let mappedEnd = timeline.originalTime(for: min(end, duration), isEnd: true) else {
+              throw SourceMediaFailure.invalidTranscript
+            }
+            mapped.endTime = max(mappedEnd, timestamp)
+          }
+          return mapped
+        })
       } catch CloudTranscriptionService.Failure.missingKey {
         return .failed("クラウド文字起こしのAPIキーが設定されていません。設定から入力してください。")
       } catch CloudTranscriptionService.Failure.unsupported {

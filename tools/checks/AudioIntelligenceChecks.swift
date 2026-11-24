@@ -1,4 +1,5 @@
 import AVFoundation
+import CoreML
 import Foundation
 
 @main struct AudioIntelligenceChecks {
@@ -34,6 +35,7 @@ import Foundation
     precondition(candidates.ranges[0].start == 0)
     let boundary = candidates.ranges[0].duration
     precondition(candidates.originalTime(for: boundary) == candidates.ranges[1].start)
+    precondition(candidates.originalTime(for: boundary, isEnd: true) == boundary)
     precondition(candidates.originalTime(for: -1) == nil)
     precondition(candidates.originalTime(for: .nan) == nil)
     for probabilities: [Float] in [[], [.nan], [0], [0.1]] {
@@ -48,6 +50,46 @@ import Foundation
     for (index, chunk) in day.enumerated() {
       precondition(chunk.start == Double(index) * 900 && chunk.duration == 900)
     }
-    print("AudioIntelligenceChecks: PASS. Real stereo PCM metrics without antiphase downmix loss; low-probability and short-word retention; uncertain VAD fallback; discontinuous source-time mapping; 96 contiguous windows for 24h. No recognition quality, learned VAD or iPhone power claim.")
+    try checkBundledModel(at: root)
+    print("AudioIntelligenceChecks: PASS. Stereo PCM, conservative VAD windows, source-time mapping, 24h chunk planning, both bundle layouts, real Core ML silence inference and tamper rejection.")
+  }
+
+  private static func checkBundledModel(at root: URL) throws {
+    let files = FileManager.default
+    let source = URL(fileURLWithPath: files.currentDirectoryPath).appendingPathComponent("App/Resources")
+    let modelName = VoiceActivityModelAssets.modelName
+    let manifestName = VoiceActivityModelAssets.manifestName + ".json"
+    let folder = VoiceActivityModelAssets.folderName
+    for nested in [false, true] {
+      let bundleURL = root.appendingPathComponent(nested ? "Nested.bundle" : "Flat.bundle")
+      let resources = bundleURL.appendingPathComponent("Contents/Resources")
+      let destination = nested ? resources.appendingPathComponent(folder) : resources
+      try files.createDirectory(at: destination, withIntermediateDirectories: true)
+      try files.copyItem(at: source.appendingPathComponent(folder).appendingPathComponent(modelName),
+        to: destination.appendingPathComponent(modelName))
+      try files.copyItem(at: source.appendingPathComponent(manifestName),
+        to: destination.appendingPathComponent(manifestName))
+      guard let bundle = Bundle(url: bundleURL),
+            let modelURL = VoiceActivityModelAssets.verifiedModelURL(in: bundle) else {
+        preconditionFailure("Bundled model could not be verified")
+      }
+      let config = MLModelConfiguration()
+      config.computeUnits = .cpuOnly
+      let model = try MLModel(contentsOf: modelURL, configuration: config)
+      let shapes = ["audio_input": 4_160, "hidden_state": 128, "cell_state": 128]
+      var input: [String: MLFeatureValue] = [:]
+      for (name, count) in shapes {
+        let array = try MLMultiArray(shape: [1, NSNumber(value: count)], dataType: .float32)
+        for index in 0..<count { array[index] = 0 }
+        input[name] = MLFeatureValue(multiArray: array)
+      }
+      let result = try model.prediction(from: MLDictionaryFeatureProvider(dictionary: input))
+      guard let value = result.featureValue(for: "vad_output")?.multiArrayValue?[0].doubleValue else {
+        preconditionFailure("Bundled model did not produce a probability")
+      }
+      precondition((0..<0.3).contains(value))
+      try Data([0]).write(to: modelURL.appendingPathComponent("model.mil"))
+      precondition(VoiceActivityModelAssets.verifiedModelURL(in: bundle) == nil)
+    }
   }
 }

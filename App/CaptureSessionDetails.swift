@@ -8,7 +8,7 @@ struct CaptureSessionDetails: View {
   var body: some View {
     @Bindable var model = model
     return VStack(alignment: .leading, spacing: MemoraSpacing.md) {
-      if let message = model.recordingInterruptionMessage {
+      if let message = model.recordingStatusMessage {
         Label(message, icon: .exclamationmarkTriangle)
           .font(.footnote)
           .foregroundStyle(.secondary)

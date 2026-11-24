@@ -31,7 +31,7 @@ actor FluidVoiceActivityEvaluator {
     let span = diagnostic?.begin(.vad, audioSeconds: duration)
     var outcome: AudioDiagnosticReport.Outcome = .failed
     defer { diagnostic?.end(span, outcome: Task.isCancelled ? .cancelled : outcome) }
-    guard duration.isFinite, duration > 0, duration <= SourceMediaChunk.durationPerChunk + 1,
+    guard duration.isFinite, duration > 0, duration <= VoiceActivityTimeline.maximumDuration,
           let target = AVAudioFormat(standardFormatWithSampleRate: 16_000, channels: 1),
           let converter = AVAudioConverter(from: source, to: target),
           let output = AVAudioPCMBuffer(pcmFormat: target, frameCapacity: 4_096),

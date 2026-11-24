@@ -24,6 +24,15 @@ extension MemoraModel {
     } else if isRecording && recordingTicker == nil {
       startRecordingTicker()
     }
+    let analysesSilence = isRecording && !isRecordingPaused && recordingIsForeground && !conserves
+    recordingSilenceWatch?.setEnabled(analysesSilence)
+    if analysesSilence {
+      if recordingSilenceTicker == nil { startSilenceTicker() }
+    } else {
+      recordingSilenceTicker?.cancel()
+      recordingSilenceTicker = nil
+      if isRecordingQuiet { isRecordingQuiet = false }
+    }
     levelTicker?.cancel()
     levelTicker = nil
     let meters = isRecording && !isRecordingPaused && levelMeter.isActive

@@ -369,6 +369,9 @@ final class MemoraModel {
   var onlineMeetingCaptureEvent: UpcomingMeeting?
   var isRecording = false
   var isRecordingPaused = false
+  /// True while the running recording has gone quiet for a while. It only
+  /// describes the recording that is running now; it is not a setting.
+  var isRecordingQuiet = false
   /// True while permission is being asked for and the recorder is starting, so
   /// repeated taps cannot begin two recordings.
   var isPreparingCapture = false
@@ -616,6 +619,8 @@ final class MemoraModel {
   @ObservationIgnored var recordingPausedDuration: TimeInterval = 0
   @ObservationIgnored var recordingTicker: Task<Void, Never>?
   @ObservationIgnored var levelTicker: Task<Void, Never>?
+  @ObservationIgnored var recordingSilenceWatch: VoiceActivitySilenceWatch?
+  @ObservationIgnored var recordingSilenceTicker: Task<Void, Never>?
   /// Transcription and summary jobs, with the rules that decide whether a
   /// result still applies.
   @ObservationIgnored let processing = ProcessingService()

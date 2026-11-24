@@ -15,7 +15,7 @@ actor VoiceActivityModelAssets {
   static let manifestName = "VoiceActivityModelManifest"
   static let folderName = "VoiceActivity"
 
-  private var isLoading = false
+  private var attemptedLoad = false
   private var loaded: MLModel?
 
   private struct Asset: Decodable {
@@ -27,42 +27,27 @@ actor VoiceActivityModelAssets {
 
   /// The verified model, or nil when the bundle does not match the manifest.
   func model() -> MLModel? {
-    if let loaded { return loaded }
-    guard !isLoading else { return nil }
-    isLoading = true
-    defer { isLoading = false }
-    guard let model = Self.loadVerifiedModel() else { return nil }
-    loaded = model
-    return model
+    if !attemptedLoad {
+      attemptedLoad = true
+      if let url = Self.verifiedModelURL() {
+        loaded = try? MLModel(contentsOf: url)
+      }
+    }
+    return loaded
   }
 
-  /// Whether the bundled model matches its manifest.
-  static func isUsable() -> Bool {
-    guard let root = bundleRoot(), let assets = manifest(),
-          assets.allSatisfy({ validates($0, at: root) }) else { return false }
-    return FileManager.default.fileExists(atPath: root.appendingPathComponent(modelName).path)
-  }
-
-  private static func bundleRoot() -> URL? {
-    guard let base = Bundle.main.resourceURL else { return nil }
-    let root = base.appendingPathComponent(folderName, isDirectory: true)
-    var isDirectory: ObjCBool = false
-    guard FileManager.default.fileExists(atPath: root.path, isDirectory: &isDirectory),
-          isDirectory.boolValue else { return nil }
-    return root
-  }
-
-  private static func manifest() -> [Asset]? {
-    guard let url = Bundle.main.url(forResource: manifestName, withExtension: "json") else { return nil }
-    return try? JSONDecoder().decode([Asset].self, from: Data(contentsOf: url))
-  }
-
-  private static func loadVerifiedModel() -> MLModel? {
-    guard let root = bundleRoot(), let assets = manifest(),
-          assets.allSatisfy({ validates($0, at: root) }) else { return nil }
-    let modelURL = root.appendingPathComponent(modelName, isDirectory: true)
-    guard let model = try? MLModel(contentsOf: modelURL) else { return nil }
-    return model
+  /// Bitrig flattens the resources while folder references can keep both
+  /// the manifest and the compiled model under VoiceActivity.
+  static func verifiedModelURL(in bundle: Bundle = .main) -> URL? {
+    guard let base = bundle.resourceURL else { return nil }
+    let folder = base.appendingPathComponent(folderName, isDirectory: true)
+    let manifestURL = bundle.url(forResource: manifestName, withExtension: "json")
+      ?? folder.appendingPathComponent(manifestName + ".json")
+    guard let data = try? Data(contentsOf: manifestURL),
+          let assets = try? JSONDecoder().decode([Asset].self, from: data),
+          !assets.isEmpty else { return nil }
+    return [base, folder].map { $0.appendingPathComponent(modelName, isDirectory: true) }
+      .first { root in assets.allSatisfy { validates($0, at: root) } }
   }
 
   private static func validates(_ asset: Asset, at root: URL) -> Bool {

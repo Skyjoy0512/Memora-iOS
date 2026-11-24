@@ -137,9 +137,13 @@ extension MemoraModel {
     // The recording tap feeds live recognition as a secondary sink, so there is
     // one microphone tap. The live service drops input until it is prepared.
     let liveService = realtimeTranscriber
+    let silenceWatch = VoiceActivitySilenceWatch()
     do {
       _ = try await recorder.startContinuous(prepared, admitRotation: admit,
-        liveSink: { buffer in liveService.consume(buffer) })
+        liveSink: { buffer in
+          liveService.consume(buffer)
+          silenceWatch.submit(buffer)
+        })
       // Session ownership can suspend too. An obsolete request must not keep a
       // recording in the workspace that replaced it or retain its audio.
       guard validateCaptureContext(context), validateCaptureContext(destinationContext) else {
@@ -153,6 +157,7 @@ extension MemoraModel {
         }
         return
       }
+      recordingSilenceWatch = silenceWatch
       isRecording = true
       isCapturePresented = true
       levelMeter.reset()
@@ -288,6 +293,11 @@ extension MemoraModel {
     recordingTicker = nil
     levelTicker?.cancel()
     levelTicker = nil
+    recordingSilenceTicker?.cancel()
+    recordingSilenceTicker = nil
+    recordingSilenceWatch?.setEnabled(false)
+    recordingSilenceWatch = nil
+    isRecordingQuiet = false
     levelMeter.reset()
     isRecording = false
     isRecordingPaused = false
@@ -339,6 +349,26 @@ extension MemoraModel {
         if let duration = self.recorder.recordedDuration {
           if self.recordingElapsed != duration { self.recordingElapsed = duration }
         }
+      }
+    }
+  }
+
+  var recordingStatusMessage: String? {
+    recordingInterruptionMessage ?? (isRecordingQuiet ? Self.recordingQuietMessage : nil)
+  }
+
+  private static let recordingQuietMessage = "発話が90秒間検出されませんでした。録音を終えるには停止を押してください。"
+
+  func startSilenceTicker() {
+    guard let watch = recordingSilenceWatch else { return }
+    recordingSilenceTicker = Task { [weak self] in
+      while !Task.isCancelled {
+        do { try await Task.sleep(for: .seconds(2)) } catch { return }
+        let quiet = await watch.evaluate()
+        guard !Task.isCancelled, let self, self.recordingSilenceWatch === watch else { return }
+        guard let quiet, quiet != self.isRecordingQuiet else { continue }
+        self.isRecordingQuiet = quiet
+        if quiet { self.announce(Self.recordingQuietMessage) }
       }
     }
   }

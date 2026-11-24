@@ -1,13 +1,15 @@
 import Foundation
 
-/// Candidate windows for evaluation only. The shipping recognizer retains the
-/// whole chunk until quiet Japanese speech has passed the acceptance corpus.
+/// Source-time windows retained in a temporary transcription upload.
 struct VoiceActivityTimeline: Sendable {
+  static let maximumDuration: TimeInterval = 2 * 60 * 60
   var ranges: [SourceMediaChunk]
+
+  var duration: TimeInterval { ranges.reduce(0) { $0 + $1.duration } }
 
   static func candidates(probabilities: [Float], frameDuration: TimeInterval,
                          duration: TimeInterval) throws -> Self {
-    guard duration.isFinite, duration > 0, duration <= SourceMediaChunk.durationPerChunk + 1,
+    guard duration.isFinite, duration > 0, duration <= maximumDuration,
           frameDuration.isFinite, frameDuration > 0 else { throw SourceMediaFailure.invalidDuration }
     let whole = Self(ranges: [.init(start: 0, duration: duration)])
     guard !probabilities.isEmpty, probabilities.count <= 100_000,
@@ -31,11 +33,14 @@ struct VoiceActivityTimeline: Sendable {
 
   /// Maps a proposed concatenation back to the unchanged original. A boundary
   /// belongs to the following window, so a skipped gap never shifts a citation.
-  func originalTime(for processedTime: TimeInterval) -> TimeInterval? {
+  func originalTime(for processedTime: TimeInterval, isEnd: Bool = false) -> TimeInterval? {
     guard processedTime.isFinite, processedTime >= 0 else { return nil }
     var cursor: TimeInterval = 0
     for range in ranges {
-      if processedTime < cursor + range.duration { return range.start + processedTime - cursor }
+      let end = cursor + range.duration
+      if processedTime < end || (isEnd && processedTime == end) {
+        return range.start + processedTime - cursor
+      }
       cursor += range.duration
     }
     if processedTime == cursor, let last = ranges.last { return last.start + last.duration }
