@@ -82,13 +82,13 @@ enum SummaryModeClassifier {
 
   /// The mode for a body of text on its own.
   ///
-  /// A text with no speakers and no link is an article when it is
+  /// A text with no speakers is an article when it carries a link or is
   /// structured, and stays `unknown` otherwise.
-  static func classify(text: String) -> SummaryMode {
+  static func classify(text: String, hasURL: Bool = false) -> SummaryMode {
     let isStructured = text.split(separator: "\n", omittingEmptySubsequences: false).contains {
       $0.hasPrefix("#") || $0.hasPrefix("- ") || $0.hasPrefix("* ")
     }
-    return classify(SummaryModeFeatures(isAudio: false, hasURL: false, speakerCount: 0,
+    return classify(SummaryModeFeatures(isAudio: false, hasURL: hasURL, speakerCount: 0,
       speakerTurnCount: 0, isStructured: isStructured, bodyText: text))
   }
 }

@@ -36,6 +36,14 @@ extension MemoraModel {
         _ = storeProjectSource(context.source)
         return
       }
+      let mode: SummaryMode
+      switch context.source.kind {
+      case .web, .pdf, .document, .note:
+        mode = SummaryModeClassifier.classify(text: blocks.map(\.text).joined(separator: "\n"),
+          hasURL: context.source.originalURL != nil)
+      case .audio, .video, .youtube, .image:
+        mode = .unknown
+      }
       let timed = blocks.contains { $0.time != nil }
       let segments = blocks.enumerated().map { index, block in
         TranscriptSegment(id: MeetingSummaryInput.sourceSegmentID(sourceID: id, index: index), speaker: block.page.map { "ページ\($0)" } ?? "原文",
@@ -46,9 +54,17 @@ extension MemoraModel {
         participantNames: [], transcript: segments, template: resolution.template,
         preferences: resolution.preferences)
       input.artifactScope = cloud ? summaryArtifactScope(ownerID: id, privacy: context.source.privacy, llm: configuration.llm, projectID: context.source.projectID) : nil
-      input.sourceContext = [context.source.originalURL?.absoluteString,
+      let sourceContext = [context.source.originalURL?.absoluteString,
         context.source.textCoverage == .complete ? "抽出本文を参照。" : "一部の文字を参照。未取得部分を読んだと表現しない。",
         context.source.errorInformation].compactMap { $0 }.joined(separator: "\n")
+      let usesAdaptiveTemplate = options.templateID == nil
+        || options.templateID == SummaryTemplateChoice.adaptive.id
+      if mode == .article, usesAdaptiveTemplate {
+        input.sourceContext = [sourceContext, "記事の構成: 見出しと段落のまとまりを原文の順に整理する。"]
+          .filter { !$0.isEmpty }.joined(separator: "\n")
+      } else {
+        input.sourceContext = sourceContext
+      }
       let snapshot = context
       let result = await MeetingSummarizer.summarize(input, engine: configuration.engine, llm: configuration.llm,
         authorize: { [weak self] in
@@ -67,6 +83,7 @@ extension MemoraModel {
         context.source.summary = value.markdown
         context.source.summaryKnowledge = value.knowledge
         context.source.summaryTextReference = reference
+        context.source.summaryModeID = mode == .unknown ? nil : mode.rawValue
         context.source.summaryStatus = .ready
         context.source.summaryUpdatedAt = .now
         context.source.summaryError = nil

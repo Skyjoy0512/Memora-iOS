@@ -31,6 +31,11 @@ struct ProjectSource: Identifiable, Hashable, Codable, Sendable {
   var summary: String?
   var summaryStatus: ProcessingStatus?
   var summaryTextReference: String?
+  /// The `SummaryMode` raw value recorded with a successfully stored summary.
+  ///
+  /// Optional so sources saved before modes were recorded still decode, with
+  /// no mode claimed for their existing summary.
+  var summaryModeID: String?
   var summaryAttemptTextReference: String?
   var summaryUpdatedAt: Date?
   var summaryError: String?

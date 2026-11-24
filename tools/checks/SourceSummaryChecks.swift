@@ -24,6 +24,7 @@ import SQLite3
   }
 
   @MainActor static func defaultsAndExplicitChoices(_ root: URL) async throws {
+    let articleHint = "記事の構成: 見出しと段落のまとまりを原文の順に整理する。"
     MeetingSummarizer.reset()
     let (model, id) = try await fixture(root, "default")
     model.summaryPreferences.method = .fixed
@@ -32,6 +33,8 @@ import SQLite3
     precondition(MeetingSummarizer.calls.count == 1)
     let call = MeetingSummarizer.calls[0]
     precondition(call.input.template == .adaptiveSource && call.input.preferences.length == .detailed)
+    precondition(call.input.sourceContext?.contains(articleHint) == true)
+    precondition(model.source(id: id)?.summaryModeID == SummaryMode.article.rawValue)
     precondition(call.engine == .foundation && call.llm.modelID == "ask-ai")
     precondition(call.input.transcript.first?.speaker == "ページ7" && call.input.transcript.first?.timestamp == 42)
     precondition(model.tasks.isEmpty && model.source(id: id)?.summaryStatus == .ready)
@@ -62,16 +65,26 @@ import SQLite3
     precondition(MeetingSummarizer.calls[0].input.template == .builtIn(.meetingMinutes))
     precondition(MeetingSummarizer.calls[0].input.preferences.length == .concise)
     precondition(MeetingSummarizer.calls[0].engine == .cloud && MeetingSummarizer.calls[0].llm.modelID == "chosen-model")
+    precondition(MeetingSummarizer.calls[0].input.sourceContext?.contains(articleHint) == false)
+    precondition(explicit.source(id: explicitID)?.summaryModeID == SummaryMode.article.rawValue)
     precondition(explicit.source(id: explicitID)?.summaryOptions == options && explicit.tasks.isEmpty)
     precondition(explicit.source(id: explicitID)?.summaryHistory == ["古い2", "古い3", "以前の要約"])
     let saved = try reload(explicit).first!
     precondition(saved == explicit.source(id: explicitID) && saved.summaryOptions == options)
+    precondition(saved.summaryModeID == SummaryMode.article.rawValue)
     var legacy = try JSONSerialization.jsonObject(with: JSONEncoder().encode(saved)) as! [String: Any]
     legacy.removeValue(forKey: "summaryOptions")
     legacy.removeValue(forKey: "summaryAttemptTextReference")
+    legacy.removeValue(forKey: "summaryModeID")
     let old = try JSONDecoder().decode(ProjectSource.self, from: JSONSerialization.data(withJSONObject: legacy))
     precondition(old.id == saved.id && old.extractedTextReference == saved.extractedTextReference)
     precondition(old.summaryOptions == nil && old.summaryAttemptTextReference == nil && old.summary == saved.summary)
+    precondition(old.summaryModeID == nil)
+    precondition(old.projectID == saved.projectID && old.kind == saved.kind && old.title == saved.title)
+    precondition(old.originalURL == saved.originalURL && old.localFileReference == saved.localFileReference)
+    precondition(old.textCoverage == saved.textCoverage && old.privacy == saved.privacy)
+    precondition(old.summaryTextReference == saved.summaryTextReference && old.summaryStatus == saved.summaryStatus)
+    precondition(old.summaryHistory == saved.summaryHistory && old.summaryKnowledge == saved.summaryKnowledge)
     MeetingSummarizer.outcome = .success(.init(markdown: "別の要約"))
     await explicit.summarizeProjectSource(explicitID, retry: true)
     precondition(MeetingSummarizer.calls.count == 2 && MeetingSummarizer.calls[1].llm.modelID == "chosen-model")

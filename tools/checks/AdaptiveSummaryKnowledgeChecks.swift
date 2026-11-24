@@ -117,8 +117,16 @@ enum AdaptiveSummaryKnowledgeChecks {
     precondition(protected.effectivePrivacy.classification == .sensitive)
     let related = knowledge.relevantFacts(to: ["担当"], excluding: "")
     precondition(related.allSatisfy { $0.status.isVisible } && related.count == 4)
+    precondition(SummaryModeClassifier.classify(text: "https://example.test/article", hasURL: true) == .article)
+    precondition(SummaryModeClassifier.classify(text: "# 見出し\n- 項目") == .article)
+    precondition(SummaryModeClassifier.classify(text: "短いメモ") == .unknown)
+    precondition(SummaryModeClassifier.classify(text: "", hasURL: true) == .unknown)
+    let meetingMode = SummaryModeClassifier.classify(SummaryModeFeatures(isAudio: true, hasURL: false,
+      speakerCount: 3, speakerTurnCount: 4, isStructured: false,
+      bodyText: "話者1: 開始します\n話者2: 確認します\n話者3: まとめます"))
+    precondition(meetingMode == .meeting)
 
-    print("AdaptiveSummaryKnowledgeChecks: passed (six statuses, mixed profiles, lossy facts, real Meeting/history codec, legacy/corrupt optional data, edit invalidation, audio deletion, truncated JSON, unspecified tasks, stable source IDs). No model/network claim.")
+    print("AdaptiveSummaryKnowledgeChecks: passed (six statuses, mixed profiles, lossy facts, real Meeting/history codec, legacy/corrupt optional data, edit invalidation, audio deletion, truncated JSON, unspecified tasks, stable source IDs, conservative summary modes). No model/network claim.")
   }
 }
 

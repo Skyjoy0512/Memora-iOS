@@ -7,7 +7,7 @@ export MEMORA_WORKSPACE_FILES_DIRECTORY="$check_dir/workspace"
 export SWIFT_BACKTRACE=enable=no
 swiftc App/SummaryKnowledge.swift -D MEMORA_HOST_CHECKS Shared/MemoraIcon.swift App/LocalStore.swift App/MemoraSpace.swift \
   App/RecordPrivacy.swift App/RecordAccessPolicy.swift App/SummarySensitivity.swift App/ProjectSource.swift \
-  App/SourceSummaryOptions.swift App/SummaryEngineChoice.swift App/SummaryLength.swift App/SummaryProcessingMode.swift \
+  App/SummaryModeClassifier.swift App/SourceSummaryOptions.swift App/SummaryEngineChoice.swift App/SummaryLength.swift App/SummaryProcessingMode.swift \
   App/SummaryPreferences.swift App/SummaryTemplate.swift App/SummaryTemplateCategory.swift App/SummaryMarketTemplate.swift \
   App/SummaryTemplateChoice.swift App/SourceSummaryResolution.swift App/AIAnswerFailure.swift \
   App/TranscriptSegment.swift App/SpeakerIdentificationStatus.swift App/SummaryArtifactScope.swift App/MeetingSummaryInput.swift \
