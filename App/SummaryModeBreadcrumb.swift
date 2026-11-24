@@ -6,7 +6,7 @@ import Foundation
 /// read from the input, the template that was finally used, and whether
 /// the person changed it. It carries no content, only the shape of the
 /// decision.
-struct SummaryModeBreadcrumb: Codable, Equatable, Sendable {
+struct SummaryModeBreadcrumb: Codable, Hashable, Sendable {
   /// The record this is about.
   var recordID: UUID
   /// The mode that was read from the input.

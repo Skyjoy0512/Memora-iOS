@@ -16,6 +16,7 @@ struct TemplateSummary: Identifiable, Hashable, Codable {
   var openQuestions: [String]
   var sourceFingerprint: String?
   var knowledge: SummaryKnowledge?
+  var modeBreadcrumb: SummaryModeBreadcrumb? = nil
   var reconciledUserEdits: Bool?
 
   static func snapshot(record: Meeting, templateID: String?, preferences: SummaryPreferences, modelInfo: String,
@@ -70,7 +71,7 @@ struct TemplateSummary: Identifiable, Hashable, Codable {
 
   private enum CodingKeys: String, CodingKey {
     case id, sourceRecordID, templateID, summaryLength, displayOrder, sections, generatedAt, modelInfo
-    case schemaVersion, markdown, keyPoints, decisions, openQuestions, sourceFingerprint, knowledge, reconciledUserEdits
+    case schemaVersion, markdown, keyPoints, decisions, openQuestions, sourceFingerprint, knowledge, modeBreadcrumb, reconciledUserEdits
   }
 
   init(from decoder: Decoder) throws {
@@ -91,6 +92,7 @@ struct TemplateSummary: Identifiable, Hashable, Codable {
     sourceFingerprint = try? values.decodeIfPresent(String.self, forKey: .sourceFingerprint)
     // Optional enrichment must never make a whole recording unrecoverable.
     knowledge = try? values.decodeIfPresent(SummaryKnowledge.self, forKey: .knowledge)
+    modeBreadcrumb = try? values.decodeIfPresent(SummaryModeBreadcrumb.self, forKey: .modeBreadcrumb)
     reconciledUserEdits = try? values.decodeIfPresent(Bool.self, forKey: .reconciledUserEdits)
   }
 

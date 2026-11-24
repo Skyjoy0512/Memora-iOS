@@ -71,6 +71,10 @@ enum BackgroundSummaryExecutionChecks {
     guard case .data(let persisted) = reopened.readOutcome(MemoraModel.StorageKey.meetings) else { fatalError() }
     let saved = try JSONDecoder().decode([Meeting].self, from: persisted)
     precondition(saved[0].summary == result.markdown && saved[0].summaryVersions.count == 2)
+    let persistedVersion = saved[0].summaryVersions.last
+    precondition(persistedVersion?.modeBreadcrumb?.recordID == saved[0].id
+      && persistedVersion?.modeBreadcrumb?.mode == .monologue,
+      "The reopened version must carry the breadcrumb written with it")
     precondition(saved[0].transcript[0].text == "承認前には公開しない。")
     let savedTasks = try read(success, MemoraModel.StorageKey.tasks, as: [MemoraTask].self)
     let savedJobs = try read(success, MemoraModel.StorageKey.pendingSummaryJobs, as: [PendingSummaryJob].self)

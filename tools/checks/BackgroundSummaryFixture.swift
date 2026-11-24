@@ -23,6 +23,7 @@ final class MemoraModel {
   var isStoreProtected = false
   var speakerAnalysisIDs: Set<UUID> = []
   var summaryPreferences = SummaryPreferences()
+  var summaryModePreference = SummaryModePreference()
   let performance = FixturePerformance()
   var deliveries = 0
   var failures = 0
@@ -151,6 +152,8 @@ struct TemplateSummary: Codable {
   var keyPoints: [String] = []
   var decisions: [String] = []
   var openQuestions: [String] = []
+  var generatedAt = Date.now
+  var modeBreadcrumb: SummaryModeBreadcrumb? = nil
   var reconciledUserEdits: Bool?
   var knowledge: SummaryKnowledge?
   static func snapshot(record: Meeting, templateID: String?, preferences: SummaryPreferences,

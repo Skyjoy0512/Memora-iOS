@@ -71,13 +71,23 @@ enum AdaptiveSummaryKnowledgeChecks {
     precondition(changed.currentSummaryKnowledge == nil)
     changed = record; changed.audioURL = nil
     precondition(changed.currentSummaryKnowledge == validated, "Transcript evidence survives audio deletion")
+    let breadcrumb = SummaryModeBreadcrumb(recordID: record.id, mode: .monologue,
+      templateID: "market.releaseReview", decidedAt: version.generatedAt, wasCorrected: true)
+    var breadcrumbVersion = version
+    breadcrumbVersion.modeBreadcrumb = breadcrumb
+    let decodedBreadcrumb = try JSONDecoder().decode(TemplateSummary.self,
+      from: JSONEncoder().encode(breadcrumbVersion))
+    precondition(decodedBreadcrumb.modeBreadcrumb == breadcrumb
+      && decodedBreadcrumb.markdown == version.markdown)
     var legacyVersion = try JSONSerialization.jsonObject(with: JSONEncoder().encode(version)) as! [String: Any]
     legacyVersion.removeValue(forKey: "knowledge"); legacyVersion.removeValue(forKey: "sourceFingerprint")
+    legacyVersion.removeValue(forKey: "modeBreadcrumb")
     let old = try JSONDecoder().decode(TemplateSummary.self, from: JSONSerialization.data(withJSONObject: legacyVersion))
-    precondition(old.knowledge == nil && old.markdown == version.markdown)
+    precondition(old.knowledge == nil && old.modeBreadcrumb == nil && old.markdown == version.markdown)
     legacyVersion["knowledge"] = "damaged optional enrichment"
+    legacyVersion["modeBreadcrumb"] = "damaged optional breadcrumb"
     let damaged = try JSONDecoder().decode(TemplateSummary.self, from: JSONSerialization.data(withJSONObject: legacyVersion))
-    precondition(damaged.markdown == version.markdown)
+    precondition(damaged.markdown == version.markdown && damaged.modeBreadcrumb == nil)
     let truncated = SummaryResponseParser.parse("## 内容\n原文の事実\n<memora-data>{\"templateID\":\"content.adaptive\",\"actions\":[")
     precondition(!truncated.hasCompleteExtraction && !truncated.markdown.contains("memora-data"))
     let badFence = SummaryResponseParser.parse("本文\n```json\n{\"actions\":[")

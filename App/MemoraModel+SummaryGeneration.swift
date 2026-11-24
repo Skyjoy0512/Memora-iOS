@@ -206,10 +206,15 @@ extension MemoraModel {
           if !editedQuestions { meeting.openQuestions = summary.openQuestions }
           meeting.status = .ready
           if let useCaseID { meeting.summaryUseCaseID = useCaseID.isEmpty ? nil : useCaseID }
-          let version = TemplateSummary.snapshot(record: meeting, templateID: summary.templateID,
+          var version = TemplateSummary.snapshot(record: meeting, templateID: summary.templateID,
             preferences: input.preferences, modelInfo: engine == .cloud || engine == .memora ? llm.modelLabel : "端末内AI",
             evidence: summary.evidence, knowledge: knowledge,
             reconciledUserEdits: editedPoints || editedDecisions || editedQuestions || !authoredFacts.isEmpty)
+          if mode != .unknown {
+            version.modeBreadcrumb = SummaryModeBreadcrumb(recordID: id, mode: mode,
+              templateID: summary.templateID ?? choice.id, decidedAt: version.generatedAt,
+              wasCorrected: !automaticallySelect && suggestedTemplateID != choice.id)
+          }
           meeting.summaryVersions.append(version)
           meeting.activeSummaryVersionID = version.id
           meeting.privacy = meeting.effectivePrivacy
@@ -224,11 +229,6 @@ extension MemoraModel {
           }
           candidateMeetings[index] = meeting
         }
-        // What was decided is kept, so a later correction can be compared with
-        // it. The mode is never a rule; it only records what the input looked
-        // like and which template was finally used.
-        recordSummaryModeBreadcrumb(recordID: id, mode: mode, templateID: choice.id,
-          suggestedTemplateID: suggestedTemplateID)
         let extracted = self.extractedTasks(summary.actions, meetingID: id, meetingDate: current.createdAt)
         let candidateTasks = extracted + self.tasks
         let candidateJobs = self.pendingSummaryJobs.filter { $0.id != job.id }

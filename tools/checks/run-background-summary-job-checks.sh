@@ -29,6 +29,7 @@ swiftc App/SummaryKnowledge.swift \
   App/MemoraTask.swift App/TaskRelationships.swift App/TaskProgress.swift \
   App/SummaryDiagnostics.swift App/LocalStore.swift App/ProcessingService.swift App/SummaryBackgroundScheduling.swift App/SummaryJobFingerprint.swift \
   App/MemoraModel+BackgroundSummary.swift App/MemoraModel+SummaryGeneration.swift App/MemoraModel+SummaryTasks.swift \
+  App/SummaryModeClassifier.swift App/SummaryModeBreadcrumb.swift App/MemoraModel+SummaryMode.swift \
   tools/checks/BackgroundSummaryFixture.swift tools/checks/BackgroundSummaryExecutionChecks.swift -o "$check_dir/execution"
 "$check_dir/execution"
 

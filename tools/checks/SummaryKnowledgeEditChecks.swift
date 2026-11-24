@@ -61,6 +61,7 @@ enum SummaryKnowledgeEditChecks {
   var store: LocalStore
   var currentTeamID: String?
   var isRestoring = false
+  var isApplyingTransientMeetingUpdate = false
   var isStoreProtected = false
   var aiWorkspaceGeneration = UUID()
   var meetingSearchTexts: [UUID: String] = [:]

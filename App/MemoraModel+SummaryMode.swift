@@ -57,24 +57,6 @@ extension MemoraModel {
     return id
   }
 
-  /// Keeps what was decided about one record.
-  ///
-  /// The breadcrumb is the trace of the decision, not a rule: it records the
-  /// mode that was read and the template that was finally used, so a later
-  /// correction can be compared with it.
-  func recordSummaryModeBreadcrumb(recordID: UUID, mode: SummaryMode, templateID: String,
-                                    suggestedTemplateID: String?) {
-    guard mode != .unknown else { return }
-    let breadcrumb = SummaryModeBreadcrumb(recordID: recordID, mode: mode, templateID: templateID,
-      decidedAt: .now, wasCorrected: suggestedTemplateID != nil && suggestedTemplateID != templateID)
-    summaryModeBreadcrumbs[recordID] = breadcrumb
-  }
-
-  /// What was decided about one record.
-  func summaryModeBreadcrumb(for recordID: UUID) -> SummaryModeBreadcrumb? {
-    summaryModeBreadcrumbs[recordID]
-  }
-
   /// Teaches the app what the person wants for this kind of input.
   ///
   /// The count only grows, so a correction that moves back to the earlier
