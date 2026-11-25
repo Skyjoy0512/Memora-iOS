@@ -762,7 +762,10 @@ struct LibraryView: View {
     let records = model.meetings
     var result = records.filter { statusFilter.matches($0.status) }
     if CollectionSearch.hasQuery(query) {
-      result = result.filter(matchesQuery)
+      let photoMatches = model.photoRecordIDs(matching: query)
+      result = result.filter { meeting in
+        photoMatches.contains(meeting.id) || CollectionSearch.matches(query, fields: [model.searchText(for: meeting)])
+      }
     }
     return sort.ordered(result)
   }
@@ -807,10 +810,6 @@ struct LibraryView: View {
     if calendar.isDate(date, equalTo: .now, toGranularity: .weekOfYear) { return "今週" }
     if calendar.isDate(date, equalTo: .now, toGranularity: .month) { return "今月" }
     return MemoraFormat.monthTitle(date)
-  }
-
-  private func matchesQuery(_ meeting: Meeting) -> Bool {
-    CollectionSearch.matches(query, fields: [model.searchText(for: meeting)])
   }
 
 }

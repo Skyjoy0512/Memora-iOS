@@ -98,7 +98,16 @@ struct MediaIndexChecks {
     let count = await model.readPendingMediaText()
     precondition(count == 1 && model.mediaIndexEntries.first?.text == "現在の原本")
     let oldEntry = model.mediaIndexEntries[0]
+    precondition(model.photoRecordIDs(matching: "現在 原本") == [meeting.id])
+    precondition(model.photoRecordIDs(matching: "現在 未入力").isEmpty)
+    model.isStoreProtected = true
+    precondition(model.photoRecordIDs(matching: "原本").isEmpty)
+    model.isStoreProtected = false
+    model.currentTeamID = "another-workspace"
+    precondition(model.photoRecordIDs(matching: "原本").isEmpty)
+    model.currentTeamID = nil
     try replace(name, version: 2)
+    precondition(model.photoRecordIDs(matching: "原本").isEmpty)
     precondition(!model.mediaIndexEntryHasLiveOriginal(oldEntry) && model.reconcileMediaIndex())
     precondition(model.mediaIndexEntries.first?.byteCount == oldEntry.byteCount)
     precondition(model.mediaIndexEntries.first?.text == "" && model.mediaIndexEntries.first?.textReadAt == nil)

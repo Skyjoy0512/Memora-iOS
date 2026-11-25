@@ -91,6 +91,17 @@ extension MemoraModel {
     return entry.matchesOriginal(values)
   }
 
+  /// Search already recognized text locally. Only matched candidates need a
+  /// filesystem check before their owning records can appear in the results.
+  func photoRecordIDs(matching query: String) -> Set<UUID> {
+    guard CollectionSearch.hasQuery(query), currentTeamID == nil,
+          !isRestoring, !isStoreProtected else { return [] }
+    return Set(mediaIndexEntries.lazy.filter {
+      $0.textReadAt != nil && CollectionSearch.matches(query, fields: [$0.text]) &&
+        self.mediaIndexEntryHasLiveOriginal($0)
+    }.map(\.recordID))
+  }
+
   private static func mediaIndexFileValues(named name: String) -> URLResourceValues? {
     guard let url = MediaFiles.photoURL(name),
           let values = try? url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey,

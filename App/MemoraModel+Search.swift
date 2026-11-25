@@ -5,10 +5,11 @@ extension MemoraModel {
   /// active filter.
   func searchMeetings(matching query: String, filters: SearchFilters) -> [Meeting] {
     let cutOff = filters.period.cutOff()
+    let photoMatches = photoRecordIDs(matching: query)
     // This runs inside a view body. Appending to an observable log here can
     // trigger another render while the keyboard is updating search results.
     return meetings.filter { meeting in
-      guard searchText(for: meeting).localizedCaseInsensitiveContains(query) else { return false }
+      guard photoMatches.contains(meeting.id) || searchText(for: meeting).localizedCaseInsensitiveContains(query) else { return false }
       if let cutOff, meeting.createdAt < cutOff { return false }
       if let personID = filters.personID,
          !(meeting.participantIDs ?? []).contains(personID) {
