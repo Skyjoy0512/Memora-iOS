@@ -1,5 +1,14 @@
 # Jinba原本とMemora 65型の機械比較
 
+## 2026-11-25 再検証
+
+- upstream は設計規約・機械検査・基本30＋追加35のHTML部品を提供する1つのスキル。Memora の PowerPoint スキルは `create_slides` から `b01–b30`、`m01–m35` を選び、Swift の共通レイアウトでアプリ表示・PDF・編集可能なPPTXを組版する。[Jinba 上流](https://github.com/carnot-tech/jinba-consulting-pptx-skill) · [型対応](../PRESENTATION_LAYOUT_MATRIX.md)
+- 許諾済みローカル比較PDFは upstream `e5f35e57e14d3998249a559c620a9286c95b4595`。PDFのSHA-256は `4cd8916f67946d4df519b285728323135b6f736ef7971c904ffcd5c6c50f4b96`。現行コードを `bash tools/checks/run-jinba-comparison.sh` で再検証し、65/65で独立ZIP/XML、編集可能な図形、日本語、出典、テキスト枠、PDF出力が通過した。CoreGraphicsの機械差は38/65、実PPTXのQuick Lookでは14/65。
+- Quick Lookの `b05`・`b22`・`m12`・`m20`・`m30`・`m33` を目視し、短い合成入力の見出し、本文・数値、出典の表示を確認した。この6型の短い入力では明らかな文字切れを確認しなかった。PowerPoint/Keynoteでの開封・再保存、業務資料による65型の目視承認、日本語の内容とストーリー、BYOK実モデルが選ぶ型や事実の品質は未検証。
+- `b22` の0%は図形サイズが0となり、完成時の検査が範囲外として書き出しを拒否していた。0%の数値とラベルを保持し、面積のない円を生成しない。0と正数の混在、全項目0、書き出し前検査、読み上げ用テキスト、OOXMLのラベルをホスト回帰テストに追加した。元の型構造と正数の円の面積比は維持した。
+- `run-slide-checks.sh` は旧資料の分割・文字順・ノートの9ケース59ページを通過。 `run-artifact-operation-checks.sh` は SQLite保存・再読込・保存失敗のロールバック、原本を残す会社資料への追記、削除・権限変更の出典処理を通過した。実サービス呼び出しは伴わない。
+- `run-conversation-evidence-checks.sh` と `run-ask-ai-scenario-checks.sh` は会話復元時の書き込み権限の失効、根拠の失効判定、調査レポート・資料・メール下書きの保存と復旧を通過した。モデル・HTTP・OS権限はテスト用の応答。中断したエージェント実行の永続チェックポイントと再開は未実装。
+
 ## 2026-11-08 Quick Look（システムレンダラ）比較
 
 - 実際の65 PPTXをmacOSの**Quick Look**で1920pxへレンダリング（`qlmanage -t`）。

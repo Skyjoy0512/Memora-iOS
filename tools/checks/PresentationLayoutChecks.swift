@@ -121,6 +121,22 @@ struct PresentationLayoutChecks {
     precondition(abs(negative.maxX - positive.x) < 0.01 && abs(negative.width * 2 - positive.width) < 0.01)
     ranked.composition?.chart?.series.append(.init(name: "隠れてしまう系列", values: [1, 2]))
     precondition(!PresentationValidator.inputIssues(for: ranked).isEmpty)
+    var proportional = PresentationExample.slide(.b22)
+    proportional.composition?.metrics?[0].value = 0
+    let proportionalDeck = MemoraDocument(title: "ゼロを含む比較", kind: .slides, slides: [proportional])
+    try PresentationExportCheck.validate(proportionalDeck)
+    let proportionalPage = SlidePageLayout.pages(for: proportionalDeck)[0]
+    precondition(proportionalPage.elements?.filter { $0.kind == .ellipse }.count == 1)
+    precondition(proportionalPage.elements?.contains { $0.text == "0%" } == true)
+    precondition(proportionalPage.readingText?.contains { $0.contains("指標1: 0%") } == true)
+    let proportionalShapes = PresentationOOXML.shapes(proportionalPage.elements ?? [])
+    precondition(proportionalShapes.contains(">0%</a:t>"))
+    proportional.composition?.metrics?[1].value = 0
+    let allZeroDeck = MemoraDocument(title: "全項目がゼロの比較", kind: .slides, slides: [proportional])
+    try PresentationExportCheck.validate(allZeroDeck)
+    let allZeroPage = SlidePageLayout.pages(for: allZeroDeck)[0]
+    precondition(allZeroPage.elements?.contains { $0.kind == .ellipse } == false)
+    precondition(allZeroPage.elements?.filter { $0.text == "0%" }.count == 2)
     var bridge = PresentationExample.slide(.m08)
     bridge.composition?.layout = .m07
     bridge.composition?.chart?.series[0].values[3] = 999

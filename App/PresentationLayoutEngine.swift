@@ -472,8 +472,11 @@ enum PresentationLayoutEngine {
       let w = 852 / Double(max(1, metrics.count))
       for (i, m) in metrics.enumerated() {
         let cx = 54 + Double(i) * w + w / 2, diameter = min(w - 30, 230) * sqrt(max(0, m.value) / maximum)
-        rect(cx - diameter / 2, 300 - diameter / 2, diameter, diameter,
-             fill: i == 0 ? PresentationTheme.blue : PresentationTheme.orange, kind: .ellipse)
+        // Keep the label for a measured zero without emitting an empty shape.
+        if diameter > 0 {
+          rect(cx - diameter / 2, 300 - diameter / 2, diameter, diameter,
+               fill: i == 0 ? PresentationTheme.blue : PresentationTheme.orange, kind: .ellipse)
+        }
         text(m.label, cx - w / 2 + 8, 154, w - 16, 48, size: 22, bold: true)
         text(SlideContent.number(m.value) + m.unit, cx - w / 2 + 8, 434, w - 16, 32, size: 24, bold: true)
       }
