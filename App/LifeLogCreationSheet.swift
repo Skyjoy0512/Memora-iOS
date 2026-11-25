@@ -28,7 +28,7 @@ struct LifeLogCreationSheet: View {
     NavigationStack {
       MemoraForm {
         Section {
-          MemoraSectionPicker(items: LifeLogKind.allCases, selection: $kind, title: \.label)
+          MemoraTextTabBar(items: LifeLogKind.allCases, selection: $kind, title: \.label)
             .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
             .listRowBackground(Color.clear)
         }

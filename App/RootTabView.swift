@@ -28,9 +28,6 @@ struct RootTabView: View {
   @State private var isCaptureMediaImporting = false
   @State private var onlineMeetingContext: LocalImportContext?
   @State private var shouldStartOnlineMeeting = false
-  /// The full-bleed drawer hides the safe area from SwiftUI, so the floating
-  /// controls re-add the home indicator inset themselves.
-  @State private var safeAreaInsets = EdgeInsets()
 
   var body: some View {
     @Bindable var model = model
@@ -101,10 +98,8 @@ struct RootTabView: View {
     .onChange(of: model.activeNavigationPath) { _, _ in recordAIEdit = nil }
     .onChange(of: composerScope) { _, _ in recordAIEdit = nil }
     .onChange(of: shouldShowComposer) { _, visible in if !visible { recordAIEdit = nil } }
-    .onGeometryChange(for: CGSize.self) { $0.size } action: { _ in refreshSafeAreaInsets() }
     .onChange(of: scenePhase) { _, phase in
       model.updateRecordingResources(isForeground: phase == .active)
-      refreshSafeAreaInsets()
       // Automatic records written while the app was away land when it returns.
       if phase == .active {
         model.invalidateAICalendarContext()
@@ -130,7 +125,6 @@ struct RootTabView: View {
     }
     .onAppear {
       model.updateRecordingResources(isForeground: scenePhase == .active)
-      refreshSafeAreaInsets()
       model.prepareWeeklyReviewIfNeeded()
     }
     .task { await model.refreshShareInbox() }
@@ -321,8 +315,7 @@ struct RootTabView: View {
       bottomControls
       if showsPrimaryTabs {
         RootTabBar(selection: $model.selectedTab)
-          .padding(.bottom, safeAreaInsets.bottom)
-          .background { RootTabBackdrop() }
+          .background { RootTabBackdrop().ignoresSafeArea(.container, edges: .bottom) }
       }
     }
     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
@@ -340,15 +333,13 @@ struct RootTabView: View {
   }
 
   private var bottomControls: some View {
-    @Bindable var model = model
-
     // A small gap keeps the composer and the bar reading as one block.
     return VStack(spacing: 12) {
       // The recording's transport rides above the composer, on the same floating
       // layer, so it never overlaps the composer or the home indicator.
       if showsPlaybackBar, let player = model.activePlayback {
         MeetingPlaybackBar(player: player)
-          .padding(.horizontal, 12)
+          .padding(.horizontal, MemoraSpacing.screen)
           .transition(
             reduceMotion
               ? .opacity
@@ -373,7 +364,7 @@ struct RootTabView: View {
         .buttonStyle(.plain)
         .accessibilityIdentifier("record.aiEdit.open")
         .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, MemoraSpacing.screen)
       }
 
       // These controls are independent surfaces. A shared glass container can
@@ -406,14 +397,13 @@ struct RootTabView: View {
             .accessibilityHidden(!showsCaptureButtons)
             .disabled(isCaptureMediaImporting)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, MemoraSpacing.screen)
         .frame(maxWidth: .infinity)
       }
 
     }
-    .padding(.top, 4)
-    // The tab row reserves the home inset whenever it is visible.
-    .padding(.bottom, showsPrimaryTabs ? MemoraSpacing.xs : (isKeyboardVisible ? 14 : safeAreaInsets.bottom))
+    .padding(.top, shouldShowComposer || showsPlaybackBar ? MemoraSpacing.xs : 0)
+    .padding(.bottom, shouldShowComposer || showsPlaybackBar ? footerBottomSpacing : 0)
     .animation(nil, value: isComposing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.activePlayback != nil)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isInlineEditing)
@@ -423,6 +413,11 @@ struct RootTabView: View {
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: isShowingMeetingDetail)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isCaptureSourcePresented)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isSearchCovering)
+  }
+
+  private var footerBottomSpacing: CGFloat {
+    if showsPrimaryTabs { return MemoraSpacing.xs }
+    return isKeyboardVisible ? MemoraSpacing.md : MemoraSpacing.sm
   }
 
   private var showsCaptureButtons: Bool {
@@ -568,13 +563,6 @@ struct RootTabView: View {
   private func setSidebar(open: Bool) {
     withAnimation(reduceMotion ? nil : MemoraMotion.drawer) {
       isSidebarOpen = open
-    }
-  }
-
-  private func refreshSafeAreaInsets() {
-    let insets = WindowSafeArea.insets
-    if insets != safeAreaInsets {
-      safeAreaInsets = insets
     }
   }
 

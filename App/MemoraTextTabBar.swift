@@ -16,19 +16,14 @@ struct MemoraTextTabBar<Item: Hashable>: View {
 
   var body: some View {
     if typeSize.isAccessibilitySize {
-      Picker(selection: $selection) {
+      Picker("表示する項目", selection: $selection) {
         ForEach(items, id: \.self) { item in Text(title(item)).tag(item) }
-      } label: {
-        Text(title(selection))
-          .font(MemoraTypography.body.weight(.semibold))
-          .fixedSize(horizontal: false, vertical: true)
       }
       .pickerStyle(.menu)
+      .labelsHidden()
       .tint(MemoraPalette.textPrimary)
       .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget, alignment: .leading)
       .padding(.horizontal, horizontalPadding)
-      .accessibilityLabel("表示する項目")
-      .accessibilityValue(title(selection))
     } else {
       ScrollViewReader { proxy in
         ScrollView(.horizontal) {

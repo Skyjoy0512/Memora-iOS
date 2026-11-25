@@ -17,12 +17,7 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
   @ViewBuilder var content: () -> Content
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @Environment(\.scenePhase) private var scenePhase
   @State private var dragTranslation: CGFloat = 0
-  /// The drawer breaks out of the safe area so the app can fill the screen, so
-  /// the panel reads the window's insets directly to keep its own contents clear
-  /// of the status bar and home indicator.
-  @State private var windowInsets = EdgeInsets()
 
   var body: some View {
     GeometryReader { proxy in
@@ -36,10 +31,6 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
         sidebar()
           .frame(width: width)
           .frame(maxHeight: .infinity, alignment: .top)
-          // The panel's own background bleeds to the edges; its contents stay
-          // clear of the status bar and home indicator.
-          .padding(.top, windowInsets.top)
-          .padding(.bottom, windowInsets.bottom)
           // Keep the mounted panel outside the viewport while closed so
           // hosting views cannot expose controls at their old positions.
           .offset(x: -(1 - progress) * width)
@@ -53,6 +44,15 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
         content()
           .frame(width: proxy.size.width, height: proxy.size.height)
           .compositingGroup()
+          .overlay(alignment: .top) {
+            // Keep scrolling text out of the status-bar strip, including the
+            // part of the presenting screen visible above a sheet.
+            MemoraPalette.background
+              .frame(height: proxy.safeAreaInsets.top)
+              .offset(y: -proxy.safeAreaInsets.top)
+              .allowsHitTesting(false)
+              .accessibilityHidden(true)
+          }
           .accessibilityHidden(isOpen)
           .overlay {
             if isOpen || progress > 0 {
@@ -73,7 +73,10 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
             }
           }
           // Clip the closing overlay too, so it cannot fill the rounded corners.
-          .clipShape(RoundedRectangle(cornerRadius: 56 * progress, style: .continuous))
+          .mask {
+            RoundedRectangle(cornerRadius: 56 * progress, style: .continuous)
+              .ignoresSafeArea(.container)
+          }
           .modifier(SidebarSlideEffect(offset: offset, onClosed: onCloseAnimationCompleted))
           .shadow(color: .black.opacity(0.08 * progress), radius: 8, x: -4)
 
@@ -90,31 +93,16 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
       }
       .frame(width: proxy.size.width, height: proxy.size.height)
     }
-    // Fill the screen but keep the keyboard's safe area, so the composer rises
-    // above the keyboard instead of staying hidden behind it.
-    .ignoresSafeArea(.container, edges: .all)
-    .background(Color(uiColor: .systemBackground).ignoresSafeArea())
+    .background {
+      (isOpen ? MemoraPalette.secondaryBackground : MemoraPalette.background)
+        .ignoresSafeArea(.container)
+    }
     .onChange(of: isEnabled) { _, enabled in
       guard !enabled, isOpen else { return }
       setOpen(false)
     }
     .onChange(of: isOpen) { _, open in
       if !open && reduceMotion { onCloseAnimationCompleted() }
-    }
-    .onGeometryChange(for: CGSize.self) { $0.size } action: { _ in refreshWindowInsets() }
-    .onChange(of: scenePhase) { _, _ in refreshWindowInsets() }
-    .onAppear { refreshWindowInsets() }
-    .task {
-      // The window may not be key yet on the first pass, so re-read once the
-      // first layout has settled.
-      refreshWindowInsets()
-    }
-  }
-
-  private func refreshWindowInsets() {
-    let insets = WindowSafeArea.insets
-    if insets != windowInsets {
-      windowInsets = insets
     }
   }
 

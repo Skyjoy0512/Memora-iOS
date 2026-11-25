@@ -51,8 +51,9 @@ struct MarketplaceSearchBar: View {
       }
     }
     .buttonStyle(.plain)
-    .padding(.horizontal, MemoraSpacing.section)
+    .padding(.horizontal, MemoraSpacing.screen)
     .padding(.vertical, MemoraSpacing.sm)
+    .background(MemoraPalette.background, ignoresSafeAreaEdges: .bottom)
     .preservesComposerFocus()
     .onAppear { isFocused = isSearching }
     .onChange(of: isFocused) { _, focused in

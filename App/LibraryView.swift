@@ -624,8 +624,9 @@ struct LibraryView: View {
     }
     .padding(MemoraSpacing.sm)
     .memoraGlass(in: Capsule())
-    .padding(.horizontal, MemoraSpacing.md)
-    .padding(.bottom, MemoraSpacing.sm)
+    .padding(.horizontal, MemoraSpacing.screen)
+    .padding(.vertical, MemoraSpacing.sm)
+    .background(MemoraPalette.background, ignoresSafeAreaEdges: .bottom)
     .transition(.move(edge: .bottom).combined(with: .opacity))
   }
 

@@ -5,6 +5,8 @@ import UniformTypeIdentifiers
 struct AIComposerBar: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+  @Environment(\.dynamicTypeSize) private var typeSize
   @Binding var text: String
   @Binding var attachment: AIAttachment?
   var placeholder: String
@@ -138,6 +140,7 @@ struct AIComposerBar: View {
   }
 
   var body: some View {
+    let composerShape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
     VStack(spacing: 0) {
       if isConversation && isVoiceConversation, FeatureFlags.isLiveConversationEnabled,
          let liveSession {
@@ -228,8 +231,12 @@ struct AIComposerBar: View {
           .transition(isConversation ? .identity : .opacity)
         }
       }
-      .memoraGlass(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous),
-        interactive: true, backed: false)
+      .memoraGlass(in: composerShape, interactive: true, backed: false)
+      .background {
+        if typeSize.isAccessibilitySize || reduceTransparency {
+          composerShape.fill(MemoraPalette.background)
+        }
+      }
       .overlay(alignment: usesStackedLayout ? .bottomLeading : .leading) {
         leadingControl
           .padding(.leading, usesStackedLayout ? MemoraSpacing.sm : MemoraSpacing.xs)
