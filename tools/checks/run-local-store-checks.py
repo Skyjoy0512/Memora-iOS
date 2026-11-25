@@ -22,4 +22,5 @@ with tempfile.TemporaryDirectory(prefix='memora-store-', dir=os.environ.get('MEM
         source.write_text(text)
     binary = folder/'store'
     subprocess.run(['swiftc', '-O', str(source), 'tools/checks/LocalStoreChecks.swift', '-o', str(binary)], check=True)
-    subprocess.run([str(binary)], check=True)
+    subprocess.run([str(binary), str(folder), *(['--historical-baseline'] if args.before else [])], check=True,
+                   timeout=60, env={**os.environ, 'SWIFT_BACKTRACE': 'enable=no'})

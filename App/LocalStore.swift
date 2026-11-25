@@ -215,16 +215,23 @@ final class LocalStore {
     guard let db else { throw StoreError.open(0) }
 
     let statement = try prepared("INSERT OR REPLACE INTO documents (key, data, updated_at) VALUES (?, ?, ?);")
-    defer { reset(statement) }
+    try data.withUnsafeBytes { buffer in
+      // SQLITE_STATIC keeps SQLite from copying the whole document. Clear the
+      // bindings before the buffer goes out of scope, including on failure.
+      defer { reset(statement) }
 
-    sqlite3_bind_text(statement, 1, key, -1, Self.transient)
-    _ = data.withUnsafeBytes { buffer in
-      sqlite3_bind_blob(statement, 2, buffer.baseAddress, Int32(buffer.count), Self.transient)
-    }
-    sqlite3_bind_double(statement, 3, Date().timeIntervalSince1970)
+      let keyStatus = sqlite3_bind_text(statement, 1, key, -1, Self.transient)
+      guard keyStatus == SQLITE_OK else { throw StoreError.statement(keyStatus) }
+      let dataStatus = buffer.isEmpty
+        ? sqlite3_bind_zeroblob(statement, 2, 0)
+        : sqlite3_bind_blob64(statement, 2, buffer.baseAddress, UInt64(buffer.count), nil)
+      guard dataStatus == SQLITE_OK else { throw StoreError.statement(dataStatus) }
+      let timestampStatus = sqlite3_bind_double(statement, 3, Date().timeIntervalSince1970)
+      guard timestampStatus == SQLITE_OK else { throw StoreError.statement(timestampStatus) }
 
-    guard sqlite3_step(statement) == SQLITE_DONE else {
-      throw StoreError.statement(sqlite3_errcode(db))
+      guard sqlite3_step(statement) == SQLITE_DONE else {
+        throw StoreError.statement(sqlite3_errcode(db))
+      }
     }
   }
 

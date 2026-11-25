@@ -5,7 +5,8 @@ import Synchronization
 @main
 struct LocalStoreChecks {
   static func main() throws {
-    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let scratch = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
+    let directory = scratch.appendingPathComponent(UUID().uuidString, isDirectory: true)
     defer { try? FileManager.default.removeItem(at: directory) }
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     let url = directory.appendingPathComponent("store.sqlite")
@@ -18,6 +19,11 @@ struct LocalStoreChecks {
     let store = LocalStore(fileURL: url)
     try store.prepare()
     precondition(read(store, "legacy") == Data("{\"old\":true}".utf8))
+    let checksEmptyBlobs = !CommandLine.arguments.contains("--historical-baseline")
+    if checksEmptyBlobs {
+      try store.write("empty", data: Data())
+      precondition(read(store, "empty") == Data(), "An existing empty blob must remain distinct from a missing document")
+    }
     try store.applyBatch(writes: [("record", Data("original".utf8)), ("draft", Data("draft".utf8))], removing: [])
     try execute(external, "CREATE TRIGGER fail_fixture BEFORE INSERT ON documents WHEN NEW.key = 'fail' BEGIN SELECT RAISE(ABORT, 'fixture'); END;")
     do {
@@ -46,6 +52,9 @@ struct LocalStoreChecks {
     let reopened = LocalStore(fileURL: url)
     try reopened.prepare()
     precondition(read(reopened, "record") == Data("second".utf8))
+    if checksEmptyBlobs {
+      precondition(read(reopened, "empty") == Data(), "An empty blob must persist across connections")
+    }
     try store.remove("record")
     guard case .missing = reopened.readOutcome("record") else { preconditionFailure() }
     try store.applyBatch(writes: [], removing: [])
@@ -56,7 +65,8 @@ struct LocalStoreChecks {
     }
     precondition(failures.withLock { $0 } == 0)
     for number in 0..<50 { precondition(read(store, "concurrent-\(number)") == Data("\(number)".utf8)) }
-    print("LocalStoreChecks: passed (legacy bytes, atomic rollback, statement reuse after failure, ordered duplicate keys, removals, reopen)")
+    print("LocalStoreChecks: passed (legacy bytes, atomic rollback, statement reuse after failure, ordered duplicate keys, removals, reopen, concurrency)")
+    if checksEmptyBlobs { print("LocalStoreChecks: empty BLOB round trip passed") }
   }
 
   static func read(_ store: LocalStore, _ key: String) -> Data? {
