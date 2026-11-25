@@ -134,7 +134,7 @@ final class LocalStore {
     catch { return .failed }
     defer { reset(statement) }
 
-    sqlite3_bind_text(statement, 1, key, -1, Self.transient)
+    guard sqlite3_bind_text(statement, 1, key, -1, Self.transient) == SQLITE_OK else { return .failed }
     switch sqlite3_step(statement) {
     case SQLITE_DONE:
       return .missing
@@ -190,13 +190,29 @@ final class LocalStore {
   /// Writes and removes documents in one transaction, so a commit that both
   /// stores a record and discards its draft cannot leave the two disagreeing.
   func applyBatch(writes: [(key: String, data: Data)], removing removals: [String]) throws {
+    _ = try applyBatch(writes: writes, removing: removals, expecting: [])
+  }
+
+  /// Mutates only the expected versions. A nil expected payload means absent.
+  /// Checking under the writer transaction also covers updates by another process.
+  func applyBatch(
+    writes: [(key: String, data: Data)],
+    removing removals: [String],
+    expecting expected: [(key: String, data: Data?)]
+  ) throws -> Bool {
     lock.lock()
     defer { lock.unlock() }
     guard db != nil else { throw StoreError.open(0) }
-    guard !writes.isEmpty || !removals.isEmpty else { return }
+    guard !writes.isEmpty || !removals.isEmpty || !expected.isEmpty else { return true }
 
     try exec("BEGIN IMMEDIATE;")
     do {
+      for (key, data) in expected {
+        guard try matchesLocked(key, expected: data) else {
+          try exec("ROLLBACK;")
+          return false
+        }
+      }
       for document in writes {
         try writeLocked(document.key, data: document.data)
       }
@@ -204,9 +220,27 @@ final class LocalStore {
         try removeLocked(key)
       }
       try exec("COMMIT;")
+      return true
     } catch {
       try? exec("ROLLBACK;")
       throw error
+    }
+  }
+
+  private func matchesLocked(_ key: String, expected: Data?) throws -> Bool {
+    let sql = expected == nil
+      ? "SELECT 1 FROM documents WHERE key = ?;"
+      : "SELECT 1 FROM documents WHERE key = ? AND data = ?;"
+    let statement = try prepared(sql)
+    return try (expected ?? Data()).withUnsafeBytes { buffer in
+      defer { reset(statement) }
+      try checkBind(sqlite3_bind_text(statement, 1, key, -1, Self.transient))
+      if expected != nil { try bindBlob(buffer, to: statement, at: 2) }
+      switch sqlite3_step(statement) {
+      case SQLITE_ROW: return expected != nil
+      case SQLITE_DONE: return expected == nil
+      case let failure: throw StoreError.statement(failure)
+      }
     }
   }
 
@@ -220,14 +254,9 @@ final class LocalStore {
       // bindings before the buffer goes out of scope, including on failure.
       defer { reset(statement) }
 
-      let keyStatus = sqlite3_bind_text(statement, 1, key, -1, Self.transient)
-      guard keyStatus == SQLITE_OK else { throw StoreError.statement(keyStatus) }
-      let dataStatus = buffer.isEmpty
-        ? sqlite3_bind_zeroblob(statement, 2, 0)
-        : sqlite3_bind_blob64(statement, 2, buffer.baseAddress, UInt64(buffer.count), nil)
-      guard dataStatus == SQLITE_OK else { throw StoreError.statement(dataStatus) }
-      let timestampStatus = sqlite3_bind_double(statement, 3, Date().timeIntervalSince1970)
-      guard timestampStatus == SQLITE_OK else { throw StoreError.statement(timestampStatus) }
+      try checkBind(sqlite3_bind_text(statement, 1, key, -1, Self.transient))
+      try bindBlob(buffer, to: statement, at: 2)
+      try checkBind(sqlite3_bind_double(statement, 3, Date().timeIntervalSince1970))
 
       guard sqlite3_step(statement) == SQLITE_DONE else {
         throw StoreError.statement(sqlite3_errcode(db))
@@ -248,10 +277,22 @@ final class LocalStore {
 
     let statement = try prepared("DELETE FROM documents WHERE key = ?;")
     defer { reset(statement) }
-    sqlite3_bind_text(statement, 1, key, -1, Self.transient)
+    try checkBind(sqlite3_bind_text(statement, 1, key, -1, Self.transient))
     guard sqlite3_step(statement) == SQLITE_DONE else {
       throw StoreError.statement(sqlite3_errcode(db))
     }
+  }
+
+  /// The statement is stepped and its bindings cleared while the buffer lives.
+  private func bindBlob(_ buffer: UnsafeRawBufferPointer, to statement: OpaquePointer, at index: Int32) throws {
+    let status = buffer.isEmpty
+      ? sqlite3_bind_zeroblob(statement, index, 0)
+      : sqlite3_bind_blob64(statement, index, buffer.baseAddress, UInt64(buffer.count), nil)
+    try checkBind(status)
+  }
+
+  private func checkBind(_ status: Int32) throws {
+    guard status == SQLITE_OK else { throw StoreError.statement(status) }
   }
 
   /// Every use is inside the existing lock, including reset and clearing bound

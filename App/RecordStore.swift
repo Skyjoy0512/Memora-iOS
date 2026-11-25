@@ -64,12 +64,12 @@ enum RecordStore {
   /// `UserDefaults` copy exactly once; a read failure is reported as such and
   /// never falls back to older data.
   static func load(_ key: String) -> LoadOutcome {
-    switch LocalStore.shared.readOutcome(key) {
+    switch readDocument(key) {
     case .data(let data):
       return .data(data)
     case .failed:
       return .failed
-    case .missing:
+    case .absent:
       break
     }
 
@@ -81,22 +81,39 @@ enum RecordStore {
     // document that was migrated and then deleted was brought in again from the
     // legacy copy on the next launch.
     let marker = key + ".migrated"
-    if case .data = LocalStore.shared.readOutcome(marker) { return .absent }
+    switch LocalStore.shared.readOutcome(marker) {
+    case .data: return readDocument(key)
+    case .failed: return .failed
+    case .missing: break
+    }
     guard let legacy = UserDefaults.standard.data(forKey: key) else { return .absent }
 
     do {
       // The document and its marker land in one transaction, so a document can
-      // never be migrated without also recording that it was. On failure the old
-      // copy is still in `UserDefaults` and no marker was written, so the next
-      // load tries again.
-      try saveBatch([
-        (key: key, data: legacy),
-        (key: marker, data: Data("1".utf8)),
-      ])
+      // never be migrated without also recording that it was. Recheck both
+      // under the write lock so a queued or external write wins over legacy.
+      if try commitIfCurrent(writes: [(key, legacy), (marker, Data("1".utf8))], removing: [],
+                             expecting: [(key, nil), (marker, nil)]) {
+        return .data(legacy)
+      }
     } catch {
       return .failed
     }
-    return .data(legacy)
+    switch readDocument(key) {
+    case .data(let data): return .data(data)
+    case .failed: return .failed
+    case .absent:
+      if case .data = LocalStore.shared.readOutcome(marker) { return readDocument(key) }
+      return .failed
+    }
+  }
+
+  private static func readDocument(_ key: String) -> LoadOutcome {
+    switch LocalStore.shared.readOutcome(key) {
+    case .data(let data): return .data(data)
+    case .missing: return .absent
+    case .failed: return .failed
+    }
   }
 
   /// Editors need the last accepted draft even while an unrelated large write
@@ -106,21 +123,40 @@ enum RecordStore {
     return load(key)
   }
 
-  /// Keeps an unreadable document aside. The original is only removed once the
-  /// copy is safely stored, so a failed quarantine never loses anything.
+  /// Archives the exact unreadable version and removes it in one transaction.
   @discardableResult
   static func quarantine(_ data: Data, key: String) -> Bool {
+    let archive = key + ".unreadable"
+    let marker = (key: key + ".migrated", data: Data("1".utf8))
     do {
-      try LocalStore.shared.write(key + ".unreadable", data: data)
+      if try commitIfCurrent(writes: [(archive, data), marker], removing: [key],
+                             expecting: [(key, data), (archive, nil)]) {
+        return true
+      }
+      // A later corruption may occur after a clean restoration. Retain the
+      // earlier archive, and recheck the original before moving this version.
+      let nextArchive = archive + "." + UUID().uuidString
+      return try commitIfCurrent(writes: [(nextArchive, data), marker], removing: [key],
+                                 expecting: [(key, data), (nextArchive, nil)])
     } catch {
       return false
     }
-    do {
-      try LocalStore.shared.remove(key)
-      return true
-    } catch {
-      return false
+  }
+
+  private static func commitIfCurrent(
+    writes: [(key: String, data: Data)],
+    removing removals: [String],
+    expecting expected: [(key: String, data: Data?)]
+  ) throws -> Bool {
+    let revisions = dataWriteRevisions(for: writes.map(\.key) + removals)
+    let committed = try queue.sync {
+#if DEBUG
+      try consumeInjectedFailure()
+#endif
+      return try LocalStore.shared.applyBatch(writes: writes, removing: removals, expecting: expected)
     }
+    if committed { settleDataWrites(revisions) }
+    return committed
   }
 
   /// Encodes a value, reporting failure instead of silently dropping it.
@@ -226,14 +262,7 @@ enum RecordStore {
     writes: [(key: String, data: Data)],
     removing removals: [String]
   ) throws {
-    let revisions = dataWriteRevisions(for: writes.map(\.key) + removals)
-    try queue.sync {
-#if DEBUG
-      try consumeInjectedFailure()
-#endif
-      try LocalStore.shared.applyBatch(writes: writes, removing: removals)
-    }
-    settleDataWrites(revisions)
+    _ = try commitIfCurrent(writes: writes, removing: removals, expecting: [])
   }
 
   /// The same commit off the caller's turn, so a screen does not wait on disk.

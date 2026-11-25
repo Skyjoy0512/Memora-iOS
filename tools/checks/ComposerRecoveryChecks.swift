@@ -11,6 +11,7 @@ struct ComposerRecoveryChecks {
 
   static func main() async throws {
     try LocalStore.shared.prepare()
+    try recordRecoveryChecks()
     try RecordStore.saveDataNow(Data("actual-record".utf8), key: "fixture.business-record")
     let directory = storeURL.deletingLastPathComponent().appendingPathComponent("AIAttachments")
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -127,6 +128,51 @@ struct ComposerRecoveryChecks {
     do { _ = try ComposerDraftStore.recover(); preconditionFailure() }
     catch ComposerDraftStore.Failure.unavailable {}
     print("PASS: production composer decoding/recovery/model guards/RecordStore + real SQLite; legacy/marked data, text/mention/attachment corruption, exact byte archives, 6 transaction rollback stages, damaged index refusal, queued latest input, restart reads, unrelated record preservation and read-failure distinction. Singleton/media paths are isolated; no user data.")
+  }
+
+  static func recordRecoveryChecks() throws {
+    let key = "fixture.quarantine"
+    let archive = key + ".unreadable"
+    let marker = key + ".migrated"
+    let legacy = Data("obsolete default".utf8)
+    let corrupt = Data([2, 255])
+    let replacement = Data("restored data".utf8)
+    UserDefaults.standard.register(defaults: [key: legacy])
+    try RecordStore.saveDataNow(corrupt, key: key)
+
+    let external = LocalStore(fileURL: storeURL)
+    try external.prepare()
+    try external.write(key, data: replacement)
+    precondition(!RecordStore.quarantine(corrupt, key: key), "Quarantine moved a newer version")
+    let replaced = try database()
+    precondition(replaced[key] == replacement && replaced[archive] == nil && replaced[marker] == nil)
+    try external.write(key, data: corrupt)
+
+    let before = try database()
+    let stages = ["INSERT ON documents WHEN NEW.key = '\(archive)'",
+                  "INSERT ON documents WHEN NEW.key = '\(marker)'",
+                  "DELETE ON documents WHEN OLD.key = '\(key)'"]
+    for stage in stages {
+      try execute("CREATE TRIGGER reject_quarantine BEFORE \(stage) BEGIN SELECT RAISE(ABORT, 'fixture'); END;")
+      precondition(!RecordStore.quarantine(corrupt, key: key))
+      try execute("DROP TRIGGER reject_quarantine;")
+      expect(try database() == before, "A rejected quarantine partially changed the store")
+    }
+
+    precondition(RecordStore.quarantine(corrupt, key: key))
+    let archived = try database()
+    precondition(archived[archive] == corrupt && archived[key] == nil && archived[marker] != nil)
+    guard case .absent = RecordStore.load(key) else { preconditionFailure("Quarantine revived legacy data") }
+    try RecordStore.saveDataNow(replacement, key: key)
+    expect(try data(key) == replacement)
+
+    let secondCorrupt = Data([3, 255])
+    try RecordStore.saveDataNow(secondCorrupt, key: key)
+    precondition(RecordStore.quarantine(secondCorrupt, key: key))
+    let archives = try database().filter { $0.key.hasPrefix(archive) }
+    precondition(archives.count == 2 && archives[archive] == corrupt && archives.values.contains(secondCorrupt))
+    guard case .absent = RecordStore.load(key) else { preconditionFailure() }
+    print("PASS: quarantine preserves newer writes and earlier archives; exact-byte recovery, clean restore, legacy suppression and rollback at all stages")
   }
 
   static func unreadable() throws {

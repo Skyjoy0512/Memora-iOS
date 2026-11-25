@@ -59,11 +59,17 @@ final class LocalStore: Sendable {
   func write(_ key: String, data: Data) throws { try applyBatch(writes: [(key, data)], removing: []) }
   func remove(_ key: String) throws { try applyBatch(writes: [], removing: [key]) }
   func applyBatch(writes: [(key: String, data: Data)], removing: [String]) throws {
+    _ = try applyBatch(writes: writes, removing: removing, expecting: [])
+  }
+  func applyBatch(writes: [(key: String, data: Data)], removing: [String],
+                  expecting expected: [(key: String, data: Data?)]) throws -> Bool {
     try state.withLock { value in
+      guard expected.allSatisfy({ value.documents[$0.key] == $0.data }) else { return false }
       if value.fails { value.fails = false; throw StoreError.statement(1) }
       value.writes += 1
       for (key, data) in writes { value.documents[key] = data }
       for key in removing { value.documents.removeValue(forKey: key) }
+      return true
     }
   }
 }

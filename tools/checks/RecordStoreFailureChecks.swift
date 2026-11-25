@@ -4,6 +4,7 @@ import Synchronization
 @main
 struct RecordStoreFailureChecks {
   @MainActor static func main() async throws {
+    try legacyMarkerChecks()
     try await draftQueueChecks()
     try RecordStore.saveNow("original", key: "record")
     try RecordStore.saveNow("draft", key: "draft")
@@ -64,6 +65,38 @@ struct RecordStoreFailureChecks {
     precondition(retained == invalid)
     print("DraftStore checks: newer queued draft retention, matching clear, legacy clear, partial restore refusal and unreadable-byte protection passed")
     print("RecordStoreFailureChecks: passed (async rollback, concurrent one-shot failure, sync recovery)")
+  }
+
+  @MainActor static func legacyMarkerChecks() throws {
+    let key = "fixture.legacy.\(UUID().uuidString)"
+    let marker = key + ".migrated"
+    let legacy = Data("legacy".utf8)
+    UserDefaults.standard.register(defaults: [key: legacy])
+    LocalStore.shared.failReads.withLock { _ = $0.insert(marker) }
+    guard case .failed = RecordStore.load(key) else { preconditionFailure("An unreadable marker revived old data") }
+    guard case .missing = LocalStore.shared.readOutcome(key) else { preconditionFailure("A failed read wrote a record") }
+    LocalStore.shared.failReads.withLock { _ = $0.remove(marker) }
+
+    RecordStore.setFailureInjection(true)
+    guard case .failed = RecordStore.load(key), case .missing = LocalStore.shared.readOutcome(marker) else {
+      preconditionFailure("A failed migration changed the migration state")
+    }
+    guard case .data(let migrated) = RecordStore.load(key), migrated == legacy else {
+      preconditionFailure("An interrupted migration was not retryable")
+    }
+    try RecordStore.remove(key)
+    guard case .absent = RecordStore.load(key) else { preconditionFailure("A deleted record reappeared") }
+
+    let racingKey = key + ".race"
+    let racingMarker = racingKey + ".migrated"
+    let replacement = Data("concurrent save".utf8)
+    UserDefaults.standard.register(defaults: [racingKey: legacy])
+    LocalStore.shared.writesAfterNextRead.withLock { $0[racingMarker] = [racingKey: replacement] }
+    guard case .data(let current) = RecordStore.load(racingKey), current == replacement,
+          case .missing = LocalStore.shared.readOutcome(racingMarker) else {
+      preconditionFailure("Legacy migration replaced a concurrent save")
+    }
+    print("RecordStoreFailureChecks: unreadable marker, retry, deletion protection and racing save passed")
   }
 
   @MainActor static func draftQueueChecks() async throws {
@@ -148,9 +181,17 @@ final class LocalStore: Sendable {
   enum ReadOutcome { case missing, data(Data), failed }
   private let documents = Mutex<[String: Data]>([:])
   let failWrites = Mutex<Set<String>>([])
+  let failReads = Mutex<Set<String>>([])
+  let writesAfterNextRead = Mutex<[String: [String: Data]]>([:])
   func prepare() throws {}
   func readOutcome(_ key: String) -> ReadOutcome {
-    documents.withLock { $0[key].map(ReadOutcome.data) ?? .missing }
+    if failReads.withLock({ $0.contains(key) }) { return .failed }
+    let writes = writesAfterNextRead.withLock { $0.removeValue(forKey: key) }
+    return documents.withLock { values in
+      let outcome = values[key].map(ReadOutcome.data) ?? .missing
+      if let writes { values.merge(writes) { _, replacement in replacement } }
+      return outcome
+    }
   }
   func write(_ key: String, data: Data) throws {
     if failWrites.withLock({ $0.contains(key) }) { throw StoreError.statement(1) }
@@ -158,9 +199,15 @@ final class LocalStore: Sendable {
   }
   func remove(_ key: String) throws { documents.withLock { _ = $0.removeValue(forKey: key) } }
   func applyBatch(writes: [(key: String, data: Data)], removing: [String]) throws {
+    _ = try applyBatch(writes: writes, removing: removing, expecting: [])
+  }
+  func applyBatch(writes: [(key: String, data: Data)], removing: [String],
+                  expecting expected: [(key: String, data: Data?)]) throws -> Bool {
     documents.withLock { values in
+      guard expected.allSatisfy({ values[$0.key] == $0.data }) else { return false }
       for (key, data) in writes { values[key] = data }
       for key in removing { values.removeValue(forKey: key) }
+      return true
     }
   }
 }
