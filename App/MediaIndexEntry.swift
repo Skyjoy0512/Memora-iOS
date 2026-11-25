@@ -13,6 +13,8 @@ struct MediaIndexEntry: Codable, Hashable, Identifiable, Sendable {
   var recordTitle: String
   var recordDate: Date
   var byteCount: Int
+  /// Older indexes lack a file revision, so they are rebuilt from the original.
+  var fileModifiedAt: Date?
   var pixelWidth: Int
   var pixelHeight: Int
   /// Text recognized in the image; empty until a read has run.
@@ -22,6 +24,11 @@ struct MediaIndexEntry: Codable, Hashable, Identifiable, Sendable {
   var textReadAt: Date?
 
   var id: String { name }
+
+  func matchesOriginal(_ values: URLResourceValues) -> Bool {
+    guard let fileModifiedAt else { return false }
+    return byteCount == values.fileSize && fileModifiedAt == values.contentModificationDate
+  }
 
   /// Matches the record's title or the words found inside the photo. Both sides
   /// fold width and case, so a half-width search finds full-width text.

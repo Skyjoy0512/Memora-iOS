@@ -160,12 +160,6 @@ enum MediaFiles {
     [name]
   }
 
-  /// A stored photo's size in bytes, read from the file itself.
-  static func byteCount(ofPhotoNamed name: String) -> Int? {
-    guard let url = photoURL(name) else { return nil }
-    return try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize
-  }
-
   /// A stored photo's pixel size, read from its header without decoding it.
   static func pixelSize(ofPhotoNamed name: String) -> (width: Int, height: Int)? {
     guard let url = photoURL(name),

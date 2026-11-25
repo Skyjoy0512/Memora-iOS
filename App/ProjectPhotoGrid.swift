@@ -16,6 +16,10 @@ struct ProjectPhotoGrid: View {
 
   var body: some View {
     let entries = model.mediaEntriesByName()
+    let hasPendingText = photos.contains { photo in
+      guard let entry = entries[photo.name] else { return false }
+      return entry.textReadAt == nil
+    }
     let matching = photos.filter { photo in
       guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return true }
       return entries[photo.name]?.matches(query)
@@ -23,7 +27,7 @@ struct ProjectPhotoGrid: View {
     }
     VStack(alignment: .leading, spacing: MemoraSpacing.md) {
       header
-      if let state = readingState {
+      if let state = readingState(hasPendingText: hasPendingText) {
         Text(state)
           .font(MemoraTypography.metadata)
           .foregroundStyle(.secondary)
@@ -38,20 +42,20 @@ struct ProjectPhotoGrid: View {
     }
     .task(id: photos) {
       model.reconcileMediaIndex()
-      guard model.mediaIndexEntries.contains(where: { $0.textReadAt == nil }) else { return }
-      isReadingText = true
-      await model.readPendingMediaText(limit: 30)
-      isReadingText = false
+      let names = Set(photos.map(\.name))
+      isReadingText = model.mediaIndexEntries.contains { names.contains($0.name) && $0.textReadAt == nil }
+      guard isReadingText else { return }
+      await model.readPendingMediaText(for: names)
+      if !Task.isCancelled { isReadingText = false }
     }
     .onDisappear {
       if model.focusedInlineEditorID == searchFieldID { model.focusedInlineEditorID = nil }
     }
   }
 
-  private var readingState: String? {
+  private func readingState(hasPendingText: Bool) -> String? {
     if isReadingText { return "写真の文字を読み取っています…（端末内で処理します）" }
-    guard !query.isEmpty,
-          model.mediaIndexEntries.contains(where: { $0.textReadAt == nil }) else { return nil }
+    guard !query.isEmpty, hasPendingText else { return nil }
     return "まだ読み取っていない写真があります。この画面を開くと続きを読み取ります。"
   }
 

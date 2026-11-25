@@ -18,6 +18,7 @@ bash tools/checks/run-project-source-storage-checks.sh
 bash tools/checks/run-project-source-preparation-checks.sh
 bash tools/checks/run-project-source-web-recovery-checks.sh
 bash tools/checks/run-project-source-import-checks.sh
+bash tools/checks/run-media-index-checks.sh
 bash tools/checks/run-source-intake-checks.sh
 bash tools/checks/run-source-extraction-cache-checks.sh
 bash tools/checks/run-source-summary-checks.sh
