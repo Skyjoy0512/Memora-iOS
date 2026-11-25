@@ -4,11 +4,12 @@ import SwiftUI
 /// how to record it, since an event can be held in a room or on the web.
 struct UpcomingEventsRow: View {
   var meetings: [UpcomingMeeting]
-  var onRecordInPerson: (UpcomingMeeting) -> Void
+  var onRecordInPerson: (UpcomingMeeting, LocalImportContext) -> Void
   var onRecordOnline: (UpcomingMeeting) -> Void
 
   @Environment(MemoraModel.self) private var model
   @State private var chosenMeeting: UpcomingMeeting?
+  @State private var pendingAction: (() -> Void)?
 
   var body: some View {
     VStack(alignment: .leading, spacing: 10) {
@@ -35,25 +36,36 @@ struct UpcomingEventsRow: View {
       .scrollTargetBehavior(.viewAligned)
     }
     .padding(.horizontal, ProjectLayout.horizontalInset)
-    .sheet(item: $chosenMeeting) { meeting in
+    .sheet(item: $chosenMeeting, onDismiss: finishDismissal) { meeting in
       RecordingMethodSheet(meeting: meeting, onChoose: { method in
-        chosenMeeting = nil
-        // Recording presents its own screen, so it waits for this sheet to
-        // finish closing.
-        Task { @MainActor in
-          try? await Task.sleep(for: .milliseconds(350))
+        let context = LocalImportContext(in: model)
+        pendingAction = {
+          guard let context, context.isCurrent(in: model) else {
+            model.recordingErrorMessage = "この保存先では録音できません。画面を開き直してください。"
+            return
+          }
           switch method {
-          case .inPerson: onRecordInPerson(meeting)
-          case .online: onRecordOnline(meeting)
+          case .inPerson: onRecordInPerson(meeting, context)
+          case .online:
+            if FeatureFlags.isOnlineMeetingCaptureEnabled { onRecordOnline(meeting) }
           }
         }
-      }, onOpenRecord: { recordID in
         chosenMeeting = nil
-        Task { @MainActor in
-          try? await Task.sleep(for: .milliseconds(350))
+      }, onOpenRecord: { recordID in
+        let generation = model.aiWorkspaceGeneration
+        pendingAction = {
+          guard model.aiWorkspaceGeneration == generation else { return }
           model.libraryPath.append(.meeting(recordID))
         }
+        chosenMeeting = nil
       })
     }
+  }
+
+  private func finishDismissal() {
+    // Native dismissal settles the presenting sheet before another screen opens.
+    let action = pendingAction
+    pendingAction = nil
+    action?()
   }
 }

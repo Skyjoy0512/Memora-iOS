@@ -324,8 +324,8 @@ struct LibraryView: View {
       VStack(spacing: MemoraSpacing.xl) {
         UpcomingEventsRow(
           meetings: upcoming.meetings,
-          onRecordInPerson: { meeting in
-            Task { await model.startCapture(event: meeting) }
+          onRecordInPerson: { meeting, context in
+            Task { await model.startCapture(event: meeting, context: context) }
           },
           onRecordOnline: recordOnline
         )
