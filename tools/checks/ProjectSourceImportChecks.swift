@@ -6,6 +6,7 @@ struct ProjectSourceImportChecks {
   @MainActor static func main() async throws {
     let root = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
     try await normalPaths(root)
+    try await concurrentCapture(root)
     for stage in 0..<4 {
       for change in 0..<8 { try await race(root, stage: stage, change: change) }
     }
@@ -16,6 +17,56 @@ struct ProjectSourceImportChecks {
     try await mutations(root)
     try contextPolicy(root)
     print("ProjectSourceImportChecks: passed (production file copy/transfer registration, fingerprints, SQLite reopen, 32 context races before load/during copy/after transfer/after registration, dedup and committed-file retention, SQL rollback/retry, detach/delete workspace guards; OS preparation/audio and model state are fixtures, no network)")
+  }
+
+  @MainActor static func concurrentCapture(_ root: URL) async throws {
+    let (model, projectID) = try fixture(root, "concurrent-capture")
+    let context = LocalImportContext(projectID: projectID, in: model)!
+    let text = "共有した文章を一度だけ保存"
+    let image = Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jCo0AAAAASUVORK5CYII=")!
+    for intent in [CaptureIntent.text(text), .image(image)] {
+      let before = try files()
+      let drafts = (0..<24).map { "capture-draft-\($0)" }
+      for draft in drafts { try model.localStore.write(draft, data: Data([1])) }
+      let outcomes = await withTaskGroup(of: CaptureOutcome.self, returning: [CaptureOutcome].self) { group in
+        for draft in drafts {
+          group.addTask { @MainActor in
+            await model.capture(intent, context: context, sourceID: UUID(), title: "共有した原本", removing: [draft])
+          }
+        }
+        return await group.reduce(into: []) { $0.append($1) }
+      }
+      let imported = outcomes.compactMap { outcome -> UUID? in
+        guard case .imported(let id) = outcome else { return nil }
+        return id
+      }
+      precondition(imported.count == 1, "Simultaneous captures must register exactly one source")
+      let id = imported[0]
+      precondition(outcomes.filter { $0 == .duplicate(id) }.count == drafts.count - 1)
+      guard let saved = model.source(id: id) else { preconditionFailure("Missing captured source") }
+      precondition(saved.projectID == projectID && saved.title == "共有した原本")
+      expect(try reload(model).first(where: { $0.id == id }) == saved)
+      expect(try files().subtracting(before).count == 1)
+      for draft in drafts {
+        guard case .missing = model.localStore.readOutcome(draft) else { preconditionFailure("Draft remained after registration") }
+      }
+    }
+
+    let duplicateDraft = "duplicate-image-draft"
+    try model.localStore.write(duplicateDraft, data: Data([1]))
+    let originalImage = model.projectSources.first(where: { $0.kind == .image })!
+    expect(await model.capture(.image(image), context: context, removing: [duplicateDraft]) == .duplicate(originalImage.id))
+    guard case .missing = model.localStore.readOutcome(duplicateDraft) else { preconditionFailure("Image duplicate kept its draft") }
+
+    let differentImage = image + Data([0])
+    let freshDraft = "fresh-image-draft"
+    try model.localStore.write(freshDraft, data: Data([1]))
+    guard case .imported(let id) = await model.capture(.image(differentImage), context: context,
+      title: "写真の名前", removing: [freshDraft]) else { preconditionFailure("Image without an inbox ID was not registered") }
+    expect(try reload(model).first(where: { $0.id == id })?.title == "写真の名前")
+    guard case .missing = model.localStore.readOutcome(freshDraft) else { preconditionFailure("New image kept its draft") }
+
+    print("PASS simultaneous text/image capture deduplicates within the project and settles drafts and staged files")
   }
 
   @MainActor static func fixture(_ root: URL, _ name: String) throws -> (MemoraModel, UUID) {

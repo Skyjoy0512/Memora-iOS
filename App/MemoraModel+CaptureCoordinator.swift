@@ -66,29 +66,15 @@ extension MemoraModel {
     guard context.isCurrent(in: self) else {
       return .refused("保存先が変更されたため取り込めませんでした。画面を開き直してください。")
     }
-    if let existing = projectSources.first(where: { candidate in
-      guard candidate.projectID == context.projectID else { return false }
-      let sameFingerprint = source.contentFingerprint != nil &&
-        candidate.contentFingerprint == source.contentFingerprint
-      let sameOriginalURL = source.originalURL != nil && candidate.originalURL == source.originalURL
-      let partitionKeys = ["partitionOriginalFingerprint", "partitionOriginalPageCount",
-        "partitionFirstPage", "partitionLastPage"]
-      let samePartition = source.metadata.map { metadata in
-        partitionKeys.allSatisfy { key in
-          guard let value = metadata[key] else { return false }
-          return candidate.metadata?[key] == value
-        }
-      } ?? false
-      return sameFingerprint || sameOriginalURL || samePartition
-    }) {
-      // The stored record is the same thing as the prepared one, so it is
-      // reused. A record that was changed in the meantime is still the one
-      // that holds this content, so the person is pointed at it instead of
-      // getting a second copy.
-      if !removing.isEmpty, !persistBatch({ [] }, removing: removing) {
-        return .refused("保存できませんでした。ストレージの空き容量を確認してください。")
-      }
-      return .duplicate(existing.id)
+    guard source.projectID == context.projectID else {
+      return .refused("保存先が変更されたため取り込めませんでした。画面を開き直してください。")
+    }
+    if let existing = duplicateCapture(of: source) {
+      return reuseCapture(existing.id, removing: removing)
+    }
+    // A caller-supplied ID must not replace previously stored evidence.
+    guard self.source(id: source.id) == nil else {
+      return .refused("同じ識別子の資料が既に保存されています。")
     }
     guard storeProjectSource(source, removing: removing) else {
       return .refused("資料を保存できませんでした。ストレージの空き容量を確認してください。")
@@ -98,6 +84,30 @@ extension MemoraModel {
     }
     scheduleProjectSourcePreparation(source.id)
     return .imported(source.id)
+  }
+
+  private func duplicateCapture(of source: ProjectSource) -> ProjectSource? {
+    let textFingerprint = source.kind == .note ? source.metadata?["captureFingerprint"] : nil
+    let partitionKeys = ["partitionOriginalFingerprint", "partitionOriginalPageCount",
+      "partitionFirstPage", "partitionLastPage"]
+    return projectSources.first { candidate in
+      guard candidate.projectID == source.projectID else { return false }
+      let sameFingerprint = source.contentFingerprint != nil && candidate.contentFingerprint == source.contentFingerprint
+      let sameText = textFingerprint != nil && candidate.kind == .note && candidate.metadata?["captureFingerprint"] == textFingerprint
+      let sameOriginalURL = source.originalURL != nil && candidate.originalURL == source.originalURL
+      let samePartition = partitionKeys.allSatisfy { key in
+        guard let value = source.metadata?[key] else { return false }
+        return candidate.metadata?[key] == value
+      }
+      return sameFingerprint || sameText || sameOriginalURL || samePartition
+    }
+  }
+
+  private func reuseCapture(_ id: UUID, removing: [String]) -> CaptureOutcome {
+    guard removing.isEmpty || persistBatch({ [] }, removing: removing) else {
+      return .refused("保存できませんでした。ストレージの空き容量を確認してください。")
+    }
+    return .duplicate(id)
   }
 
   /// A public link, and a meeting that is kept as a link with a marker.
@@ -151,9 +161,7 @@ extension MemoraModel {
                            sourceID: UUID?, metadata: [String: String], title: String?,
                            removing: [String]) async -> CaptureOutcome {
     let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmed.isEmpty else {
-      return .refused("テキストが長すぎます。10,000文字以内で入力してください。")
-    }
+    guard !trimmed.isEmpty else { return .refused("保存するテキストを入力してください。") }
     guard text.count <= 10_000 else {
       return .refused("テキストが長すぎます。10,000文字以内で入力してください。")
     }
@@ -163,13 +171,11 @@ extension MemoraModel {
     guard context.isCurrent(in: self) else {
       return .refused("保存先が変更されたため取り込めませんでした。画面を開き直してください。")
     }
-    if let existing = projectSources.first(where: {
-      $0.projectID == context.projectID && $0.metadata?["captureFingerprint"] == fingerprint
-    }) {
-      if !removing.isEmpty, !persistBatch({ [] }, removing: removing) {
-        return .refused("保存できませんでした。ストレージの空き容量を確認してください。")
-      }
-      return .duplicate(existing.id)
+    var source = ProjectSource(projectID: context.projectID, kind: .note,
+      title: title.flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 } ?? String(text.prefix(40)), metadata: mergedMetadata)
+    if let sourceID { source.id = sourceID }
+    if let existing = duplicateCapture(of: source) {
+      return reuseCapture(existing.id, removing: removing)
     }
     let data: Data
     do {
@@ -183,26 +189,11 @@ extension MemoraModel {
     } catch {
       return .refused("テキストを保存できませんでした。ストレージの空き容量を確認してください。")
     }
-    guard context.isCurrent(in: self) else {
-      await ProjectSourceFiles.shared.remove([name])
-      return .refused("保存先が変更されたため取り込めませんでした。画面を開き直してください。")
-    }
-    var source = ProjectSource(projectID: context.projectID, kind: .note,
-      title: title.flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 } ?? String(text.prefix(40)), metadata: mergedMetadata)
-    if let sourceID { source.id = sourceID }
     source.extractedTextReference = name
     source.processingStatus = .ready
     source.textCoverage = .complete
     source.acquiredAt = .now
-    guard storeProjectSource(source, removing: removing) else {
-      await ProjectSourceFiles.shared.remove([name])
-      return .refused("テキストを保存できませんでした。ストレージの空き容量を確認してください。")
-    }
-    guard context.isCurrent(in: self) else {
-      return .refused("保存先が変更されたため取り込めませんでした。画面を開き直してください。")
-    }
-    scheduleProjectSourcePreparation(source.id)
-    return .imported(source.id)
+    return await registerStagedCapture(source, reference: name, context: context, removing: removing)
   }
 
   /// A picture, stored through the existing import path so the fingerprint
@@ -220,53 +211,30 @@ extension MemoraModel {
     guard context.isCurrent(in: self) else {
       return .refused("保存先が変更されたため取り込めませんでした。画面を開き直してください。")
     }
-    if let existing = projectSources.first(where: {
-      $0.projectID == context.projectID && $0.contentFingerprint == fingerprint
-    }) {
-      return .duplicate(existing.id)
-    }
-    if let sourceID {
-      do {
-        let reference = try await ProjectSourceFiles.shared.write(data, extension: "jpg")
-        guard context.isCurrent(in: self) else {
-          await ProjectSourceFiles.shared.remove([reference])
-          return .refused("保存先が変更されたため取り込めませんでした。画面を開き直してください。")
-        }
-        var source = ProjectSource(projectID: context.projectID, kind: .image,
-          title: title.flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 } ?? "写真",
-          localFileReference: reference, contentFingerprint: fingerprint,
-          metadata: metadata.isEmpty ? nil : metadata)
-        source.id = sourceID
-        guard storeProjectSource(source, removing: removing) else {
-          await ProjectSourceFiles.shared.remove([reference])
-          return .refused("写真を保存できませんでした。ストレージの空き容量を確認してください。")
-        }
-        guard context.isCurrent(in: self) else {
-          return .refused("保存先が変更されたため取り込めませんでした。画面を開き直してください。")
-        }
-        scheduleProjectSourcePreparation(source.id)
-        return .imported(source.id)
-      } catch {
-        return .refused("写真を保存できませんでした。ストレージの空き容量を確認してください。")
-      }
+    var source = ProjectSource(projectID: context.projectID, kind: .image,
+      title: title.flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 } ?? "写真",
+      contentFingerprint: fingerprint, metadata: metadata.isEmpty ? nil : metadata)
+    if let sourceID { source.id = sourceID }
+    if let existing = duplicateCapture(of: source) {
+      return reuseCapture(existing.id, removing: removing)
     }
     do {
-      let id = try await importProjectSource(title: "写真", context: context,
-        presentsErrorsLocally: true, waitsForPreparation: false,
-        sourceMetadata: metadata.isEmpty ? nil : metadata) {
-        let reference = try await ProjectSourceFiles.shared.write(data, extension: "jpg")
-        return ProjectSourceFiles.Receipt(reference: reference, fingerprint: fingerprint)
-      }
-      guard context.isCurrent(in: self) else {
-        return .refused("保存先が変更されたため取り込めませんでした。画面を開き直してください。")
-      }
-      guard let id else {
-        return .refused("写真を保存できませんでした。ストレージの空き容量を確認してください。")
-      }
-      return .imported(id)
+      let reference = try await ProjectSourceFiles.shared.write(data, extension: "jpg")
+      source.localFileReference = reference
+      return await registerStagedCapture(source, reference: reference, context: context, removing: removing)
     } catch {
       return .refused("写真を保存できませんでした。ストレージの空き容量を確認してください。")
     }
+  }
+
+  private func registerStagedCapture(_ source: ProjectSource, reference: String,
+                                     context: LocalImportContext, removing: [String]) async -> CaptureOutcome {
+    // Another capture can finish while disk I/O suspends the caller. Check
+    // for a duplicate again in the same actor turn as SQLite registration.
+    let outcome = capture(source, context: context, removing: removing)
+    if case .imported = outcome { return outcome }
+    await ProjectSourceFiles.shared.remove([reference])
+    return outcome
   }
 
   /// A file, copied into managed storage and deduplicated by its destination
