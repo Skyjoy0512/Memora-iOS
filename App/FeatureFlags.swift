@@ -12,6 +12,12 @@ enum FeatureFlags {
 
   static let isOnlineMeetingCaptureEnabled = false
 
+  #if DEBUG && MEMORA_ENABLE_CHATGPT_SIGN_IN
+  static let isChatGPTSignInEnabled = true
+  #else
+  static let isChatGPTSignInEnabled = false
+  #endif
+
   /// Live conversation is built but only compiled into explicitly enabled
   /// debug builds. Both DEBUG and MEMORA_ENABLE_LIVE_CONVERSATION are required;
   /// ordinary Debug and Release builds keep it disabled with no runtime switch.

@@ -58,6 +58,9 @@ final class ChatGPTSignInCoordinator {
   /// `ChatGPTSignInError.accountMismatch`; the stored credentials are left
   /// untouched in that case.
   func signIn() async -> ChatGPTSignInOutcome {
+    guard FeatureFlags.isChatGPTSignInEnabled else {
+      return .failed(message: "このビルドではChatGPTとのアカウント連携を利用できません。")
+    }
     guard state != .connecting else { return .failed(message: ChatGPTSignInError.callbackFailed.localizedDescription) }
     let previous = ChatGPTCredentialStore.load()
     let storedClientID = previous?.clientID ?? ChatGPTCredentialStore.storedClientID()
@@ -159,6 +162,7 @@ final class ChatGPTSignInCoordinator {
   /// valid for more than a minute, or when OpenAI has not yet allowed a
   /// refresh. Returns whether the connection was refreshed.
   func refreshIfNeeded() async -> Bool {
+    guard FeatureFlags.isChatGPTSignInEnabled else { return false }
     guard state != .connecting, let stored = ChatGPTCredentialStore.load() else { return false }
 
     let now = Date()
@@ -217,6 +221,10 @@ final class ChatGPTSignInCoordinator {
   func signOut() async -> ChatGPTSignInOutcome {
     cancel()
     let stored = ChatGPTCredentialStore.load()
+    guard ChatGPTCredentialStore.clear() else {
+      return .failed(message: "端末から資格情報を削除できませんでした。ロックを解除して、もう一度お試しください。")
+    }
+    state = .disconnected
     var revoked = true
     if let stored, let refreshToken = stored.refreshToken, !refreshToken.isEmpty {
       do {
@@ -225,8 +233,6 @@ final class ChatGPTSignInCoordinator {
         revoked = false
       }
     }
-    _ = ChatGPTCredentialStore.clear()
-    state = .disconnected
     return .signedOut(revoked: revoked)
   }
 

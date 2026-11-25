@@ -1,5 +1,11 @@
 # ChatGPT サインアップ / サインイン
 
+公開ビルドと通常の Debug では入口を無効化しています。開発時のみ `DEBUG` と
+`MEMORA_ENABLE_CHATGPT_SIGN_IN` の両方で有効になります。下記は実験用 OAuth フローです。
+Memora では ChatGPT プランによる推論への接続は未実装です。クラウド AI の公開経路は
+設定済みの API キーです。既存の連携は設定から解除できます。
+適用範囲と検証は [公開準備の設計判断](development/ARCHITECTURE_DECISIONS.md) を参照。
+
 Memora に「ChatGPTで続ける」を追加する。OpenAI の Sign in with ChatGPT
 (open-source flow) を使い、ChatGPT のアカウントでサインインできるようにする。
 

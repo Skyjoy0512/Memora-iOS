@@ -1,83 +1,35 @@
 import Foundation
 import Security
 
-/// Stores API keys in the keychain so they never touch UserDefaults or disk.
-///
-/// Reads are cached in memory: screens ask whether a key is set while drawing,
-/// and a keychain query each time is needlessly slow.
+/// Keeps credentials in the device's Keychain.
 enum KeychainStore {
   private static let service = "app.memora.keys"
-  private static let lock = NSLock()
   private static let mutationLock = NSRecursiveLock()
-  /// A key mapped to its value, or to `nil` when it is known to be absent.
-  private static var cache: [String: String?] = [:]
 
-  /// Writes a secret. The in-memory cache is only updated once the keychain
-  /// write succeeded, so a failed save never looks like a success.
   @discardableResult
   static func set(_ value: String?, forKey key: String) -> Bool {
     mutationLock.lock()
     defer { mutationLock.unlock() }
-    let stored = (value?.isEmpty == false) ? value : nil
 
-    let base: [String: Any] = [
-      kSecClass as String: kSecClassGenericPassword,
-      kSecAttrService as String: service,
-      kSecAttrAccount as String: key
-    ]
-
-    let succeeded: Bool
-
-    if let stored, let data = stored.data(using: .utf8) {
-      let updateStatus = SecItemUpdate(
-        base as CFDictionary,
-        [kSecValueData as String: data] as CFDictionary
-      )
-
-      if updateStatus == errSecItemNotFound {
-        succeeded = add(data, base: base)
-      } else if updateStatus == errSecSuccess {
-        // SecItemUpdate keeps the attribute an older build stored, so the
-        // matching item is replaced to adopt the current protection.
-        let deleteStatus = SecItemDelete(base as CFDictionary)
-        if deleteStatus == errSecSuccess || deleteStatus == errSecItemNotFound {
-          succeeded = add(data, base: base)
-        } else {
-          succeeded = false
-        }
-      } else {
-        succeeded = false
-      }
-    } else {
-      let deleteStatus = SecItemDelete(base as CFDictionary)
-      succeeded = deleteStatus == errSecSuccess || deleteStatus == errSecItemNotFound
-    }
-
-    guard succeeded else { return false }
-
-    lock.lock()
-    cache[key] = stored
-    lock.unlock()
-    return true
+    let match = query(for: key)
+    if let value, !value.isEmpty { return write(Data(value.utf8), matching: match) }
+    let status = SecItemDelete(match as CFDictionary)
+    return status == errSecSuccess || status == errSecItemNotFound
   }
 
   static func string(forKey key: String) -> String? {
     mutationLock.lock()
     defer { mutationLock.unlock() }
-    lock.lock()
-    if let cached = cache[key] {
-      lock.unlock()
-      return cached
-    }
-    lock.unlock()
 
-    let value = readFromKeychain(key)
-
-    lock.lock()
-    cache[key] = value
-    lock.unlock()
-
-    return value
+    // Recheck availability on every read so a device lock takes effect and a
+    // temporary failure does not hide the item after unlocking.
+    var match = query(for: key)
+    match[kSecReturnData as String] = true
+    match[kSecMatchLimit as String] = kSecMatchLimitOne
+    var result: AnyObject?
+    guard SecItemCopyMatching(match as CFDictionary, &result) == errSecSuccess,
+          let data = result as? Data else { return nil }
+    return String(data: data, encoding: .utf8)
   }
 
   static func replaceIfUnchanged(_ value: String, expected: String, forKey key: String) -> Bool {
@@ -91,27 +43,33 @@ enum KeychainStore {
     string(forKey: key) != nil
   }
 
-  private static func add(_ data: Data, base: [String: Any]) -> Bool {
-    var attributes = base
-    attributes[kSecValueData as String] = data
-    attributes[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-    return SecItemAdd(attributes as CFDictionary, nil) == errSecSuccess
+  static func write(
+    _ data: Data,
+    matching query: [String: Any],
+    update: (CFDictionary, CFDictionary) -> OSStatus = SecItemUpdate,
+    add: (CFDictionary) -> OSStatus = { SecItemAdd($0, nil) }
+  ) -> Bool {
+    let attributes: [String: Any] = [
+      kSecValueData as String: data,
+      kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+    ]
+    // Commit protection and data together, leaving the old value intact on
+    // failure. An add is needed only for an item that does not exist yet.
+    let status = update(query as CFDictionary, attributes as CFDictionary)
+    if status == errSecSuccess { return true }
+    guard status == errSecItemNotFound else { return false }
+    let addStatus = add(query.merging(attributes) { _, new in new } as CFDictionary)
+    if addStatus == errSecDuplicateItem {
+      return update(query as CFDictionary, attributes as CFDictionary) == errSecSuccess
+    }
+    return addStatus == errSecSuccess
   }
 
-  private static func readFromKeychain(_ key: String) -> String? {
-    let query: [String: Any] = [
+  private static func query(for key: String) -> [String: Any] {
+    [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
-      kSecAttrAccount as String: key,
-      kSecReturnData as String: true,
-      kSecMatchLimit as String: kSecMatchLimitOne
+      kSecAttrAccount as String: key
     ]
-
-    var result: AnyObject?
-    guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
-          let data = result as? Data else {
-      return nil
-    }
-    return String(data: data, encoding: .utf8)
   }
 }

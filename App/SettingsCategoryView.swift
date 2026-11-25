@@ -70,7 +70,11 @@ struct SettingsCategoryView: View {
       }
       .confirmationDialog("サインアウトしますか？", isPresented: $isSignOutConfirmationPresented, titleVisibility: .visible) {
         Button("サインアウト", role: .destructive) {
-          model.signOut()
+          if model.account?.provider == .chatGPT || model.isChatGPTSignedIn {
+            Task { await model.signOutOfChatGPT() }
+          } else {
+            model.signOut()
+          }
         }
         Button("キャンセル", role: .cancel) {}
       } message: {
@@ -159,6 +163,10 @@ struct SettingsCategoryView: View {
             } label: {
               SettingsLabel("サインアウト", icon: .rectanglePortraitAndArrowRight)
             }
+          } else if model.isChatGPTSignedIn {
+            Button("ChatGPTの連携を解除", icon: .rectanglePortraitAndArrowRight) {
+              isSignOutConfirmationPresented = true
+            }
           } else {
             Button {
               isAuthPresented = true
@@ -174,7 +182,7 @@ struct SettingsCategoryView: View {
         } header: {
           Text("アカウント")
         } footer: {
-          Text("ChatGPTのアカウントは「サインイン / 新規登録」から連携できます。")
+          Text(model.chatGPTSignInFailureMessage ?? "クラウドAIのAPIキーは「AIと要約」で設定できます。")
         }
 
         if model.isSignedIn {

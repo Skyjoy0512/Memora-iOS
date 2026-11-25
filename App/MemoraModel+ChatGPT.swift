@@ -7,16 +7,13 @@ extension MemoraModel {
   /// Whether a ChatGPT account is connected.
   var isChatGPTSignedIn: Bool { chatGPTConnection != nil }
 
-  /// Whether the connected ChatGPT account may use ChatGPT plan usage.
-  var hasChatGPTPlanUsage: Bool { ChatGPTCredentialStore.hasPlanUsage() }
-
   /// Signs in with ChatGPT.
   ///
   /// The browser is opened by the coordinator; the person finishes there. The
   /// result is reported through `chatGPTSignInFailureMessage` and the
   /// account state.
   func signInWithChatGPT() async {
-    guard !isChatGPTSigningIn else { return }
+    guard FeatureFlags.isChatGPTSignInEnabled, !isChatGPTSigningIn else { return }
     isChatGPTSigningIn = true
     chatGPTSignInFailureMessage = nil
     defer { isChatGPTSigningIn = false }
@@ -38,9 +35,16 @@ extension MemoraModel {
   /// Signs out of ChatGPT and removes the stored credentials.
   func signOutOfChatGPT() async {
     let coordinator = ChatGPTSignInCoordinator()
-    _ = await coordinator.signOut()
-    chatGPTSignInFailureMessage = nil
-    account = chatGPTAccount()
+    switch await coordinator.signOut() {
+    case .signedOut(let revoked):
+      if account?.provider == .chatGPT { signOut() }
+      chatGPTSignInFailureMessage = revoked ? nil
+        : "このiPhoneの連携は解除しました。ChatGPT側の許可は、ChatGPTの設定から解除できます。"
+    case .failed(let message):
+      chatGPTSignInFailureMessage = message
+    default:
+      break
+    }
   }
 
   /// The Memora account that mirrors the ChatGPT connection.

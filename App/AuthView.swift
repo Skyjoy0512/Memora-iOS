@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Optional sign-in. There is no auth service behind the Apple, Google and
 /// e-mail buttons yet, so those explain that rather than pretending to
-/// create an account. ChatGPT sign-in is connected and opens the browser.
+/// create an account. The ChatGPT flow is available in opted-in debug builds.
 struct AuthView: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(MemoraModel.self) private var model
@@ -15,7 +15,7 @@ struct AuthView: View {
             .font(MemoraTypography.display)
             .accessibilityAddTraits(.isHeader)
 
-          Text("ログインせず、このiPhoneで使えます。ChatGPTのアカウントを連携すると、ChatGPTの権限に応じて利用できます。")
+          Text("ログインせず、このiPhoneで使えます。クラウドAIは設定に登録したAPIキーで利用できます。")
             .font(.body)
             .foregroundStyle(.secondary)
             .lineSpacing(4)
@@ -29,10 +29,12 @@ struct AuthView: View {
             .accessibilityIdentifier("auth.continueLocal")
 
           VStack(spacing: MemoraSpacing.sm) {
-            AuthProviderButton(provider: .chatGPT) {
-              Task { await model.signInWithChatGPT() }
+            if FeatureFlags.isChatGPTSignInEnabled {
+              AuthProviderButton(provider: .chatGPT) {
+                Task { await model.signInWithChatGPT() }
+              }
+              .disabled(model.isChatGPTSigningIn)
             }
-            .disabled(model.isChatGPTSigningIn)
 
             AuthProviderButton(provider: .apple)
             AuthProviderButton(provider: .google)
@@ -44,16 +46,6 @@ struct AuthView: View {
             Text(message)
               .font(.footnote)
               .foregroundStyle(MemoraPalette.danger)
-              .padding(.top, MemoraSpacing.sm)
-          }
-
-          if model.hasChatGPTPlanUsage {
-            HStack(spacing: MemoraSpacing.xs) {
-              Image(icon: .checkmarkCircle, size: 14)
-              Text("ChatGPTの計画的な利用が許可されています。")
-            }
-              .font(.footnote)
-              .foregroundStyle(.secondary)
               .padding(.top, MemoraSpacing.sm)
           }
 
