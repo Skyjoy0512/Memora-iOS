@@ -4,6 +4,7 @@ cd "$(dirname "$0")/../.."
 check_root=${MEMORA_CHECK_ROOT:-${TMPDIR:-/tmp}}
 check_dir=$(mktemp -d "$check_root/memora-nextgen-checks.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
+bash tools/checks/run-keychain-write-checks.sh
 bash tools/checks/run-summary-reading-checks.sh
 swiftc App/JournalInsertionTime.swift tools/checks/JournalInsertionTimeChecks.swift -o "$check_dir/journal-insertion"
 "$check_dir/journal-insertion"
@@ -13,6 +14,11 @@ swiftc App/PersistenceFailurePresentation.swift tools/checks/PersistenceFailureP
 "$check_dir/persistence-presentation"
 swiftc -D MEMORA_HOST_CHECKS App/AIMemory.swift App/AIMemory+Editing.swift App/MemoryRetrievalItem.swift App/MemoryRetrievalOrchestrator.swift tools/checks/MemoryRetrievalChecks.swift -lsqlite3 -o "$check_dir/memory"
 "$check_dir/memory"
+swiftc App/MemoryRetrievalItem.swift App/MemoryRetrievalOrchestrator.swift tools/checks/MemoryRetrievalEvaluation.swift -lsqlite3 -o "$check_dir/memory-evaluation"
+"$check_dir/memory-evaluation" tools/checks/fixtures/memory-retrieval-evaluation.json
+swiftc App/GroundedTaskContext.swift App/MemoraTask.swift App/TaskRelationships.swift App/TaskProgress.swift \
+  App/RecordPrivacy.swift App/SummarySensitivity.swift tools/checks/GroundedTaskContextChecks.swift -o "$check_dir/grounded-tasks"
+"$check_dir/grounded-tasks"
 bash tools/checks/run-memory-editing-checks.sh
 bash tools/checks/run-project-source-storage-checks.sh
 bash tools/checks/run-project-source-preparation-checks.sh

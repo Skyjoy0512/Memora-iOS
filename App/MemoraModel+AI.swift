@@ -709,24 +709,22 @@ extension MemoraModel {
     characterLimit: Int,
     prioritizesPassages: Bool = false
   ) -> (String, [AIChatSource]) {
+    guard characterLimit > 0 else { return ("", []) }
     let ranked = rank(meetings: meetings, words: words, tasks: tasks).prefix(8)
     var blocks: [String] = []
     var sources: [AIChatSource] = []
     var used = 0
 
-    // A task with no record is reachable only from the whole-library range. It
-    // shares the same budget as everything else.
-    let looseTasks = tasks.filter { !$0.isCompleted && $0.meetingID == nil }
-    if !looseTasks.isEmpty, characterLimit > 0 {
-      let block = String(
-        ("未完了のタスク:\n" + looseTasks.map { "- \($0.title)" }.joined(separator: "\n"))
-          .prefix(characterLimit)
-      )
-      used += block.count
-      blocks.append(block)
-    }
+    // Standalone tasks can answer a question on their own. When records also
+    // match, reserve most of the space for dated, citable evidence.
+    let taskBudget = ranked.isEmpty ? characterLimit : characterLimit / 5
+    let looseTasks = GroundedTaskContext.render(tasks, matching: words, budget: taskBudget)
+    let recordBudget = characterLimit - (looseTasks.isEmpty ? 0 : looseTasks.count + 2)
 
     for meeting in ranked {
+      let separator = blocks.isEmpty ? 0 : 2
+      let remainingBudget = recordBudget - used - separator
+      guard remainingBudget > 0 else { break }
       var lines: [String] = [
         // Numbered so an answer can cite it; only these numbers become chips.
         "【資料\(sources.count + 1)】会議: \(meeting.displayTitle)",
@@ -751,47 +749,47 @@ extension MemoraModel {
         .prefix(3)
       let best: [ScoredSpan]
       if prioritizesPassages {
-        var available = max(0, characterLimit - used - lines.joined(separator: "\n").count - 2)
+        var available = max(0, remainingBudget - lines.joined(separator: "\n").count)
         var selected: [ScoredSpan] = []
         // Fit the strongest evidence first, then restore time order within what will actually be sent.
         for span in rankedSpans {
-          let cost = span.text.count + 5
+          let cost = span.text.count + "\n発言:\n".count
           if cost <= available { selected.append(span); available -= cost }
           else if selected.isEmpty, available > 35 {
             var clipped = span
-            clipped.text = RelevantTextWindow.text(span.text, matching: words, maximumCharacters: available - 5)
+            clipped.text = RelevantTextWindow.text(span.text, matching: words,
+              maximumCharacters: available - "\n発言:\n".count)
             selected.append(clipped)
             available = 0
           }
         }
         best = selected.sorted { $0.start < $1.start }
       } else { best = rankedSpans.sorted { $0.start < $1.start } }
-      for span in best {
-        lines.append("発言:")
-        lines.append(span.text)
-      }
-
       var block = lines.joined(separator: "\n")
-      let remainingBudget = max(0, characterLimit - used)
       if block.count > remainingBudget {
-        // The first record is always sent, trimmed to what is left, so a range
-        // with one huge record still carries something.
-        guard blocks.isEmpty, remainingBudget > 0 else { break }
+        guard sources.isEmpty else { continue }
         block = String(block.prefix(remainingBudget))
       }
-      used += block.count + 2
+      var excerpts: [AIChatSource.Excerpt] = []
+      for span in best {
+        let passage = "\n発言:\n" + span.text
+        guard block.count + passage.count <= remainingBudget else { continue }
+        block += passage
+        excerpts.append(.init(text: snippet(span.text), start: span.start))
+      }
+      used += separator + block.count
       blocks.append(block)
       sources.append(
         AIChatSource(
           meetingID: meeting.id,
           title: meeting.displayTitle,
-          excerpts: best.map { AIChatSource.Excerpt(text: snippet($0.text), start: $0.start) }
+          excerpts: excerpts
         )
       )
     }
 
-    let joined = blocks.joined(separator: "\n\n")
-    return (String(joined.prefix(characterLimit)), Array(sources))
+    if !looseTasks.isEmpty { blocks.append(looseTasks) }
+    return (blocks.joined(separator: "\n\n"), sources)
   }
 
   /// The transcript as sent: whole when it fits, otherwise the high-scoring spans

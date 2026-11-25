@@ -1,0 +1,27 @@
+{
+  "entries": [
+    {"key":"policy-before","text":"オーロラ保管方針。30日保持する判断。","time":100},
+    {"key":"policy-after","text":"オーロラ保管方針。90日保持する判断。","time":200},
+    {"key":"photo","text":"白壁写真。赤いラベルは発送保留。","time":204},
+    {"key":"minutes","text":"白壁写真。保留解除には検品が必要。","time":202},
+    {"key":"personal-bid","text":"青葉見積は十二箱。","time":220},
+    {"key":"team-bid","text":"青葉見積は二十箱。","time":225,"workspace":"other"},
+    {"key":"first-person","text":"虹橋承認の最終確認者。","time":230,"person":"00000000-0000-4000-8000-000000000011"},
+    {"key":"second-person","text":"虹橋承認の最終確認者。","time":231,"person":"00000000-0000-4000-8000-000000000012"},
+    {"key":"removed","text":"廃止コードムギ。","time":240},
+    {"key":"changed","text":"納入経路ポプラ。","time":245}
+  ],
+  "cases": [
+    {"label":"two dated decisions", "query":"オーロラ保管方針", "expected":["policy-after","policy-before"],"ordered":true},
+    {"label":"photo and associated decision", "query":"白壁写真", "expected":["photo","minutes"]},
+    {"label":"personal scope", "query":"青葉見積", "expected":["personal-bid"]},
+    {"label":"team scope", "query":"青葉見積", "workspace":"other", "expected":["team-bid"]},
+    {"label":"same-name person disambiguation", "query":"虹橋承認", "person":"00000000-0000-4000-8000-000000000011", "expected":["first-person"]},
+    {"label":"before removal", "query":"廃止コードムギ", "expected":["removed"]},
+    {"label":"after removal", "query":"廃止コードムギ", "excluding":["removed"], "expected":[]},
+    {"label":"before edit", "query":"納入経路ポプラ", "expected":["changed"]},
+    {"label":"old wording after edit", "query":"納入経路ポプラ", "replacing":{"changed":"改訂語ソラマメ。"}, "expected":[]},
+    {"label":"new wording after edit", "query":"改訂語ソラマメ", "replacing":{"changed":"改訂語ソラマメ。"}, "expected":["changed"]},
+    {"label":"irrelevant question", "query":"木星の雲の速度", "expected":[]}
+  ]
+}
