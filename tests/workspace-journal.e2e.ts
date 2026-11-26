@@ -72,7 +72,7 @@ async function scrollTo(screen: any, locator: any) {
   throw new Error('could not scroll to the target');
 }
 
-test('the workspace tabs switch between chat, records and references', async ({ app, device, screen }) => {
+test('the workspace tabs switch between records, documents, references, chat and images', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await createProject(screen, device);
 
@@ -80,11 +80,17 @@ test('the workspace tabs switch between chat, records and references', async ({ 
   await selectWorkspaceTab(screen, '記録');
   await expect(screen.getByRole('button', { name: '録音を追加', exact: true }).first()).toBeVisible();
   await app.screenshot('workspace-empty-files');
+  await selectWorkspaceTab(screen, '資料');
+  await expect(screen.getByRole('button', { name: 'AIに資料を作ってもらう', exact: true }).first()).toBeVisible();
   await selectWorkspaceTab(screen, '参考資料');
   await expect(screen.getByRole('button', { name: '参考資料を追加', exact: true }).first()).toBeVisible();
   await app.screenshot('workspace-empty-sources');
   await selectWorkspaceTab(screen, 'チャット');
   await expect(screen.getByRole('button', { name: '新しいチャット', exact: true }).first()).toBeVisible();
+  await selectWorkspaceTab(screen, '画像');
+  await expect(screen.getByText('写真はまだありません', { exact: true })).toBeVisible();
+  await tapStable(screen.getByRole('button', { name: '記録を見る', exact: true }));
+  await expect(screen.getByRole('button', { name: '記録', exact: true, selected: true })).toBeVisible();
 });
 
 test('the week strip selects a day and updates the timeline', async ({ app, device, screen }) => {
@@ -273,6 +279,13 @@ test('the journal and workspace stay legible in dark appearance', async ({ app, 
     await selectWorkspaceTab(screen, '参考資料');
     await expect(screen.getByRole('button', { name: '参考資料を追加', exact: true }).first()).toBeVisible();
     await app.screenshot('workspace-empty-sources-dark');
+    await selectWorkspaceTab(screen, '資料');
+    await expect(screen.getByText('資料はまだありません', { exact: true })).toBeVisible();
+    await selectWorkspaceTab(screen, 'チャット');
+    await expect(screen.getByText('チャットを始める', { exact: true })).toBeVisible();
+    await selectWorkspaceTab(screen, '画像');
+    await expect(screen.getByText('写真はまだありません', { exact: true })).toBeVisible();
+    await app.screenshot('workspace-empty-images-dark');
   } finally {
     await device.setAppearance('light');
   }
