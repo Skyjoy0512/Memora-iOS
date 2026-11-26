@@ -331,7 +331,8 @@ extension MemoraModel {
       guard !Task.isCancelled, self.aiWorkspaceGeneration == generation else { return }
       onStage?(value)
     }
-    let cloud = AIEngineService.effectiveEngine(engine) == .cloud
+    let effectiveEngine = AIEngineService.effectiveEngine(engine)
+    let cloud = effectiveEngine == .cloud
     let memoryFingerprint = request.scope == .global ? cloudMemoryFingerprint : nil
     let scopedMeetings = request.sourceID == nil ? Self.meetings(in: request.scope, from: allowedMeetings) : []
     let permitted = scopedMeetings.filter { !cloud || allowsRecordAccess($0.id, purpose: .cloudAI) }
@@ -355,8 +356,19 @@ extension MemoraModel {
         maximumCharacters: min(AIAttachmentText.maximumCharacters, AIEngineService.contextCharacterLimit(for: engine, llm: llm, task: .chat) / 2), vocabulary: transcriptionVocabulary)
     } else { attachmentContent = nil }
 
-    let sourcePack = await sourceQueryContext(request, cloud: cloud,
-      budget: min(24_000, max(700, AIEngineService.contextCharacterLimit(for: engine, llm: llm, task: .chat) / 2)))
+    let contextBudget = AIEngineService.contextCharacterLimit(for: engine, llm: llm, task: .chat)
+    let sourcePack = await sourceQueryContext(request, cloud: cloud, budget: min(24_000, max(700, contextBudget / 2)))
+    let photoPack: ProjectContextBuilder.Context
+    if effectiveEngine == .foundation, case .file = request.scope,
+       let record = permitted.first, record.photoFileNames?.isEmpty == false {
+      safeStage("資料を確認しています")
+      photoPack = await recordPhotoContext(record, question: request.effectiveQuestion,
+        budget: min(1_000, contextBudget / 4))
+    } else {
+      photoPack = .init(text: "", used: [], matchedCount: 0)
+    }
+    let photoContext = photoPack.text.isEmpty ? ""
+      : "\n写真から端末内で読み取った文字（参照用の抜粋）。出典には提供された【写真n】を使用する。\n" + photoPack.text
 
     func contextAvailable() -> Bool {
       guard !isRestoring, !isStoreProtected, currentTeamID == workspaceID,
@@ -368,6 +380,7 @@ extension MemoraModel {
         self.source(id: $0.id)?.hasSameReadableEvidence(as: $0) == true &&
           (!cloud || RecordAccessPolicy.allows($0.privacy, purpose: .cloudAI))
       }
+        && photoPack.used.allSatisfy { currentPhotoEvidence($0) != nil }
         && (memoryFingerprint == nil || memoryFingerprint == cloudMemoryFingerprint)
         && permitted.allSatisfy { record in
           meeting(id: record.id) == record
@@ -385,10 +398,11 @@ extension MemoraModel {
         history: request.scope == .global && request.sourceID == nil && !cloud ? history : "",
         personal: request.scope == .global && request.sourceID == nil ? (cloud ? personalContext(for: request.effectiveQuestion,
           budget: limit / 6, includesHistory: false) : personal) : "",
-        characterLimit: max(300, limit - sourcePack.text.count), attachmentContent: attachmentContent)
+        characterLimit: max(300, limit - sourcePack.text.count - photoContext.count), attachmentContent: attachmentContent)
       if !sourcePack.text.isEmpty {
         built.context += "\n参考資料（原文から検索した抜粋）:\n" + sourcePack.text
       }
+      built.context += photoContext
       return built
     }
 
@@ -398,7 +412,6 @@ extension MemoraModel {
       scopedRecord = permitted.first
     } else { scopedRecord = nil }
     safeStage("記録を探しています")
-    let contextBudget = AIEngineService.contextCharacterLimit(for: engine, llm: llm, task: .chat)
     var content = buildContent(limit: scopedRecord == nil ? contextBudget : min(28_000, contextBudget))
     func outcome(_ result: AIAnswerResult) -> AIAnswerOutcome {
       AIAnswerOutcome(question: content.question, scopeLabel: scopeLabel, result: result,
@@ -406,9 +419,10 @@ extension MemoraModel {
         details: AIAnswerDetails(scopeLabel: scopeLabel,
           engineLabel: AIEngineService.effectiveEngine(engine).label,
           modelLabel: AIEngineService.modelLabel(engine: engine, llm: llm),
-          sourceCount: result.text == nil ? 0 : content.sources.count + Set(sourcePack.citations.map(\.target)).count + Set(content.attachmentCitations.map { $0.file.id }).count, generatedAt: .now),
+          sourceCount: result.text == nil ? 0 : content.sources.count + Set(sourcePack.citations.map(\.target)).count
+            + Set(photoPack.used.compactMap(\.photo)).count + Set(content.attachmentCitations.map { $0.file.id }).count, generatedAt: .now),
         unsupportedAttachmentNote: content.unsupportedAttachmentNote, contextNote: content.contextNote,
-        sourceCitations: result.text == nil ? [] : sourcePack.citations,
+        sourceCitations: result.text == nil ? [] : sourcePack.citations + photoPack.used,
         attachmentCitations: result.text == nil ? [] : content.attachmentCitations)
     }
     if let attachmentPreparationFailure {
@@ -429,7 +443,8 @@ extension MemoraModel {
     guard contextAvailable() else { return outcome(.failure(.contextChanged)) }
     guard content.unsupportedAttachmentNote == nil else { return outcome(.failure(.attachmentNotAnalysed)) }
     if case .file = request.scope, !permitted.contains(where: \.hasReadableAIContent),
-       permittedTasks.isEmpty, attachmentContent?.text?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true {
+       permittedTasks.isEmpty, photoPack.used.isEmpty,
+       attachmentContent?.text?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true {
       return outcome(.failure(.recordContentUnavailable))
     }
     if let attachment = effectiveRequest.attachment { onAttachmentReady?(attachment) }

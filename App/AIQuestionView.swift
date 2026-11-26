@@ -156,7 +156,7 @@ struct AIQuestionView: View {
   private func answerContent(_ answer: String) -> some View {
     VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
       AIResponseText(text: AnswerSourceCitation.stripped(answer), isStreaming: isAnswering)
-      SourceCitationList(citations: sourceCitations)
+      SourceCitationList(citations: sourceCitations, scope: submitted?.scope)
       AttachmentCitationList(citations: attachmentCitations)
 
       if !sources.isEmpty {

@@ -40,8 +40,8 @@ extension MemoraModel {
         text = blocks.filter { citation.page == nil || $0.page == citation.page }.map(\.text).joined(separator: "\n")
       case .meeting(let id):
         guard let record = meeting(id: id) else { return false }
-        if let photo = citation.photo {
-          guard let entry = projectPhotoEvidence(photo, recordID: id) else { return false }
+        if citation.photo != nil {
+          guard let entry = currentPhotoEvidence(citation) else { return false }
           text = entry.text
         } else {
           text = ([record.summary, record.summaryKnowledgeText] + record.transcript.map(\.text)).joined(separator: "\n")
@@ -59,22 +59,13 @@ extension MemoraModel {
 
   func projectCitationAllowed(_ citation: ProjectCitation, projectID: UUID, cloud: Bool) -> Bool {
     guard projectEvidenceAllowed(citation.target, projectID: projectID, cloud: cloud) else { return false }
-    if let photo = citation.photo {
-      guard !cloud, case .meeting(let id) = citation.target,
-            projectPhotoEvidence(photo, recordID: id) != nil else { return false }
+    if citation.photo != nil {
+      return !cloud && currentPhotoEvidence(citation) != nil
     }
     if case .meeting(let id) = citation.target, let recordedAt = citation.recordedAt {
       return meeting(id: id)?.createdAt == recordedAt
     }
     return true
-  }
-
-  private func projectPhotoEvidence(_ photo: ProjectCitation.Photo, recordID: UUID) -> MediaIndexEntry? {
-    guard let entry = mediaIndexEntries.first(where: { $0.name == photo.name && $0.recordID == recordID }),
-          entry.byteCount == photo.byteCount, entry.fileModifiedAt == photo.modifiedAt,
-          entry.textReadAt == photo.textReadAt,
-          mediaIndexEntryHasLiveOriginal(entry) else { return nil }
-    return entry
   }
 
   func projectContext(question: String, projectID: UUID, cloud: Bool, budget: Int,
@@ -137,11 +128,8 @@ extension MemoraModel {
     var photoEntries: [MediaIndexEntry] = []
     if !cloud {
       let names = Set(records.filter { allowed.contains(.meeting($0.id)) }.flatMap { $0.photoFileNames ?? [] })
-      if !names.isEmpty, reconcileMediaIndex() {
-        await readPendingMediaText(for: names, limit: 6)
-        guard !Task.isCancelled, aiWorkspaceGeneration == generation, currentTeamID == workspaceID else { return empty }
-        photoEntries = mediaIndexEntries.filter { names.contains($0.name) && $0.textReadAt != nil && !$0.text.isEmpty }
-      }
+      photoEntries = await photoEvidenceEntries(for: names)
+      guard !Task.isCancelled, aiWorkspaceGeneration == generation, currentTeamID == workspaceID else { return empty }
     }
     let currentAllowed = allowed.filter { projectEvidenceAllowed($0, projectID: projectID, cloud: cloud) }
     let permittedInputs = inputs.filter { currentAllowed.contains($0.target) }
@@ -160,15 +148,7 @@ extension MemoraModel {
             title: input.title, page: block.page, time: block.time, recordedAt: input.recordedAt)
         }
       }
-      let photoChunks = photos.flatMap { entry -> [ProjectEvidenceChunk] in
-        let target = ProjectCitation.Target.meeting(entry.recordID)
-        guard currentAllowed.contains(target), let modifiedAt = entry.fileModifiedAt,
-              let textReadAt = entry.textReadAt else { return [] }
-        let reference = ProjectCitation.Photo(name: entry.name, byteCount: entry.byteCount,
-          modifiedAt: modifiedAt, textReadAt: textReadAt)
-        return ProjectContextBuilder.split(entry.text, projectID: projectID, target: target,
-          title: entry.recordTitle, recordedAt: entry.recordDate, photo: reference)
-      }
+      let photoChunks = Self.photoEvidenceChunks(photos, namespace: projectID, allowed: Set(currentAllowed))
       return ProjectContextBuilder.build(question: question, projectID: projectID, chunks: chunks + photoChunks,
         allowed: Set(currentAllowed), characterBudget: budget, selectedTarget: onlyTarget)
     }.value

@@ -7,10 +7,38 @@ struct MediaIndexChecks {
     try await mergesIntoCurrentIndex()
     try await prioritizesRequestedPhotos()
     try await preparesLibrarySearchInBoundedVisits()
+    try await buildsRecordPhotoEvidence()
     try await rejectsStaleRecognition()
     try await reindexesChangedOriginal()
     try await rollsBackWriteFailure()
     print("MediaIndexChecks: passed (scoped recognition, live file revision, SQLite reopen, legacy invalidation, merge, deletion, cancellation, restore and write failure; Vision callback/model state are fixtures)")
+  }
+
+  @MainActor static func buildsRecordPhotoEvidence() async throws {
+    let model = try MemoraModel("record-photo-evidence")
+    let original = try photo("record-photo-original")
+    let other = try photo("record-photo-other")
+    let record = Meeting(photoFileNames: [original])
+    model.meetings = [record, Meeting(photoFileNames: [other])]
+    MediaTextRecognizer.read = { name in name == original ? "水晶の決定事項" : "他の記録の機密事項" }
+    let context = await model.recordPhotoContext(record, question: "水晶の決定事項", budget: 500)
+    precondition(context.text.hasPrefix("【写真1】") && context.text.contains("水晶の決定事項"))
+    precondition(!context.text.contains("他の記録の機密事項") && context.used.count == 1)
+    let citation = context.used[0]
+    precondition(citation.target == .meeting(record.id) && citation.photo?.name == original)
+    precondition(model.currentPhotoEvidence(citation)?.name == original)
+    let persisted = try model.persistedEntries()
+    precondition(persisted.first { $0.name == other }?.textReadAt == nil)
+    var alteredCitation = citation
+    alteredCitation.excerpt = "元画像にない情報"
+    precondition(model.currentPhotoEvidence(alteredCitation) == nil)
+    model.isStoreProtected = true
+    precondition(model.currentPhotoEvidence(citation) == nil)
+    let locked = await model.recordPhotoContext(record, question: "水晶の決定事項", budget: 500)
+    precondition(locked.used.isEmpty)
+    model.isStoreProtected = false
+    try replace(original, version: 2)
+    precondition(model.currentPhotoEvidence(citation) == nil)
   }
 
   @MainActor static func prioritizesRequestedPhotos() async throws {

@@ -7,6 +7,11 @@ enum ProjectContextBuilder {
     var matchedCount: Int
   }
 
+  enum CitationMarker: String {
+    case material = "資料"
+    case photo = "写真"
+  }
+
   static func split(_ text: String, projectID: UUID, target: ProjectCitation.Target,
                     title: String, page: Int? = nil, time: TimeInterval? = nil,
                     recordedAt: Date? = nil, photo: ProjectCitation.Photo? = nil) -> [ProjectEvidenceChunk] {
@@ -26,7 +31,7 @@ enum ProjectContextBuilder {
 
   static func build(question: String, projectID: UUID, chunks: [ProjectEvidenceChunk],
                     allowed: Set<ProjectCitation.Target>, characterBudget: Int,
-                    selectedTarget: ProjectCitation.Target? = nil) -> Context {
+                    selectedTarget: ProjectCitation.Target? = nil, marker: CitationMarker = .material) -> Context {
     let terms = queryGrams(question)
     let topics = question.components(separatedBy: "と").filter { !informativeGrams($0).isEmpty }
     let asksMultipleTopics = topics.count >= 2
@@ -73,20 +78,25 @@ enum ProjectContextBuilder {
     var text = ""
     var used: [ProjectCitation] = []
     var perSource: [ProjectCitation.Target: Int] = [:]
+    var usedPhotos = Set<ProjectCitation.Photo>()
     for (_, chunk, _, _) in candidates {
       guard used.count < 8, perSource[chunk.target, default: 0] < 2 else { continue }
+      if marker == .photo {
+        guard let photo = chunk.photo, !usedPhotos.contains(photo) else { continue }
+      }
       let safeTime = chunk.time.flatMap { $0.isFinite && $0 >= 0 && $0 < Double(Int.max) ? $0 : nil }
       let location = chunk.photo != nil ? " · 写真の文字" : chunk.page.map { " · ページ\($0)" }
         ?? safeTime.map { " · \(chunk.recordedAt == nil ? "" : "録音内 ")\(Int($0))秒" } ?? ""
       var citation = ProjectCitation(target: chunk.target, title: chunk.title, excerpt: "",
         page: chunk.page, time: chunk.time, recordedAt: chunk.recordedAt, photo: chunk.photo)
       let date = citation.recordDateLabel.map { " · \($0)" } ?? ""
-      let prefix = "【資料\(used.count + 1)】 \(chunk.title.prefix(80))\(date)\(location)\n"
+      let prefix = "【\(marker.rawValue)\(used.count + 1)】 \(chunk.title.prefix(80))\(date)\(location)\n"
       let remaining = characterBudget - text.count - prefix.count - 2
       guard remaining >= 30 else { continue }
       citation.excerpt = String(chunk.text.prefix(min(700, remaining)))
       text += prefix + citation.excerpt + "\n\n"
       used.append(citation)
+      if let photo = citation.photo { usedPhotos.insert(photo) }
       perSource[chunk.target, default: 0] += 1
     }
     return Context(text: text, used: used, matchedCount: matched.count)

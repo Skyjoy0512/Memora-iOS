@@ -88,6 +88,11 @@ struct ProjectContextChecks {
       chunks: datedChunks + photographed, allowed: [meeting], characterBudget: 500)
     precondition(imageContext.used.count == 1 && imageContext.used[0].photo == photo)
     precondition(imageContext.text.contains("写真の文字") && !imageContext.text.contains(photo.name))
+    let recordPhotoContext = ProjectContextBuilder.build(question: "接続仕様", projectID: project,
+      chunks: photographed + ProjectContextBuilder.split("試験環境の接続仕様と手順", projectID: project, target: meeting,
+        title: "公開方針", recordedAt: recordedAt, photo: photo), allowed: [meeting], characterBudget: 500, marker: .photo)
+    precondition(recordPhotoContext.text.hasPrefix("【写真1】") && !recordPhotoContext.text.contains("【資料1】"))
+    precondition(recordPhotoContext.used.count == 1)
     let titleMatchOnly = ProjectContextBuilder.build(question: "公開方針", projectID: project,
       chunks: photographed, allowed: [meeting], characterBudget: 500)
     precondition(titleMatchOnly.used.isEmpty)
