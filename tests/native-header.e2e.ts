@@ -8,7 +8,7 @@ test('native header: recorder status opens the real hub and search lives in the 
   await launchMemora(app, device, screen);
   const status = screen.getByTestId('recorder.toolbarStatus');
   await expect(status).toBeVisible();
-  await expect(screen.getByText('未接続', { exact: true })).toBeVisible();
+  await expect(status).toHaveValue('未接続');
   await expect(screen.getByRole('button', { name: '検索', exact: true })).not.toBeVisible();
   await app.screenshot('native-library-header-light');
   await device.setAppearance('dark');
@@ -19,9 +19,9 @@ test('native header: recorder status opens the real hub and search lives in the 
   await tapControl(screen, screen.getByRole('button', { name: '完了', exact: true }));
   await expect(status).toBeVisible();
   await openSidebarSearch(screen);
-  await expect(screen.getByText('ファイルを検索', { exact: true })).toBeVisible();
+  await expect(screen.getByTestId('collection.search.input')).toBeFocused();
   await expect(screen.getByTestId('ai.composer.input')).not.toBeVisible();
-  await expect(screen.getByLabel('新規作成')).not.toBeVisible();
+  await expect(screen.getByLabel('追加メニュー', { exact: true })).not.toBeVisible();
   await app.screenshot('native-library-sidebar-search');
   await tapControl(screen, screen.getByRole('button', { name: 'キャンセル', exact: true }));
   await expect(status).toBeVisible();
@@ -56,12 +56,14 @@ test('native header: Ask AI sidebar search retains the existing chat actions', a
   await expect(screen.getByLabel('新しいチャット')).toBeDisabled();
 });
 
-test('native header: empty Library capture action retains its native dialog route', async ({ app, device, screen }) => {
+test('native header: the empty Library has a recording action and the capture menu opens a note', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
-  await tapControl(screen, screen.getByRole('button', { name: '録音または読み込み', exact: true }));
-  await expect(screen.getByRole('button', { name: '録音を開始', exact: true })).toBeVisible();
-  await tapControl(screen, screen.getByRole('button', { name: 'メモを作成', exact: true }));
-  await expect(screen.getByPlaceholder('メモのタイトル')).toBeVisible();
-  await tapControl(screen, screen.getByRole('button', { name: 'キャンセル', exact: true }));
+  await expect(screen.getByText('ファイルはまだありません', { exact: true })).toBeVisible();
+  await expect(screen.getByRole('button', { name: '録音する', exact: true })).toBeVisible();
+  await tapControl(screen, screen.getByRole('button', { name: '追加メニュー', exact: true }));
+  await expect(screen.getByRole('button', { name: '音声を取り込む', exact: true })).toBeVisible();
+  await tapControl(screen, screen.getByRole('button', { name: 'ノートを追加', exact: true }));
+  await expect(screen.getByRole('textbox', { name: 'タイトル', exact: true })).toBeVisible();
+  await tapControl(screen, screen.getByRole('button', { name: '閉じる', exact: true }));
   await expect(screen.getByTestId('recorder.toolbarStatus')).toBeVisible();
 });

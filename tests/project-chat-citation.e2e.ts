@@ -1,17 +1,33 @@
 import { randomUUID } from 'node:crypto';
+import { copyFileSync, mkdirSync, statSync, unlinkSync, utimesSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { seedSummaryFixture } from './summary-fixture-helpers';
 import { sql } from './sqlite-fixture-helpers';
 import { requireRootMenu, selectLibrarySection, tapControl } from './ui-helpers';
 
-test('project chat shows the record date and refuses to open a record moved elsewhere', { timeout: 180_000 }, async ({ app, device, screen }) => {
+test('project chat cites dates and original photos and revalidates their availability', { timeout: 180_000 }, async ({ app, device, screen }) => {
   const { database, fixture } = await seedSummaryFixture(app, device, screen);
   await device.closeApp();
   const originalProject = { id: randomUUID(), name: '公開準備プロジェクト', symbol: 'folder' };
   const otherProject = { id: randomUUID(), name: '移動先プロジェクト', symbol: 'folder' };
-  const retained = { ...fixture, spaceID: originalProject.id };
-  const moved = { ...fixture, id: randomUUID(), title: '移動済みの根拠', spaceID: otherProject.id };
+  const photoName = fixture.id + '.jpg';
+  const retained = { ...fixture, spaceID: originalProject.id, photoFileNames: [photoName] };
+  const moved = { ...retained, id: randomUUID(), title: '移動済みの根拠', spaceID: otherProject.id, photoFileNames: [] };
+  const photosPath = resolve(dirname(database), '../../..', 'Documents', 'Photos');
+  mkdirSync(photosPath, { recursive: true });
+  const originalPhoto = join(photosPath, photoName);
+  copyFileSync(join(import.meta.dirname, 'fixtures', 'photo-ocr-quartz.jpg'), originalPhoto);
+  const unixDate = fixture.createdAt + 978307200;
+  utimesSync(originalPhoto, unixDate, unixDate);
+  const byteCount = statSync(originalPhoto).size;
+  const recognizedText = 'QUARTZ LEDGER';
+  const mediaIndex = {
+    name: photoName, recordID: retained.id, recordTitle: retained.title,
+    recordDate: fixture.createdAt, byteCount, fileModifiedAt: fixture.createdAt,
+    pixelWidth: 0, pixelHeight: 0, text: recognizedText, textReadAt: fixture.createdAt,
+  };
   const citation = (record: typeof retained) => ({
     id: randomUUID(), target: { meeting: { _0: record.id } }, title: record.title,
     excerpt: record.transcript[0].text, recordedAt: record.createdAt,
@@ -21,13 +37,17 @@ test('project chat shows the record date and refuses to open a record moved else
     createdAt: fixture.createdAt, updatedAt: fixture.createdAt,
     messages: [{
       id: randomUUID(), role: 'assistant', text: '保存された出典を参照できます。',
-      createdAt: fixture.createdAt, citations: [citation(moved), citation(retained)],
+      createdAt: fixture.createdAt, citations: [citation(moved), citation(retained), {
+        ...citation(retained), excerpt: recognizedText,
+        photo: { name: photoName, byteCount, modifiedAt: fixture.createdAt, textReadAt: fixture.createdAt },
+      }],
     }],
   };
   const values = [
     ['memoraSpaces', [originalProject, otherProject]],
     ['memoraMeetings', [retained, moved]],
     ['memoraProjectChats.v2', [thread]],
+    ['memora.mediaIndex.v1', [mediaIndex]],
   ].map(([key, data]) => "('" + key + "',X'" + Buffer.from(JSON.stringify(data)).toString('hex') + "'," + fixture.createdAt + ')');
   sql(database, 'INSERT OR REPLACE INTO documents (key,data,updated_at) VALUES ' + values.join(','));
 
@@ -40,11 +60,20 @@ test('project chat shows the record date and refuses to open a record moved else
   await tapControl(screen.getByText('出典', { exact: true }));
 
   const movedCitation = screen.getByRole('button', { name: /移動済みの根拠.*記録日/ });
-  const retainedCitation = screen.getByRole('button', { name: /検証用・発売準備ミーティング.*記録日/ });
+  const retainedCitation = screen.getByRole('button', { name: /検証用・発売準備ミーティング.*記録日 \S+$/ });
+  const photoCitation = screen.getByRole('button', { name: /検証用・発売準備ミーティング.*写真の文字/ });
   await expect(movedCitation).toBeVisible();
   await expect(retainedCitation).toBeVisible();
   await app.screenshot('project-chat-dated-citations');
   await tapControl(movedCitation);
+  await expect(screen.getByText('元のソースが見つかりません', { exact: true })).toBeVisible();
+  await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }).last());
+  await tapControl(photoCitation);
+  await expect(screen.getByLabel(retained.title + 'の写真', { exact: true })).toBeVisible();
+  await app.screenshot('project-chat-original-photo');
+  await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }).last());
+  unlinkSync(originalPhoto);
+  await tapControl(photoCitation);
   await expect(screen.getByText('元のソースが見つかりません', { exact: true })).toBeVisible();
   await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }).last());
   await tapControl(retainedCitation);
