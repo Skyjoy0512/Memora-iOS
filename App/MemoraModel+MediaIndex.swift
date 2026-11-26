@@ -1,6 +1,12 @@
 import Foundation
 
 extension MemoraModel {
+  /// A Library visit can discover photo text without opening a project first.
+  func preparePhotoSearchIndex() async {
+    guard meetings.contains(where: { $0.photoFileNames?.isEmpty == false }), reconcileMediaIndex() else { return }
+    await readPendingMediaText(limit: 12)
+  }
+
   /// Brings the photo entries in line with the records: a photo a record holds is
   /// indexed, one no record holds any more is dropped, and metadata that does
   /// not match the file is read again. The files are never changed here.

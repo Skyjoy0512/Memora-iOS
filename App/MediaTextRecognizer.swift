@@ -10,7 +10,7 @@ enum MediaTextRecognizer {
   static func read(photoNamed name: String) async -> String? {
     guard let url = MediaFiles.photoURL(name) else { return nil }
     let job = Task.detached(priority: .utility) { () -> String? in
-      guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+      guard !Task.isCancelled, let source = CGImageSourceCreateWithURL(url as CFURL, nil),
             let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
               kCGImageSourceCreateThumbnailFromImageAlways: true,
               kCGImageSourceThumbnailMaxPixelSize: 1_600,
@@ -20,7 +20,8 @@ enum MediaTextRecognizer {
       request.recognitionLevel = .accurate
       request.usesLanguageCorrection = true
       request.recognitionLanguages = ["ja-JP", "en-US"]
-      guard (try? VNImageRequestHandler(cgImage: image).perform([request])) != nil else { return nil }
+      guard !Task.isCancelled, (try? VNImageRequestHandler(cgImage: image).perform([request])) != nil,
+            !Task.isCancelled else { return nil }
       let text = (request.results ?? [])
         .compactMap { $0.topCandidates(1).first?.string }
         .joined(separator: "\n")

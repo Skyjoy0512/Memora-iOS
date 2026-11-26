@@ -6,6 +6,7 @@ struct MediaIndexChecks {
   @MainActor static func main() async throws {
     try await mergesIntoCurrentIndex()
     try await prioritizesRequestedPhotos()
+    try await preparesLibrarySearchInBoundedVisits()
     try await rejectsStaleRecognition()
     try await reindexesChangedOriginal()
     try await rollsBackWriteFailure()
@@ -23,6 +24,25 @@ struct MediaIndexChecks {
     let persisted = try model.persistedEntries()
     precondition(count == 1 && persisted.first { $0.name == requested }?.text == requested)
     precondition(persisted.first { $0.name == other }?.textReadAt == nil)
+  }
+
+  @MainActor static func preparesLibrarySearchInBoundedVisits() async throws {
+    let model = try MemoraModel("library-search")
+    let records = try (0..<13).map { index in
+      try Meeting(photoFileNames: [photo("library-\(index)")])
+    }
+    model.meetings = records
+    MediaTextRecognizer.read = { _ in "図面の確認項目" }
+    model.currentTeamID = "another-workspace"
+    await model.preparePhotoSearchIndex()
+    precondition(model.mediaIndexEntries.isEmpty)
+    model.currentTeamID = nil
+    await model.preparePhotoSearchIndex()
+    let first = model.photoRecordIDs(matching: "図面")
+    precondition(first.count == 12)
+    await model.preparePhotoSearchIndex()
+    let second = model.photoRecordIDs(matching: "図面")
+    precondition(second == Set(records.map(\.id)) && first.isSubset(of: second))
   }
 
   @MainActor static func mergesIntoCurrentIndex() async throws {

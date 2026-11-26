@@ -4,6 +4,7 @@ import SwiftUI
 struct LibraryView: View {
   @State private var matchingSourceIDs: Set<UUID> = []
   @State private var completedSourceRequest: SourceSearchRequest?
+  @State private var isReadingPhotoText = false
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.dynamicTypeSize) private var typeSize
@@ -153,6 +154,14 @@ struct LibraryView: View {
         guard !Task.isCancelled, sourceSearchRequest == request else { return }
         matchingSourceIDs = matches
         completedSourceRequest = request
+      }
+      .task(id: photoSearchGeneration, priority: .utility) { [generation = photoSearchGeneration] in
+        guard !Task.isCancelled else { return }
+        isReadingPhotoText = false
+        guard let generation else { return }
+        isReadingPhotoText = true
+        await model.preparePhotoSearchIndex()
+        if !Task.isCancelled, photoSearchGeneration == generation { isReadingPhotoText = false }
       }
       .toolbar {
         if isSelectionMode && !isSearching {
@@ -352,6 +361,14 @@ struct LibraryView: View {
       workspaceGeneration: model.aiWorkspaceGeneration)
   }
 
+  private var photoSearchGeneration: UUID? {
+    guard isSearching, model.selectedTab == .library, model.librarySection == .files,
+          model.libraryPath.isEmpty, !model.isToolsPresented, !model.isRecording,
+          !model.isRestoring, !model.isStoreProtected, model.currentTeamID == nil,
+          scenePhase == .active else { return nil }
+    return model.aiWorkspaceGeneration
+  }
+
   private var filesPage: some View {
     // Searching replaces the list with its results; before anything is typed
     // there is nothing to match, so the files stay out of the way.
@@ -395,6 +412,9 @@ struct LibraryView: View {
               message: "記録や参考資料のタイトル・本文から探せます。", isEmbedded: true)
           } else if isSearchingSourceText {
             ProgressView("参考資料の本文を検索しています…")
+              .padding(.vertical, MemoraSpacing.lg)
+          } else if isReadingPhotoText {
+            ProgressView("写真の文字を読み取っています…")
               .padding(.vertical, MemoraSpacing.lg)
           } else if CollectionSearch.hasQuery(query) {
             CollectionSearchState(title: "見つかりませんでした",
