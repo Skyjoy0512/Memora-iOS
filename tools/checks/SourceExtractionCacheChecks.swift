@@ -6,6 +6,13 @@ import CryptoKit
 struct SourceExtractionCacheChecks {
   static func main() async throws {
     let root = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
+    if CommandLine.arguments.count > 2 {
+      guard let hours = Int(CommandLine.arguments[2]), [1, 3, 8, 24].contains(hours) else {
+        throw RecordedAudioScaleBenchmark.Failure.unsupportedDuration
+      }
+      try await RecordedAudioScaleBenchmark.run(hours: hours, root: root)
+      return
+    }
     try SourceMediaCheckpointChecks.run(root: root)
     try SourceMediaChunkRevisionChecks.run(root: root)
     try await RecordedAudioTranscriptionChecks.run(root: root)

@@ -15,8 +15,18 @@ swiftc App/SummaryKnowledge.swift "${audio_diagnostic_sources[@]}" App/SourceSum
   App/SourceMediaCheckpointStore.swift App/SourceMediaSnapshot.swift App/SourceMediaTranscript.swift \
   App/SourceProcessingQueue.swift App/SourceMediaStageLease.swift App/SourceMediaStaging.swift \
   App/SourceMediaAudioExport.swift App/SourceMediaAudioLease.swift App/RecordedAudioPreparationPolicy.swift App/TranscriptionOutcome.swift App/RecordingAudioPart.swift App/RecordingAudioManifest.swift App/RecordedAudioInput.swift App/RecordedAudioTranscription.swift App/AudioSignalInspector.swift \
-  tools/checks/RecordedAudioTranscriptionChecks.swift tools/checks/RecordedAudioPreparationChecks.swift tools/checks/SegmentedAudioTranscriptionChecks.swift \
+  tools/checks/RecordedAudioTranscriptionChecks.swift tools/checks/RecordedAudioPreparationChecks.swift tools/checks/SegmentedAudioTranscriptionChecks.swift tools/checks/RecordedAudioScaleBenchmark.swift \
   App/SourceTextChunks.swift App/TranscriptSegment.swift App/SpeakerIdentificationStatus.swift \
   tools/checks/SourceMediaCheckpointChecks.swift tools/checks/SourceMediaChunkRevisionChecks.swift \
   App/RecognitionLanguage.swift App/SourceExtractionCache.swift tools/checks/SourceExtractionCacheChecks.swift -lsqlite3 -o "$check_dir/checks"
-"$check_dir/checks" "$check_dir"
+if [[ $# -eq 0 ]]; then
+  "$check_dir/checks" "$check_dir"
+elif [[ $1 == --recorded-audio-hours && $# -ge 2 ]]; then
+  shift
+  for hours in "$@"; do
+    "$check_dir/checks" "$check_dir" "$hours"
+  done
+else
+  printf '%s\n' 'Usage: run-source-extraction-cache-checks.sh [--recorded-audio-hours 1 3 8 24]' >&2
+  exit 2
+fi
