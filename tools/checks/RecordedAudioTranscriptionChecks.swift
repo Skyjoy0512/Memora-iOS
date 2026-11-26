@@ -25,9 +25,10 @@ enum RecordedAudioTranscriptionChecks {
     let calls = RecordingRecognitionFixture()
     let failed = await RecordedAudioTranscription.transcribe(url, locale: Locale(identifier: "ja-JP"), vocabulary: [],
       checkpointStore: SourceMediaCheckpointStore(directory: directory), staging: staging, checkReadiness: { try AudioProcessingReadiness.check(thermalState: .nominal) }) { await calls.recognize($0) }
-    guard case .failed = failed else { preconditionFailure("Partial result was published") }
+    guard case .failed(let reason) = failed else { preconditionFailure("Partial result was published") }
     let firstCount = await calls.count
-    precondition(firstCount == 2)
+    precondition(firstCount == 2 && reason == "fixture interrupted suffix",
+      "Expected the suffix recognition to fail; got \(firstCount) recognition calls and: \(reason)")
     let checkpointKey = try recordingKey(url)
     let inspector = SourceMediaCheckpointStore(directory: directory)
     let firstCheckpoint = inspector.load(checkpointKey, duration: 901, session: inspector.begin())!
