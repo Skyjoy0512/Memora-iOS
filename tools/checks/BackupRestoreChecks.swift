@@ -228,8 +228,17 @@ struct BackupRestoreChecks {
 
     // Clear only this isolated destination, simulating a fresh app container.
     for name in workspaceFiles.keys { try fm.removeItem(at: ProjectSourceFiles.resolve(name)!) }
-    try fm.removeItem(at: MediaFiles.directory.appendingPathComponent("audio.m4a"))
-    try fm.removeItem(at: MediaFiles.photosDirectory.appendingPathComponent("photo.jpg"))
+    try fm.removeItem(at: MediaFiles.directory)
+    try fm.removeItem(at: MediaFiles.photosDirectory)
+    MediaFiles.refusedProtection = MediaFiles.photosDirectory
+    do {
+      try await BackupRestoreTransaction.restore(from: package) { _ in preconditionFailure("Unprotected media restore committed") }
+      preconditionFailure("Media folder protection failure was ignored")
+    } catch BackupPackage.BackupError.mediaInstallFailed(let names) {
+      precondition(names == [MediaFiles.photosDirectory.lastPathComponent])
+    }
+    MediaFiles.refusedProtection = nil
+    precondition(emptyDestinations())
     // Actually restore the pre-feature package, rather than only decoding its JSON.
     try JSONSerialization.data(withJSONObject: json).write(to: manifestURL, options: .atomic)
     var legacyCommitted = false
@@ -239,8 +248,10 @@ struct BackupRestoreChecks {
       legacyCommitted = true
     }
     precondition(legacyCommitted)
+    precondition(MediaFiles.protectedDirectories == [MediaFiles.directory.path, MediaFiles.photosDirectory.path])
     let legacyAudio = try Data(contentsOf: MediaFiles.directory.appendingPathComponent("audio.m4a"))
-    precondition(legacyAudio == audio)
+    let legacyPhoto = try Data(contentsOf: MediaFiles.photosDirectory.appendingPathComponent("photo.jpg"))
+    precondition(legacyAudio == audio && legacyPhoto == photo)
     BackupPackage.removeInstalledMedia([("audio.m4a", true), ("photo.jpg", false)])
     try originalJSON.write(to: manifestURL, options: .atomic)
     precondition(emptyDestinations())
@@ -320,7 +331,7 @@ struct BackupRestoreChecks {
     let restoredAudio = try Data(contentsOf: MediaFiles.directory.appendingPathComponent("audio.m4a"))
     precondition(restoredAudio == audio)
     try checkSegmentOriginals(meeting, into: input)
-    print("BackupRestoreChecks: passed (production package/restore + real SQLite, new metadata/files roundtrip, legacy restore, duplicate documents, recipient limits, truncated/missing/oversize, traversal/symlinks, DB rollback, cancellation/gate, conflict preserves bytes, reopen; isolated fixtures only)")
+    print("BackupRestoreChecks: passed (production package/restore + real SQLite, new metadata/files roundtrip, protected destination gate, legacy restore, duplicate documents, recipient limits, truncated/missing/oversize, traversal/symlinks, DB rollback, cancellation/gate, conflict preserves bytes, reopen; isolated fixtures only)")
   }
 
   static func checkSegmentOriginals(_ original: Meeting, into input: URL) throws {
@@ -433,6 +444,16 @@ struct ProjectChatThread: Codable { var id = UUID(); var projectID: UUID? }
 enum MediaFiles {
   static var directory: URL { FixtureFiles.root.appendingPathComponent("audio") }
   static var photosDirectory: URL { FixtureFiles.root.appendingPathComponent("photos") }
+  static var refusedProtection: URL?
+  static var protectedDirectories: Set<String> = []
+  static func prepareProtectedDirectory(at folder: URL) -> Bool {
+    guard folder.path != refusedProtection?.path else { return false }
+    do {
+      try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+      protectedDirectories.insert(folder.path)
+      return true
+    } catch { return false }
+  }
   static func isPlainName(_ name: String) -> Bool { !name.isEmpty && name != "." && name != ".." && !name.contains("/") && !name.contains("\\") && !name.contains("\0") }
   static func reference(for url: URL) -> String? { isPlainName(url.lastPathComponent) && url.deletingLastPathComponent() == directory ? url.lastPathComponent : nil }
   static func resolve(_ name: String) -> URL? { isPlainName(name) ? directory.appendingPathComponent(name) : nil }

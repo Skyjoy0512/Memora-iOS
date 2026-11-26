@@ -364,28 +364,38 @@ enum BackupPackage {
         guard copy(from: source, to: destination), BackupPackageFile.resolve(name, in: staging) != nil else {
           throw BackupError.mediaInstallFailed([name])
         }
+        #if os(iOS)
+        // A provider copy may carry the original file's protection class.
+        do {
+          try fileManager.setAttributes([.protectionKey: FileProtectionType.complete], ofItemAtPath: destination.path)
+        } catch {
+          throw BackupError.mediaInstallFailed([name])
+        }
+        #endif
         staged.append((name, destination, isAudio))
       }
     }
 
-    // 2. Move them into place, taking back what moved if one fails.
-    do {
-      try fileManager.createDirectory(at: MediaFiles.directory, withIntermediateDirectories: true)
-      try fileManager.createDirectory(at: MediaFiles.photosDirectory, withIntermediateDirectories: true)
-    } catch {
-      throw BackupError.mediaInstallFailed([MediaFiles.directory.lastPathComponent])
+    let recordings = MediaFiles.directory
+    let photos = MediaFiles.photosDirectory
+    // Restore to the same protected, backup-excluded folders as capture.
+    for (folder, names) in [(recordings, audioNames), (photos, photoNames)] where !names.isEmpty {
+      guard MediaFiles.prepareProtectedDirectory(at: folder) else {
+        throw BackupError.mediaInstallFailed([folder.lastPathComponent])
+      }
     }
 
+    // 2. Move them into place, taking back what moved if one fails.
     var installed: [(name: String, isAudio: Bool)] = []
     func rollBack() {
       for entry in installed {
-        let folder = entry.isAudio ? MediaFiles.directory : MediaFiles.photosDirectory
+        let folder = entry.isAudio ? recordings : photos
         try? fileManager.removeItem(at: folder.appendingPathComponent(entry.name))
       }
     }
     for file in staged {
       if Task.isCancelled { rollBack(); throw CancellationError() }
-      let folder = file.isAudio ? MediaFiles.directory : MediaFiles.photosDirectory
+      let folder = file.isAudio ? recordings : photos
       let destination = folder.appendingPathComponent(file.name)
       // A same-named file on the device is a conflict, not a replacement, so
       // nothing of the person's own is ever destroyed by a restore.
