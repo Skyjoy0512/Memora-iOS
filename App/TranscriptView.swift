@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TranscriptView: View {
   @Environment(MemoraModel.self) private var model
+  @Environment(\.dynamicTypeSize) private var typeSize
   var meetingID: UUID
   @State private var detailTab: RootTab?
 
@@ -25,6 +26,7 @@ struct TranscriptView: View {
             .padding(.bottom, MemoraSpacing.xl)
             .frame(maxWidth: .infinity, alignment: .center)
           }
+          .padding(.bottom, typeSize.isAccessibilitySize ? model.bottomControlsHeight : 0)
           .scrollFocusedEditorAboveKeyboard(in: proxy)
         }
         .background(MemoraPalette.background)
@@ -37,7 +39,7 @@ struct TranscriptView: View {
         .onDisappear {
           model.popActiveDetail(meeting.id, tab: detailTab)
         }
-        .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
+        .contentMargins(.bottom, typeSize.isAccessibilitySize ? MemoraSpacing.lg : model.bottomContentClearance, for: .scrollContent)
       } else {
         ContentUnavailableView("文字起こしが見つかりません", icon: .docQuestionmark)
       }

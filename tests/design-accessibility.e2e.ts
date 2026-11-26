@@ -16,23 +16,18 @@ test('design: mention controls remain below navigation and above native input', 
   const close = screen.getByLabel('候補を閉じる');
   await expect(close).toBeVisible();
   await expect(screen.getByRole('button', { name: 'ファイル・記録の検索、利用可能', exact: true })).toBeVisible();
-  const closeBox = await close.boundingBox();
-  const inputBox = await input.boundingBox();
-  if (!closeBox || !inputBox) throw new Error('mention layout has no frames');
-  expect(closeBox.y).toBeGreaterThan(108);
-  expect(closeBox.y + closeBox.height).toBeLessThan(inputBox.y);
-  expect(closeBox.width).toBeGreaterThanOrEqual(44);
-  expect(closeBox.height).toBeGreaterThanOrEqual(44);
+  const settledLayout = async () => {
+    const closeBox = await close.boundingBox();
+    const inputBox = await input.boundingBox();
+    if (closeBox && inputBox && closeBox.y > 108 && closeBox.y + closeBox.height < inputBox.y
+        && closeBox.width >= 44 && closeBox.height >= 44) return 'clear';
+    return JSON.stringify({ closeBox, inputBox });
+  };
+  await expect.poll(settledLayout).toBe('clear');
   await app.screenshot('mention-layout');
   // The same layout holds in dark appearance.
   await device.setAppearance('dark');
-  const darkClose = await close.boundingBox();
-  const darkInput = await input.boundingBox();
-  if (!darkClose || !darkInput) throw new Error('dark mention layout has no frames');
-  expect(darkClose.y).toBeGreaterThan(108);
-  expect(darkClose.y + darkClose.height).toBeLessThan(darkInput.y);
-  expect(darkClose.width).toBeGreaterThanOrEqual(44);
-  expect(darkClose.height).toBeGreaterThanOrEqual(44);
+  await expect.poll(settledLayout).toBe('clear');
   await app.screenshot('mention-layout-dark');
   await device.setAppearance('light');
   await tapControl(screen, close);

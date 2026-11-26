@@ -20,17 +20,26 @@ test('transcript and purpose catalogs remain usable at largest Dynamic Type', { 
     size('accessibility-extra-extra-extra-large');
     await tapControl(screen.getByRole('button', { name: /表示する項目/ }).first());
     await tapControl(screen.getByRole('button', { name: '文字起こし', exact: true }).last());
-    await expect(screen.getByTestId('transcript.search')).toBeVisible();
+    const search = screen.getByTestId('transcript.search');
+    const composerBeforeSearch = await screen.getByTestId('ai.composer.input').boundingBox();
+    const editShortcut = await screen.getByTestId('record.aiEdit.open').boundingBox();
+    const back = await screen.getByTestId('BackButton').first().boundingBox();
+    if (!composerBeforeSearch || !back) throw new Error('Missing record navigation or composer frame');
+    await scrollToControl(screen, search, {
+      minimumY: back.y + back.height, maximumY: Math.min(composerBeforeSearch.y, editShortcut?.y ?? Infinity),
+    });
+    await expect(search).toBeVisible();
     await device.setAppearance('dark');
     await app.screenshot('transcript-largest-dark');
-    await tapControl(screen.getByTestId('transcript.search'));
+    await tapControl(screen, search);
     const transcriptQuery = screen.getByTestId('transcript.search.input');
     await expect(transcriptQuery).toBeFocused();
     await expect.poll(async () => {
       const field = await transcriptQuery.boundingBox();
       const composer = await screen.getByTestId('ai.composer.input').boundingBox();
-      return !!field && !!composer && field.y >= 120 && field.y + field.height <= composer.y;
-    }).toBe(true);
+      if (field && composer && field.y >= 120 && field.y + field.height <= composer.y) return 'clear';
+      return JSON.stringify({ field, composer });
+    }).toBe('clear');
     await transcriptQuery.fill('10万円');
     await scrollToControl(screen, screen.getByRole('button', { name: '予算は10万円ではなく12万円です。', exact: true }));
     await app.screenshot('transcript-largest-search');

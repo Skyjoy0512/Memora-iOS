@@ -68,6 +68,7 @@ struct MeetingDetailView: View {
   }
 
   var body: some View {
+    let reservesFooter = typeSize.isAccessibilitySize && !showsLocalPlaybackBar
     Group {
       if let meeting = model.meeting(id: meetingID) {
         ScrollViewReader { proxy in
@@ -116,8 +117,12 @@ struct MeetingDetailView: View {
             .padding(.horizontal, MemoraSpacing.screen)
             .frame(maxWidth: .infinity)
             // Room to scroll the last section clear of the floating AI composer.
-            .padding(.bottom, model.bottomContentClearance)
+            .padding(.bottom, reservesFooter ? MemoraSpacing.lg : model.bottomContentClearance)
           }
+          // At larger text sizes the reading viewport ends above the
+          // measured composer, so controls remain reachable while scrolling.
+          .padding(.bottom, reservesFooter ? model.bottomControlsHeight : 0)
+          .scrollFocusedEditorAboveKeyboard(in: proxy)
           .background(MemoraPalette.background)
           .onAppear {
             detailTab = model.selectedTab
