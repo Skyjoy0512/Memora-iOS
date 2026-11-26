@@ -30,7 +30,7 @@ extension MemoraModel {
     guard citations.count <= 128 else { return false }
     for citation in citations {
       guard !Task.isCancelled, currentTeamID == workspaceID,
-            projectEvidenceAllowed(citation.target, projectID: projectID, cloud: cloud) else { return false }
+            projectCitationAllowed(citation, projectID: projectID, cloud: cloud) else { return false }
       let text: String
       switch citation.target {
       case .source(let id):
@@ -47,9 +47,17 @@ extension MemoraModel {
         text = [task.title, task.detail, task.assignee].compactMap { $0 }.joined(separator: "\n")
       }
       guard !Task.isCancelled, currentTeamID == workspaceID, !citation.excerpt.isEmpty, text.contains(citation.excerpt),
-            projectEvidenceAllowed(citation.target, projectID: projectID, cloud: cloud) else { return false }
+            projectCitationAllowed(citation, projectID: projectID, cloud: cloud) else { return false }
     }
     return !Task.isCancelled && currentTeamID == workspaceID && !isRestoring && !isStoreProtected
+  }
+
+  func projectCitationAllowed(_ citation: ProjectCitation, projectID: UUID, cloud: Bool) -> Bool {
+    guard projectEvidenceAllowed(citation.target, projectID: projectID, cloud: cloud) else { return false }
+    if case .meeting(let id) = citation.target, let recordedAt = citation.recordedAt {
+      return meeting(id: id)?.createdAt == recordedAt
+    }
+    return true
   }
 
   func projectContext(question: String, projectID: UUID, cloud: Bool, budget: Int,
@@ -71,7 +79,7 @@ extension MemoraModel {
         blocks += record.summaryKnowledgeText.components(separatedBy: "\n").filter { !record.summary.contains($0) }.map { ProjectSourceText(text: $0) }
       }
       blocks += record.transcript.map { ProjectSourceText(text: $0.text, time: $0.timestamp) }
-      inputs.append(ProjectEvidenceInput(target: target, title: record.displayTitle, blocks: blocks))
+      inputs.append(ProjectEvidenceInput(target: target, title: record.displayTitle, blocks: blocks, recordedAt: record.createdAt))
     }
     let recordIDs = Set(records.map(\.id))
     for task in tasks where task.meetingID.map(recordIDs.contains) == true && !task.isCompleted {
@@ -117,7 +125,7 @@ extension MemoraModel {
       let chunks = indexed ?? permittedInputs.flatMap { input in
         input.blocks.flatMap { block in
           ProjectContextBuilder.split(block.text, projectID: projectID, target: input.target,
-            title: input.title, page: block.page, time: block.time)
+            title: input.title, page: block.page, time: block.time, recordedAt: input.recordedAt)
         }
       }
       return ProjectContextBuilder.build(question: question, projectID: projectID, chunks: chunks,

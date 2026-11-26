@@ -91,6 +91,20 @@ struct ProjectSearchIndexChecks {
     let kanaMatches = try await index.retrieve(question: "さくら", projectID: kanaProject, inputs: [kana, kanaNoise])
     precondition(kanaMatches.count == 1 && kanaMatches.first?.target == kana.target)
     try await index.remove(projectID: kanaProject)
-    print("ProjectSearchIndexChecks: passed (FTS5, persistence, update, removal, membership isolation, bound queries)")
+    let dateProject = UUID()
+    var dated = ProjectEvidenceInput(target: .meeting(UUID()), title: "公開方針",
+      blocks: [ProjectSourceText(text: "会議で公開方針を承認した。", time: 480)])
+    let oldRows = try await index.retrieve(question: "公開方針", projectID: dateProject, inputs: [dated])
+    precondition(oldRows.first?.recordedAt == nil && oldRows.first?.time == 480)
+    let recordedAt = Date(timeIntervalSince1970: 1_789_560_000)
+    dated.recordedAt = recordedAt
+    let datedRows = try await index.retrieve(question: "公開方針", projectID: dateProject, inputs: [dated])
+    precondition(datedRows.first?.recordedAt == recordedAt && datedRows.first?.time == 480)
+    dated.recordedAt = recordedAt.addingTimeInterval(86_400)
+    let updatedRows = try await index.retrieve(question: "公開方針", projectID: dateProject, inputs: [dated])
+    precondition(updatedRows != datedRows && updatedRows.first?.recordedAt == dated.recordedAt)
+    let reopenedRows = try await reopened.retrieve(question: "公開方針", projectID: dateProject, inputs: [dated])
+    precondition(reopenedRows == updatedRows)
+    print("ProjectSearchIndexChecks: passed (FTS5, persistence, date-only updates, removal, membership isolation, bound queries)")
   }
 }

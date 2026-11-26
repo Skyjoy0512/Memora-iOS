@@ -17,7 +17,7 @@ extension MemoraModel {
       !Task.isCancelled && isCurrent() && currentTeamID == workspaceID && aiWorkspaceGeneration == generation && !isRestoring && !isStoreProtected
         && space(id: projectID) != nil
         && (selection.pluginIDs.isEmpty || projectMentionSelection(selection.pluginIDs, projectID: projectID) == selection)
-        && (historyEvidence + evidence.references).allSatisfy { projectEvidenceAllowed($0.target, projectID: projectID, cloud: true) }
+        && (historyEvidence + evidence.references).allSatisfy { projectCitationAllowed($0, projectID: projectID, cloud: true) }
     }
     func register(_ citations: [ProjectCitation]) -> AgentToolOutcome {
       evidence.register(citations, allowed: Set(citations.filter {

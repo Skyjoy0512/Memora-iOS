@@ -119,7 +119,7 @@ actor ProjectSearchIndex {
     if synchronizedProject == projectID, synchronizedHasUniqueTargets, synchronizedInputs == inputs { return }
     let boundedInputs = Self.bounded(inputs, maximumCharacters: characterLimit)
     // Only an identical, already committed snapshot can bypass synchronization.
-    // A membership, permission-filtered input, title, page, time or body change
+    // A membership, permission-filtered input, title, date, location or body change
     // fails equality. Duplicate targets keep the original sequential semantics.
     let uniqueTargets = Set(boundedInputs.map(\.target)).count == boundedInputs.count
     if synchronizedProject == projectID, uniqueTargets, synchronizedInputs == boundedInputs { return }
@@ -159,7 +159,7 @@ actor ProjectSearchIndex {
         try run("DELETE FROM project_chunks WHERE project = ? AND target = ?;", values: [project, target])
         for block in bounded.blocks {
           for chunk in ProjectContextBuilder.split(block.text, projectID: projectID, target: input.target,
-              title: input.title, page: block.page, time: block.time) {
+              title: input.title, page: block.page, time: block.time, recordedAt: input.recordedAt) {
             let payload = String(decoding: try encoder.encode(chunk), as: UTF8.self)
             let tokens = ProjectContextBuilder.grams(chunk.title + " " + chunk.text).sorted().joined(separator: " ")
             try run("INSERT INTO project_chunks(project,target,payload,tokens) VALUES(?,?,?,?);", values: [project, target, payload, tokens])

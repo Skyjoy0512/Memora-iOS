@@ -7,4 +7,5 @@ struct ProjectEvidenceChunk: Hashable, Codable, Sendable {
   var text: String
   var page: Int?
   var time: TimeInterval?
+  var recordedAt: Date?
 }

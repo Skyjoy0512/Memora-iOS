@@ -9,11 +9,19 @@ struct ProjectCitation: Identifiable, Hashable, Codable, Sendable {
   var excerpt: String
   var page: Int?
   var time: TimeInterval?
+  var recordedAt: Date?
   /// The source evidence this citation was read from. Older citations have no
   /// stamp and stay readable; a stamped citation is dropped once the source's
   /// text reference or content fingerprint changes.
   var evidenceReference: String?
   var evidenceFingerprint: String?
+
+  var recordDateLabel: String? {
+    recordedAt.map {
+      let style = Date.FormatStyle(date: .numeric, time: .omitted).locale(Locale(identifier: "ja_JP"))
+      return "記録日 \($0.formatted(style))"
+    }
+  }
 
   enum Target: Hashable, Codable, Sendable {
     case source(UUID)

@@ -31,13 +31,14 @@ struct ProjectChatView: View {
                   AIResponseActionBar(text: message.text, retry: {})
                   if !message.citations.isEmpty {
                     DisclosureGroup("出典") {
-                  ForEach(message.citations) { citation in
-                    Button { open(citation) } label: {
-                      Label(citationLabel(citation), icon: .docText)
-                        .font(MemoraTypography.metadata).multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                    }.tint(MemoraPalette.textPrimary)
-                  }
+                      ForEach(message.citations) { citation in
+                        Button { open(citation, projectID: thread.projectID) } label: {
+                          Label(citationLabel(citation), icon: .docText)
+                            .font(MemoraTypography.metadata).multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        }
+                        .tint(MemoraPalette.textPrimary)
+                      }
                     }
                   }
                   if let engine = message.engineLabel { Text(engine).font(.caption).foregroundStyle(.secondary) }
@@ -97,14 +98,16 @@ struct ProjectChatView: View {
   }
 
   private func citationLabel(_ citation: ProjectCitation) -> String {
-    if let page = citation.page { return "\(citation.title) · ページ\(page)" }
-    if let time = ProjectCitationLocation.playbackTime(citation.time) {
-      return "\(citation.title) · \(MemoraFormat.duration(time))"
-    }
-    return citation.title
+    let location = citation.page.map { "ページ\($0)" }
+      ?? ProjectCitationLocation.playbackTime(citation.time).map { MemoraFormat.duration($0) }
+    return [citation.title, citation.recordDateLabel, location].compactMap { $0 }.joined(separator: " · ")
   }
 
-  private func open(_ citation: ProjectCitation) {
+  private func open(_ citation: ProjectCitation, projectID: UUID?) {
+    guard let projectID, model.projectCitationAllowed(citation, projectID: projectID, cloud: false) else {
+      sourceMissing = true
+      return
+    }
     switch citation.target {
     case .source(let id):
       if let source = model.source(id: id) {

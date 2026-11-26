@@ -2,7 +2,7 @@ import Foundation
 
 @main
 struct ProjectContextChecks {
-  static func main() {
+  static func main() throws {
     let project = UUID(), other = UUID()
     let source = ProjectCitation.Target.source(UUID())
     let secret = ProjectCitation.Target.source(UUID())
@@ -66,6 +66,20 @@ struct ProjectContextChecks {
     let wrongMoney = ProjectContextBuilder.build(question: "50円の予算", projectID: project,
       chunks: money, allowed: [source], characterBudget: 1_000)
     precondition(wrongMoney.used.isEmpty)
-    print("ProjectContextChecks: passed (chunk/page fidelity, isolation, budgets, follow-ups, citations, hiragana/title search, no-match abstention, local aliases)")
+    let recordedAt = Date(timeIntervalSince1970: 1_789_560_000)
+    let meeting = ProjectCitation.Target.meeting(UUID())
+    let datedChunks = ProjectContextBuilder.split("会議で公開方針を承認した。", projectID: project,
+      target: meeting, title: "公開方針", time: 480, recordedAt: recordedAt)
+    let dated = ProjectContextBuilder.build(question: "公開方針", projectID: project,
+      chunks: datedChunks, allowed: [meeting], characterBudget: 300)
+    let dateLabel = recordedAt.formatted(Date.FormatStyle(date: .numeric, time: .omitted).locale(Locale(identifier: "ja_JP")))
+    precondition(dated.text.contains("記録日 \(dateLabel) · 録音内 480秒"))
+    precondition(dated.used.first?.recordedAt == recordedAt && dated.used.first?.time == 480)
+    precondition(citations[0].recordedAt == nil && !context.text.contains("記録日"))
+    let legacyData = try JSONEncoder().encode(citations[0])
+    precondition(!String(decoding: legacyData, as: UTF8.self).contains("recordedAt"))
+    let legacyCitation = try JSONDecoder().decode(ProjectCitation.self, from: legacyData)
+    precondition(legacyCitation == citations[0])
+    print("ProjectContextChecks: passed (chunk/page/date fidelity, isolation, budgets, follow-ups, citations, hiragana/title search, no-match abstention, local aliases)")
   }
 }

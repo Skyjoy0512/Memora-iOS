@@ -8,7 +8,8 @@ enum ProjectContextBuilder {
   }
 
   static func split(_ text: String, projectID: UUID, target: ProjectCitation.Target,
-                    title: String, page: Int? = nil, time: TimeInterval? = nil) -> [ProjectEvidenceChunk] {
+                    title: String, page: Int? = nil, time: TimeInterval? = nil,
+                    recordedAt: Date? = nil) -> [ProjectEvidenceChunk] {
     let characters = Array(text.prefix(200_000))
     var chunks: [ProjectEvidenceChunk] = []
     var offset = 0
@@ -16,7 +17,7 @@ enum ProjectContextBuilder {
       let end = min(offset + 700, characters.count)
       let body = String(characters[offset..<end]).trimmingCharacters(in: .whitespacesAndNewlines)
       if !body.isEmpty { chunks.append(ProjectEvidenceChunk(projectID: projectID, target: target,
-        title: title, text: body, page: page, time: time)) }
+        title: title, text: body, page: page, time: time, recordedAt: recordedAt)) }
       if end == characters.count { break }
       offset = end - 100
     }
@@ -74,13 +75,17 @@ enum ProjectContextBuilder {
     for (_, chunk, _, _) in candidates {
       guard used.count < 8, perSource[chunk.target, default: 0] < 2 else { continue }
       let safeTime = chunk.time.flatMap { $0.isFinite && $0 >= 0 && $0 < Double(Int.max) ? $0 : nil }
-      let location = chunk.page.map { " · ページ\($0)" } ?? safeTime.map { " · \(Int($0))秒" } ?? ""
-      let prefix = "【資料\(used.count + 1)】 \(chunk.title.prefix(80))\(location)\n"
+      let location = chunk.page.map { " · ページ\($0)" }
+        ?? safeTime.map { " · \(chunk.recordedAt == nil ? "" : "録音内 ")\(Int($0))秒" } ?? ""
+      var citation = ProjectCitation(target: chunk.target, title: chunk.title, excerpt: "",
+        page: chunk.page, time: chunk.time, recordedAt: chunk.recordedAt)
+      let date = citation.recordDateLabel.map { " · \($0)" } ?? ""
+      let prefix = "【資料\(used.count + 1)】 \(chunk.title.prefix(80))\(date)\(location)\n"
       let remaining = characterBudget - text.count - prefix.count - 2
       guard remaining >= 30 else { continue }
-      let excerpt = String(chunk.text.prefix(min(700, remaining)))
-      text += prefix + excerpt + "\n\n"
-      used.append(ProjectCitation(target: chunk.target, title: chunk.title, excerpt: excerpt, page: chunk.page, time: chunk.time))
+      citation.excerpt = String(chunk.text.prefix(min(700, remaining)))
+      text += prefix + citation.excerpt + "\n\n"
+      used.append(citation)
       perSource[chunk.target, default: 0] += 1
     }
     return Context(text: text, used: used, matchedCount: matched.count)

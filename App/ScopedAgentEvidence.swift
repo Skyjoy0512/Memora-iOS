@@ -13,14 +13,20 @@ struct ScopedAgentEvidence {
     var text = ""
     for citation in citations {
       let existing = references.firstIndex {
-        $0.target == citation.target && $0.page == citation.page && $0.time == citation.time && $0.excerpt == citation.excerpt
+        $0.target == citation.target && $0.page == citation.page && $0.time == citation.time
+          && $0.recordedAt == citation.recordedAt && $0.excerpt == citation.excerpt
       }
       guard existing != nil || references.count < 24 else { break }
       let number = (existing ?? references.count) + 1
       let title = String(citation.title.prefix(80))
       let page = citation.page.flatMap { $0 > 0 ? " · ページ\($0)" : nil }
-      let time = citation.time.flatMap { $0.isFinite && $0 >= 0 && $0 < Double(Int.max) ? " · \(Int($0))秒" : nil }
-      let prefix = "【資料\(number)】 id=\(citation.target.identifier.uuidString) 「\(title)」\(page ?? time ?? "")\n"
+      let time = citation.time.flatMap { offset -> String? in
+        guard offset.isFinite, offset >= 0, offset < Double(Int.max) else { return nil }
+        let label = citation.recordedAt == nil ? "" : "録音内 "
+        return " · \(label)\(Int(offset))秒"
+      }
+      let date = citation.recordDateLabel.map { " · \($0)" } ?? ""
+      let prefix = "【資料\(number)】 id=\(citation.target.identifier.uuidString) 「\(title)」\(date)\(page ?? time ?? "")\n"
       let available = remainingCharacters - text.count - prefix.count - 2
       guard available >= 30 else { break }
       var sent = citation

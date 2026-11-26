@@ -33,6 +33,15 @@ struct ScopedAgentEvidenceChecks {
       ProjectCitation(target: meeting, title: "録音", excerpt: "本文")], allowed: [source, meeting])
     precondition(ambiguous.target(for: reusedID.uuidString) == nil)
 
+    let recordDate = Date(timeIntervalSince1970: 1_789_560_000)
+    var dated = ProjectCitation(target: meeting, title: "公開方針", excerpt: "公開を決めた", time: 480, recordedAt: recordDate)
+    var recordEvidence = ScopedAgentEvidence(characterBudget: 800)
+    let firstDate = recordEvidence.register([dated], allowed: [meeting])
+    precondition(firstDate.text.contains("【資料1】") && firstDate.text.contains("記録日") && firstDate.text.contains("録音内 480秒"))
+    dated.recordedAt = recordDate.addingTimeInterval(86_400)
+    let revisedDate = recordEvidence.register([dated], allowed: [meeting])
+    precondition(revisedDate.text.contains("【資料2】") && recordEvidence.references.last?.recordedAt == dated.recordedAt)
+
     var tiny = ScopedAgentEvidence(characterBudget: 10)
     precondition(tiny.register([first], allowed: [local]).isError && tiny.references.isEmpty)
     var bounded = ScopedAgentEvidence(characterBudget: 20_000)
