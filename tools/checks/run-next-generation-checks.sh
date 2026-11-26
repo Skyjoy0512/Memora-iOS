@@ -5,6 +5,9 @@ check_root=${MEMORA_CHECK_ROOT:-${TMPDIR:-/tmp}}
 check_dir=$(mktemp -d "$check_root/memora-nextgen-checks.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
 bash tools/checks/run-keychain-write-checks.sh
+bash tools/checks/run-meeting-bot-contract-checks.sh
+python3 tools/checks/run-meeting-row-staging-checks.py
+bash tools/checks/run-project-longitudinal-checks.sh
 bash tools/checks/run-summary-reading-checks.sh
 swiftc App/JournalInsertionTime.swift tools/checks/JournalInsertionTimeChecks.swift -o "$check_dir/journal-insertion"
 "$check_dir/journal-insertion"
