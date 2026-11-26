@@ -177,7 +177,7 @@ struct MCPServerEditor: View {
   }
 
   private func authorize() {
-    guard isValid, save() else { return }
+    guard !isChecking, isValid, save() else { return }
     checkedTools = nil; errorMessage = nil; isChecking = true
     let snapshot = server
     authorizationTask = Task {
@@ -195,6 +195,7 @@ struct MCPServerEditor: View {
 
   /// Saves first, so the check uses exactly what is entered.
   private func check() {
+    guard !isChecking else { return }
     guard isValid else {
       errorMessage = MCPClientError.invalidURL.localizedDescription
       return

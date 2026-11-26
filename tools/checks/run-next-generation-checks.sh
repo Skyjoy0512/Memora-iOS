@@ -39,6 +39,7 @@ bash tools/checks/run-notion-agent-checks.sh
 bash tools/checks/run-gmail-service-checks.sh
 bash tools/checks/run-gmail-agent-checks.sh
 bash tools/checks/run-mcp-agent-checks.sh
+python3 tools/checks/run-mcp-oauth-lifecycle-checks.py
 bash tools/checks/run-mcp-pinned-http-checks.sh
 bash tools/checks/run-answer-presentation-checks.sh
 swiftc App/Person.swift App/RecordPrivacy.swift App/SummarySensitivity.swift App/PersonIdentity.swift tools/checks/PersonIdentityChecks.swift -o "$check_dir/person-identity"
