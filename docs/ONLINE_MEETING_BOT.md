@@ -47,6 +47,7 @@ Docker Hub の公開マニフェストを照合した。Lite `v0.12.28` は Linu
 
 ## 検証状況
 
+- Google Meet と Teams の直接参加 URL、共通 `MeetingBotProvider`、状態遷移を実装した。依頼の有効期限と所属、参加後の録音通知・同意、受領できる音声の上限と照合、未取得の録音が失効する条件をホストテストで検証した。利用者に公開する操作は無効のまま。次は認証済みテスト環境に接続し、費用の予約、同意の照合、音声取得から端末取込までを確認する。 [Meet の会議 URI](https://developers.google.com/workspace/meet/api/reference/rest/v2/spaces) · [Teams の参加 URL 形式](https://learn.microsoft.com/en-us/microsoftteams/platform/html-widgets/send-html-widgets#supported-teams-deep-links)
 - リポジトリの経路、公式の認可要件、ライセンス、API と公開イメージのメタデータを確認した。現環境では Docker CLI、同意取得済みの検証会議、主催者・テナントの認可がなく、入室・録音・取り込みの PoC と同時実行計測は未実施。
 - 公開前の判定は、許可されたテナントで一件の音声取得を確認し、ロビー拒否、強制退出、再試行、通知、保存後・期限後の削除まで行う。件数を増やす前に、同時 2 会議で音声の混在がなく、コスト上限が機能することを確認する。
 - 既存アプリの録音機能を検証する場合は、カレンダーの録音方法シートを開き、閉じる操作で後続の画面が開かないこと、対面録音の選択から閉じ完了後に一度だけ録音画面へ進むこと、前回記録のリンクを開けることを確認する。
