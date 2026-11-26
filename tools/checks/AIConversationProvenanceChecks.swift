@@ -14,6 +14,22 @@ struct AIConversationProvenanceChecks {
         resolve: { $0 == target ? resolved : nil }, allows: { _ in granted })
     }
     precondition(reusable(provenance))
+    func cloudReplay(_ provenance: AIConversationProvenance, granted: Bool = true) -> Bool {
+      provenance.allowsCloudReplay(workspaceID: nil, memoryFingerprint: "memory",
+        resolve: { $0 == target ? reference : nil }, allows: { _ in granted })
+    }
+    precondition(!cloudReplay(provenance))
+    var cloud = provenance
+    cloud.cloudReplayAuthorizationVersion = 1
+    precondition(cloudReplay(cloud) && !cloudReplay(cloud, granted: false))
+    cloud.isComplete = false
+    precondition(!cloudReplay(cloud))
+    cloud.isComplete = true
+    cloud.cloudReplayAuthorizationVersion = 2
+    precondition(!cloudReplay(cloud))
+    // Older entries are still valid local history after decoding.
+    let uncategorized = try JSONDecoder().decode(AIConversationProvenance.self, from: JSONEncoder().encode(provenance))
+    precondition(reusable(uncategorized) && !cloudReplay(uncategorized))
     precondition(!reusable(provenance, granted: false))
     precondition(!reusable(provenance, workspace: "team"))
     precondition(!reusable(provenance, memory: "deleted memory"))
@@ -42,6 +58,6 @@ struct AIConversationProvenanceChecks {
     let malformed = try JSONDecoder().decode(AIConversationEntry.self, from: JSONSerialization.data(withJSONObject: legacy))
     precondition(malformed.cloudProvenance == nil && malformed.answer == "回答")
     precondition(AIRecordFingerprint.make(["key": "value"]) == AIRecordFingerprint.make(["key": "value"]))
-    print("AIConversationProvenanceChecks: passed (grant, revoke, edit, missing source, workspace, memory, limit, legacy)")
+    print("AIConversationProvenanceChecks: passed (cloud replay requires request-time proof, local history preserved, grant, revoke, edit, missing source, workspace, memory, limit, legacy)")
   }
 }

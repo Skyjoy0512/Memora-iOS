@@ -18,7 +18,7 @@ extension MemoraModel {
 
   func canReuseCloudConversation(_ provenance: AIConversationProvenance?) -> Bool {
     guard !isRestoring, !isStoreProtected, let provenance else { return false }
-    return provenance.allowsReuse(workspaceID: currentTeamID, memoryFingerprint: cloudMemoryFingerprint,
+    return provenance.allowsCloudReplay(workspaceID: currentTeamID, memoryFingerprint: cloudMemoryFingerprint,
       resolve: recordReference, allows: { allowsRecordAccess($0, purpose: .cloudAI) })
   }
 
@@ -41,7 +41,7 @@ extension MemoraModel {
 
   func newCloudProvenance(references: [AIRecordReference]) -> AIConversationProvenance {
     AIConversationProvenance(references: references, workspaceID: currentTeamID,
-      memoryFingerprint: cloudMemoryFingerprint)
+      memoryFingerprint: cloudMemoryFingerprint, cloudReplayAuthorizationVersion: 1)
   }
 
   var cloudAuthorizedTargets: Set<RecordPrivacyTarget> {

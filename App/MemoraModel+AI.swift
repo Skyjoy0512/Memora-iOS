@@ -1061,7 +1061,11 @@ extension MemoraModel {
     let citations = sourceCitations ?? last?.sourceCitations ?? []
     let clips = Array((attachmentCitations ?? last?.attachmentCitations ?? []).filter(\.isValid).prefix(64))
     let references = (last?.sources ?? []).compactMap { recordReference(for: .meeting($0.meetingID)) }
-    var provenance = cloudProvenance ?? (last?.isAgentReply == false ? newCloudProvenance(references: references) : nil)
+    // Local retrieval can use this metadata, but history saved after a local
+    // answer cannot authorize replay of the context it may have inherited.
+    var provenance = cloudProvenance ?? (last?.isAgentReply == false
+      ? AIConversationProvenance(references: references, workspaceID: currentTeamID,
+        memoryFingerprint: cloudMemoryFingerprint) : nil)
     if !citations.isEmpty || !clips.isEmpty || userFile != nil { provenance?.isComplete = false }
     let episode = isAIMemoryEnabled ? AIEpisode(id: entryID, sessionID: aiConversationID, date: .now,
       topic: String(question.prefix(120)), objective: String(question.prefix(240)), summary: String(answer.prefix(600)),
