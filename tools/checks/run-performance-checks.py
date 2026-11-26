@@ -19,8 +19,9 @@ def original(name):
 
 def sections(source, name):
     begin = source.index('  private var fileSections:')
-    end = source.index('  private func matchesQuery', begin)
-    value = source[begin:end].replace('  private var fileSections: [FileDateSection] {', '  func build(_ matchingMeetings: [Meeting]) -> [FileDateSection] {')
+    end = source.index('\n}', begin)
+    value = source[begin:end].partition('  private func matchesQuery')[0]
+    value = value.replace('  private var fileSections: [FileDateSection] {', '  func build(_ matchingMeetings: [Meeting]) -> [FileDateSection] {')
     # Both candidates get the same clock/calendar. Production code still uses
     # the person's current date; a CI run must not change at midnight or by zone.
     value = value.replace('let calendar = Calendar.current', 'let calendar = SectionComparisonContext.calendar')

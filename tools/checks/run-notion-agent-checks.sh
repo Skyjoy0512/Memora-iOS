@@ -11,6 +11,7 @@ swiftc App/SummaryContentProjection.swift App/MarkdownBlockParser.swift App/Mark
   App/MemoraTask.swift App/TaskRelationships.swift App/TaskProgress.swift App/RecordPrivacy.swift App/RecordAccessPolicy.swift \
   App/SummarySensitivity.swift App/RecordPrivacyTarget.swift App/AIAnswerFailure.swift App/GmailError.swift App/ExternalToolFailure.swift App/MCPClientError.swift App/MCPOAuthError.swift \
   App/IntegrationConfigurationRevision.swift App/NotionSaveConfiguration.swift App/NotionSaveEnvironment.swift App/NotionService.swift \
+  App/CloudHTTPTransport.swift App/SummaryRequestAdmission.swift App/SummaryRetryDelay.swift App/SummaryDiagnostics.swift \
   App/AgentConversationExecutionContext.swift App/NotionExportContext.swift App/NotionAgentExecutionContext.swift \
   App/MemoraModel+NotionExport.swift App/MemoraModel+NotionTools.swift App/MemoraModel+IntegrationSettings.swift tools/checks/IntegrationCalendarFixture.swift \
   tools/checks/HTTPResponseGate.swift tools/checks/NotionAgentFixtureModel.swift tools/checks/NotionAgentChecks.swift \
