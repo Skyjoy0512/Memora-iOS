@@ -80,6 +80,20 @@ struct ProjectContextChecks {
     precondition(!String(decoding: legacyData, as: UTF8.self).contains("recordedAt"))
     let legacyCitation = try JSONDecoder().decode(ProjectCitation.self, from: legacyData)
     precondition(legacyCitation == citations[0])
+    let photo = ProjectCitation.Photo(name: "whiteboard.jpg", byteCount: 2_048,
+      modifiedAt: recordedAt, textReadAt: recordedAt.addingTimeInterval(1))
+    let photographed = ProjectContextBuilder.split("試験環境の接続仕様", projectID: project, target: meeting,
+      title: "公開方針", recordedAt: recordedAt, photo: photo)
+    let imageContext = ProjectContextBuilder.build(question: "接続仕様", projectID: project,
+      chunks: datedChunks + photographed, allowed: [meeting], characterBudget: 500)
+    precondition(imageContext.used.count == 1 && imageContext.used[0].photo == photo)
+    precondition(imageContext.text.contains("写真の文字") && !imageContext.text.contains(photo.name))
+    let titleMatchOnly = ProjectContextBuilder.build(question: "公開方針", projectID: project,
+      chunks: photographed, allowed: [meeting], characterBudget: 500)
+    precondition(titleMatchOnly.used.isEmpty)
+    let deniedPhoto = ProjectContextBuilder.build(question: "接続仕様", projectID: project,
+      chunks: photographed, allowed: [], characterBudget: 500)
+    precondition(deniedPhoto.used.isEmpty)
     print("ProjectContextChecks: passed (chunk/page/date fidelity, isolation, budgets, follow-ups, citations, hiragana/title search, no-match abstention, local aliases)")
   }
 }

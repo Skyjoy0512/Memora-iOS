@@ -7,7 +7,7 @@ struct ScopedAgentEvidence {
   init(characterBudget: Int) { remainingCharacters = min(max(characterBudget, 0), 20_000) }
 
   mutating func register(_ citations: [ProjectCitation], allowed: Set<ProjectCitation.Target>) -> AgentToolOutcome {
-    guard citations.count <= 80, citations.allSatisfy({ allowed.contains($0.target) && !$0.excerpt.isEmpty }) else {
+    guard citations.count <= 80, citations.allSatisfy({ allowed.contains($0.target) && !$0.excerpt.isEmpty && $0.photo == nil }) else {
       return AgentToolOutcome(text: "対象範囲または資料の内容を確認できません。本文を渡していません。", isError: true)
     }
     var text = ""

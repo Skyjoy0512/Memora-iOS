@@ -41,6 +41,10 @@ struct ScopedAgentEvidenceChecks {
     dated.recordedAt = recordDate.addingTimeInterval(86_400)
     let revisedDate = recordEvidence.register([dated], allowed: [meeting])
     precondition(revisedDate.text.contains("【資料2】") && recordEvidence.references.last?.recordedAt == dated.recordedAt)
+    var photoCitation = dated
+    photoCitation.photo = .init(name: "whiteboard.jpg", byteCount: 2_048, modifiedAt: recordDate, textReadAt: recordDate)
+    let refused = recordEvidence.register([photoCitation], allowed: [meeting])
+    precondition(refused.isError && !refused.text.contains(photoCitation.excerpt) && recordEvidence.references.count == 2)
 
     var tiny = ScopedAgentEvidence(characterBudget: 10)
     precondition(tiny.register([first], allowed: [local]).isError && tiny.references.isEmpty)

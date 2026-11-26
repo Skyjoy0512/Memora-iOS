@@ -113,7 +113,7 @@ final class MemoraModel {
     return .init(text: "架空の資料", used: [])
   }
   func projectEvidenceStillAvailable(_ references: [ProjectCitation], projectID: UUID, cloud: Bool) async -> Bool { true }
-  func projectEvidenceAllowed(_ target: ProjectCitation.Target, projectID: UUID, cloud: Bool) -> Bool { true }
+  func projectCitationAllowed(_ citation: ProjectCitation, projectID: UUID, cloud: Bool) -> Bool { true }
   func projectMentionSelection(_ ids: [String], projectID: UUID) -> ProjectMentionSelection? {
     guard ids.isEmpty else { return nil }
     return ProjectMentionSelection(pluginIDs: [], toolNames: ProjectMentionSelection.readingTools, guidance: "")

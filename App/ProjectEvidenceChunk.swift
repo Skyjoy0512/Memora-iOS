@@ -8,4 +8,5 @@ struct ProjectEvidenceChunk: Hashable, Codable, Sendable {
   var page: Int?
   var time: TimeInterval?
   var recordedAt: Date?
+  var photo: ProjectCitation.Photo?
 }

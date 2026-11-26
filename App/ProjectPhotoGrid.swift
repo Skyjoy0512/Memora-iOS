@@ -140,35 +140,3 @@ struct ProjectPhotoGrid: View {
     }
   }
 }
-
-private struct ProjectPhotoViewer: View {
-  var photo: ProjectPhoto
-  @Environment(\.dismiss) private var dismiss
-  @State private var image: UIImage?
-
-  var body: some View {
-    NavigationStack {
-      Group {
-        if let image {
-          Image(uiImage: image)
-            .resizable()
-            .scaledToFit()
-        } else {
-          ProgressView()
-        }
-      }
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .background(MemoraPalette.background)
-      .navigationTitle(photo.recordTitle)
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .confirmationAction) {
-          ToolbarIconButton("閉じる", icon: .xmark) { dismiss() }
-        }
-      }
-    }
-    .task(id: photo.id) {
-      image = await MediaImageCache.image(named: photo.name, maxPixelSize: 2_048)
-    }
-  }
-}

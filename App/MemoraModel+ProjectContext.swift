@@ -40,7 +40,12 @@ extension MemoraModel {
         text = blocks.filter { citation.page == nil || $0.page == citation.page }.map(\.text).joined(separator: "\n")
       case .meeting(let id):
         guard let record = meeting(id: id) else { return false }
-        text = ([record.summary, record.summaryKnowledgeText] + record.transcript.map(\.text)).joined(separator: "\n")
+        if let photo = citation.photo {
+          guard let entry = projectPhotoEvidence(photo, recordID: id) else { return false }
+          text = entry.text
+        } else {
+          text = ([record.summary, record.summaryKnowledgeText] + record.transcript.map(\.text)).joined(separator: "\n")
+        }
       case .document(let id): text = document(id: id)?.plainText ?? ""
       case .task(let id):
         guard let task = self.task(id: id) else { return false }
@@ -54,16 +59,29 @@ extension MemoraModel {
 
   func projectCitationAllowed(_ citation: ProjectCitation, projectID: UUID, cloud: Bool) -> Bool {
     guard projectEvidenceAllowed(citation.target, projectID: projectID, cloud: cloud) else { return false }
+    if let photo = citation.photo {
+      guard !cloud, case .meeting(let id) = citation.target,
+            projectPhotoEvidence(photo, recordID: id) != nil else { return false }
+    }
     if case .meeting(let id) = citation.target, let recordedAt = citation.recordedAt {
       return meeting(id: id)?.createdAt == recordedAt
     }
     return true
   }
 
+  private func projectPhotoEvidence(_ photo: ProjectCitation.Photo, recordID: UUID) -> MediaIndexEntry? {
+    guard let entry = mediaIndexEntries.first(where: { $0.name == photo.name && $0.recordID == recordID }),
+          entry.byteCount == photo.byteCount, entry.fileModifiedAt == photo.modifiedAt,
+          entry.textReadAt == photo.textReadAt,
+          mediaIndexEntryHasLiveOriginal(entry) else { return nil }
+    return entry
+  }
+
   func projectContext(question: String, projectID: UUID, cloud: Bool, budget: Int,
                       onlyTarget: ProjectCitation.Target? = nil,
                       selectedTargets: Set<ProjectCitation.Target>? = nil) async -> ProjectContextBuilder.Context {
     let workspaceID = currentTeamID
+    let generation = aiWorkspaceGeneration
     let empty = ProjectContextBuilder.build(question: question, projectID: projectID, chunks: [], allowed: [], characterBudget: 0)
     guard !Task.isCancelled, !isRestoring, !isStoreProtected, space(id: projectID) != nil else { return empty }
     var inputs: [ProjectEvidenceInput] = []
@@ -108,10 +126,22 @@ extension MemoraModel {
       guard projectEvidenceAllowed(target, projectID: projectID, cloud: cloud), let name = source.extractedTextReference else { continue }
       guard let blocks = try? await ProjectSourceTextReader.readAsync(name),
             self.source(id: source.id)?.extractedTextReference == name else { continue }
-      guard !Task.isCancelled, currentTeamID == workspaceID, !isRestoring, !isStoreProtected else { return empty }
+      guard !Task.isCancelled, currentTeamID == workspaceID, aiWorkspaceGeneration == generation,
+            !isRestoring, !isStoreProtected else { return empty }
       guard projectEvidenceAllowed(target, projectID: projectID, cloud: cloud) else { continue }
       allowed.insert(target)
       inputs.append(ProjectEvidenceInput(target: target, title: source.title, blocks: blocks))
+    }
+    // Record photos have a local OCR index. Keep this evidence out of the FTS
+    // snapshot shared with cloud requests, and index a bounded pending batch.
+    var photoEntries: [MediaIndexEntry] = []
+    if !cloud {
+      let names = Set(records.filter { allowed.contains(.meeting($0.id)) }.flatMap { $0.photoFileNames ?? [] })
+      if !names.isEmpty, reconcileMediaIndex() {
+        await readPendingMediaText(for: names, limit: 6)
+        guard !Task.isCancelled, aiWorkspaceGeneration == generation, currentTeamID == workspaceID else { return empty }
+        photoEntries = mediaIndexEntries.filter { names.contains($0.name) && $0.textReadAt != nil && !$0.text.isEmpty }
+      }
     }
     let currentAllowed = allowed.filter { projectEvidenceAllowed($0, projectID: projectID, cloud: cloud) }
     let permittedInputs = inputs.filter { currentAllowed.contains($0.target) }
@@ -120,7 +150,9 @@ extension MemoraModel {
     if onlyTarget == nil, selectedTargets == nil {
       indexed = try? await ProjectSearchIndex.shared.retrieve(question: question, projectID: projectID, inputs: permittedInputs)
     } else { indexed = nil }
-    guard !Task.isCancelled, currentTeamID == workspaceID, !isRestoring, !isStoreProtected else { return empty }
+    guard !Task.isCancelled, currentTeamID == workspaceID, aiWorkspaceGeneration == generation,
+          !isRestoring, !isStoreProtected else { return empty }
+    let photos = photoEntries
     let context = await Task.detached(priority: .userInitiated) {
       let chunks = indexed ?? permittedInputs.flatMap { input in
         input.blocks.flatMap { block in
@@ -128,10 +160,20 @@ extension MemoraModel {
             title: input.title, page: block.page, time: block.time, recordedAt: input.recordedAt)
         }
       }
-      return ProjectContextBuilder.build(question: question, projectID: projectID, chunks: chunks,
+      let photoChunks = photos.flatMap { entry -> [ProjectEvidenceChunk] in
+        let target = ProjectCitation.Target.meeting(entry.recordID)
+        guard currentAllowed.contains(target), let modifiedAt = entry.fileModifiedAt,
+              let textReadAt = entry.textReadAt else { return [] }
+        let reference = ProjectCitation.Photo(name: entry.name, byteCount: entry.byteCount,
+          modifiedAt: modifiedAt, textReadAt: textReadAt)
+        return ProjectContextBuilder.split(entry.text, projectID: projectID, target: target,
+          title: entry.recordTitle, recordedAt: entry.recordDate, photo: reference)
+      }
+      return ProjectContextBuilder.build(question: question, projectID: projectID, chunks: chunks + photoChunks,
         allowed: Set(currentAllowed), characterBudget: budget, selectedTarget: onlyTarget)
     }.value
-    guard !Task.isCancelled, currentTeamID == workspaceID, !isRestoring, !isStoreProtected else { return empty }
+    guard !Task.isCancelled, currentTeamID == workspaceID, aiWorkspaceGeneration == generation,
+          !isRestoring, !isStoreProtected else { return empty }
     return context
   }
 }

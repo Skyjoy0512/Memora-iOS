@@ -7,6 +7,7 @@ struct ProjectChatView: View {
   @State private var isRenaming = false
   @State private var isDeleting = false
   @State private var editingTask: MemoraTask?
+  @State private var viewingPhoto: ProjectPhoto?
   @State private var sourceMissing = false
 
   var body: some View {
@@ -33,7 +34,7 @@ struct ProjectChatView: View {
                     DisclosureGroup("出典") {
                       ForEach(message.citations) { citation in
                         Button { open(citation, projectID: thread.projectID) } label: {
-                          Label(citationLabel(citation), icon: .docText)
+                          Label(citationLabel(citation), icon: citation.photo == nil ? .docText : .photo)
                             .font(MemoraTypography.metadata).multilineTextAlignment(.leading)
                             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                         }
@@ -89,6 +90,7 @@ struct ProjectChatView: View {
       }
       .sheet(isPresented: $isRenaming) { ProjectChatRenameSheet(thread: thread) }
       .sheet(item: $editingTask) { task in TaskEditView(task: task) }
+      .sheet(item: $viewingPhoto) { ProjectPhotoViewer(photo: $0) }
       .alert("元のソースが見つかりません", isPresented: $sourceMissing) { Button("閉じる", role: .cancel) {} }
       .confirmationDialog("このチャットを削除しますか？", isPresented: $isDeleting, titleVisibility: .visible) {
         Button("削除", role: .destructive) { if model.deleteProjectChat(threadID) { dismiss() } }
@@ -98,7 +100,7 @@ struct ProjectChatView: View {
   }
 
   private func citationLabel(_ citation: ProjectCitation) -> String {
-    let location = citation.page.map { "ページ\($0)" }
+    let location = citation.photo.map { _ in "写真の文字" } ?? citation.page.map { "ページ\($0)" }
       ?? ProjectCitationLocation.playbackTime(citation.time).map { MemoraFormat.duration($0) }
     return [citation.title, citation.recordDateLabel, location].compactMap { $0 }.joined(separator: " · ")
   }
@@ -116,8 +118,11 @@ struct ProjectChatView: View {
         } else { model.libraryPath.append(.projectSource(id)) }
       } else { sourceMissing = true }
     case .meeting(let id):
-      if model.meeting(id: id) != nil {
-        if let time = ProjectCitationLocation.playbackTime(citation.time) {
+      if let record = model.meeting(id: id) {
+        if let photo = citation.photo {
+          viewingPhoto = ProjectPhoto(name: photo.name, date: record.createdAt,
+            recordID: id, recordTitle: record.displayTitle)
+        } else if let time = ProjectCitationLocation.playbackTime(citation.time) {
           model.libraryPath.append(.meetingCitation(id, time))
         } else { model.libraryPath.append(.transcript(id)) }
       } else { sourceMissing = true }
