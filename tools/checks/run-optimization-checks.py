@@ -29,7 +29,7 @@ checks = [
     ('ProjectChatHistoryChecks', ['ProjectCitation', 'ProjectChatTurn', 'ProjectChatThread', 'ProjectChatHistory'], []),
     ('RecordStoreFailureChecks', ['RecordStore', 'DraftStore', 'LocalSaveFailure'], ['-swift-version', '6', '-DDEBUG']),
     ('HealthReviewLoaderChecks', ['HealthReviewSnapshot', 'HealthReviewLoader', 'ReviewPeriod'], []),
-    ('JournalPerformanceChecks', ['TaskOwnership', 'TaskRelationships'], ['-O']),
+    ('JournalPerformanceChecks', ['TaskOwnership', 'TaskRelationships', 'MemoraTask', 'TaskProgress', 'RecordPrivacy', 'SummarySensitivity'], ['-O']),
     ('JournalActivityDaysChecks', ['JournalActivityDays', 'TaskOwnership', 'MemoraTask', 'TaskRelationships', 'TaskProgress', 'RecordPrivacy', 'SummarySensitivity'], []),
     ('RecordPrivacyChecks', ['RecordPrivacy', 'RecordAccessPolicy', 'SummarySensitivity'], []),
     ('RootNavigationChecks', ['RootTab', 'RootNavigation', 'LibraryRoute', 'LibrarySection', 'AIQueryScope', 'MemoraArtwork'], []),

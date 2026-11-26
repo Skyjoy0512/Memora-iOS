@@ -15,13 +15,20 @@ struct RecordingResourceLifecycleChecks {
     precondition(model.recordingTicker != nil)
     precondition((model.levelTicker != nil) == !systemConserves)
     precondition(model.recorder.meteringEnabled == !systemConserves)
+    precondition(model.recordingSilenceWatch?.enabled == !systemConserves)
+    precondition((model.recordingSilenceTicker != nil) == !systemConserves)
 
     let foregroundTicker = model.recordingTicker!
     let meterTicker = model.levelTicker
+    let silenceTicker = model.recordingSilenceTicker
+    model.isRecordingQuiet = true
     model.updateRecordingResources(isForeground: false)
     precondition(foregroundTicker.isCancelled)
     precondition(meterTicker == nil || meterTicker!.isCancelled)
     precondition(model.recordingTicker == nil && model.levelTicker == nil)
+    precondition(silenceTicker == nil || silenceTicker!.isCancelled)
+    precondition(model.recordingSilenceTicker == nil && !model.isRecordingQuiet)
+    precondition(model.recordingSilenceWatch?.enabled == false)
     precondition(model.recordingElapsed == model.recorder.recordedDuration)
     precondition(!model.recorder.meteringEnabled && model.levelMeter.level == 0)
 
@@ -46,6 +53,7 @@ struct RecordingResourceLifecycleChecks {
     model.refreshRecordingResources()
     precondition(model.recordingConservesResources)
     precondition(model.recordingTicker != nil && model.levelTicker == nil)
+    precondition(model.recordingSilenceTicker == nil && model.recordingSilenceWatch?.enabled == false)
     precondition(!model.recorder.meteringEnabled)
     precondition(model.realtimeTranscriber.powerSuspensions > 0)
     precondition(!model.realtimeTranscriber.running)
@@ -79,12 +87,22 @@ final class MemoraModel {
   var recordingElapsed: TimeInterval = 0
   var recordingTicker: Task<Void, Never>?
   var levelTicker: Task<Void, Never>?
+  var recordingSilenceWatch: SilenceWatchFixture? = SilenceWatchFixture()
+  var recordingSilenceTicker: Task<Void, Never>?
+  var isRecordingQuiet = false
   var recorder = RecorderFixture()
   var levelMeter = LevelFixture()
   var realtimeTranscriber = RealtimeTranscriptionService()
 
   func startRecordingTicker() { recordingTicker = Task {} }
   func startLevelTicker() { levelTicker = Task {} }
+  func startSilenceTicker() { recordingSilenceTicker = Task {} }
+}
+
+@MainActor
+final class SilenceWatchFixture {
+  var enabled = false
+  func setEnabled(_ enabled: Bool) { self.enabled = enabled }
 }
 
 @MainActor

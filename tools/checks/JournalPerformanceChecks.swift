@@ -5,9 +5,14 @@ struct JournalPerformanceChecks {
   static func main() {
     let names = ["山田 太郎", "TARO"]
     let tasks = (0..<1_000).map { number in
-      MemoraTask(ownedByMe: number.isMultiple(of: 5) ? true : nil,
-        assignee: number.isMultiple(of: 3) ? "ＴＡＲＯ" : number.isMultiple(of: 2) ? " 自分 " : "他人", meetingID: UUID())
+      MemoraTask(id: UUID(), title: "合成タスク", meetingID: UUID(),
+        assignee: number.isMultiple(of: 3) ? "ＴＡＲＯ" : number.isMultiple(of: 2) ? " 自分 " : "他人",
+        isCompleted: false, ownedByMe: number.isMultiple(of: 5) ? true : nil,
+        ownerNeedsConfirmation: number.isMultiple(of: 7))
     }
+    let unconfirmed = MemoraTask(id: UUID(), title: "要確認", assignee: "ＴＡＲＯ", isCompleted: false,
+      ownerNeedsConfirmation: true)
+    precondition(!TaskOwnership.isMine(unconfirmed, names: names))
     precondition(TaskOwnership.ownedTasks(tasks, names: names) == tasks.filter { TaskOwnership.isMine($0, names: names) })
     measure("ownership-before", count: tasks.count) { tasks.filter { TaskOwnership.isMine($0, names: names) }.count }
     measure("ownership-batched", count: tasks.count) { TaskOwnership.ownedTasks(tasks, names: names).count }
@@ -27,5 +32,3 @@ struct JournalPerformanceChecks {
     print(String(format: "%@,%d,median=%.3f,p95=%.3f,max=%.3f", name, count, samples[10], samples[19], samples[20]))
   }
 }
-
-struct MemoraTask: Equatable { var ownedByMe: Bool?; var assignee: String?; var meetingID: UUID?; var relationships = TaskRelationships() }
