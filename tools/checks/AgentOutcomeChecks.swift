@@ -45,6 +45,16 @@ struct AgentOutcomeChecks {
     duplicate.spaces = [.init(name: "既存")]
     let existing = await duplicate.createProjectTool(.init(id: "project", name: "create_project", arguments: ["name": "既存"]), messageID: duplicate.aiMessages[1].id)
     precondition(!existing.isError && existing.dataChange == .none)
+    let history = MemoraModel()
+    let citation = ProjectCitation(target: .meeting(UUID()), title: "記録の写真", excerpt: "写真の文字",
+      photo: .init(name: "fixture.jpg", byteCount: 1, modifiedAt: .now, textReadAt: .now))
+    history.aiMessages = [
+      AIChatMessage(role: .user, text: "質問"),
+      AIChatMessage(role: .assistant, text: "通常の履歴"),
+      AIChatMessage(role: .assistant, text: "写真由来の回答", sourceCitations: [citation]),
+      AIChatMessage(role: .assistant, text: "生成途中", isThinking: true),
+    ]
+    precondition(history.aiConversationContext() == "利用者: 質問\n回答: 通常の履歴")
     print("PASS: production approval/aggregation/retry methods, confirmed/failed/partial/unknown/read-only/no-op outcomes, sticky retry barriers, and memory/project/journal tool save branches; storage/provider boundaries are fixtures.")
   }
 }
@@ -80,9 +90,12 @@ struct AgentOutcomeChecks {
 struct AIChatMessage {
   enum Role { case user, assistant }
   var role: Role
+  var text = ""
   var id = UUID(); var didChangeData = false; var hasUnconfirmedDataChange = false
   var residentName: String?; var attachment: String?; var cloudProvenance: Provenance?
   var agentSteps: [Step] = []
+  var sourceCitations: [ProjectCitation] = []
+  var isThinking = false
   struct Provenance { var memoryFingerprint: String }
   struct Step { var output: [String] = [] }
 }

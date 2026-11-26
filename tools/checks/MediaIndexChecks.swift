@@ -29,6 +29,10 @@ struct MediaIndexChecks {
     precondition(model.currentPhotoEvidence(citation)?.name == original)
     let persisted = try model.persistedEntries()
     precondition(persisted.first { $0.name == other }?.textReadAt == nil)
+    let indexed = await model.indexedPhotoContext(for: Set(model.meetings.map(\.id)), question: "水晶の決定事項", budget: 500)
+    precondition(indexed.used.count == 1 && indexed.used[0].photo?.name == original)
+    let outsideScope = await model.indexedPhotoContext(for: [model.meetings[1].id], question: "水晶の決定事項", budget: 500)
+    precondition(outsideScope.text.isEmpty && outsideScope.used.isEmpty)
     var alteredCitation = citation
     alteredCitation.excerpt = "元画像にない情報"
     precondition(model.currentPhotoEvidence(alteredCitation) == nil)
@@ -39,6 +43,8 @@ struct MediaIndexChecks {
     model.isStoreProtected = false
     try replace(original, version: 2)
     precondition(model.currentPhotoEvidence(citation) == nil)
+    let stale = await model.indexedPhotoContext(for: [record.id], question: "水晶の決定事項", budget: 500)
+    precondition(stale.used.isEmpty)
   }
 
   @MainActor static func prioritizesRequestedPhotos() async throws {

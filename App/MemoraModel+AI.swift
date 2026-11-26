@@ -359,11 +359,14 @@ extension MemoraModel {
     let contextBudget = AIEngineService.contextCharacterLimit(for: engine, llm: llm, task: .chat)
     let sourcePack = await sourceQueryContext(request, cloud: cloud, budget: min(24_000, max(700, contextBudget / 2)))
     let photoPack: ProjectContextBuilder.Context
-    if effectiveEngine == .foundation, case .file = request.scope,
-       let record = permitted.first, record.photoFileNames?.isEmpty == false {
-      safeStage("資料を確認しています")
-      photoPack = await recordPhotoContext(record, question: request.effectiveQuestion,
-        budget: min(1_000, contextBudget / 4))
+    if effectiveEngine == .foundation, request.sourceID == nil {
+      let photoBudget = min(1_000, contextBudget / 4)
+      if case .file = request.scope, let record = permitted.first, record.photoFileNames?.isEmpty == false {
+        safeStage("資料を確認しています")
+        photoPack = await recordPhotoContext(record, question: request.effectiveQuestion, budget: photoBudget)
+      } else {
+        photoPack = await indexedPhotoContext(for: recordIDs, question: request.effectiveQuestion, budget: photoBudget)
+      }
     } else {
       photoPack = .init(text: "", used: [], matchedCount: 0)
     }
@@ -937,8 +940,11 @@ extension MemoraModel {
     let settled = aiMessages.filter { $0.role != .assistant || !$0.isThinking }
     let turns = settled.suffix(6)
     return turns
-      .map { message in
-        "\(message.role == .user ? "利用者" : "回答"): \(message.text)"
+      .compactMap { message in
+        // Photo evidence is selected and revalidated for each question, even
+        // when continuing a saved answer that used an older photo snapshot.
+        guard message.role != .assistant || !message.sourceCitations.contains(where: { $0.photo != nil }) else { return nil }
+        return "\(message.role == .user ? "利用者" : "回答"): \(message.text)"
       }
       .joined(separator: "\n")
   }
