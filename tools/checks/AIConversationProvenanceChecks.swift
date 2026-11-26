@@ -44,6 +44,15 @@ struct AIConversationProvenanceChecks {
     let reportID = UUID()
     let entry = AIConversationEntry(id: UUID(), question: "質問", answer: "回答", scopeLabel: "全体",
       createdAt: .now, cloudProvenance: provenance, webResearchReportID: reportID)
+    var authorizedEntry = entry
+    cloud.cloudReplayAuthorizationVersion = 1
+    authorizedEntry.cloudProvenance = cloud
+    authorizedEntry.episode = AIEpisode(id: entry.id, sessionID: UUID(), date: entry.createdAt,
+      topic: "話題", objective: "質問", summary: "概要", provenance: cloud)
+    let restored = authorizedEntry.withoutCloudReplayAuthorization
+    precondition(restored.answer == entry.answer && restored.cloudProvenance == provenance)
+    precondition(restored.episode?.provenance == provenance && restored.episode?.summary == "概要")
+    precondition(cloudReplay(authorizedEntry.cloudProvenance!) && !cloudReplay(restored.cloudProvenance!))
     let data = try JSONEncoder().encode(entry)
     let decoded = try JSONDecoder().decode(AIConversationEntry.self, from: data)
     precondition(decoded.cloudProvenance == provenance)

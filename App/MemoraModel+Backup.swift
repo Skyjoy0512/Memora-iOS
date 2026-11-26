@@ -282,6 +282,7 @@ extension MemoraModel {
 
       // The records go in as one write. If it fails, only the files this restore
       // just created are taken back, so the device is left as it was.
+      let restoredHistory = manifest.aiHistory.map(\.withoutCloudReplayAuthorization)
       let stored = persistBatch {
         [
           (key: StorageKey.meetings, data: try RecordStore.encoded(manifest.meetings)),
@@ -289,7 +290,7 @@ extension MemoraModel {
           (key: StorageKey.tasks, data: try RecordStore.encoded(manifest.tasks)),
           (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(manifest.lifeLogEntries)),
           (key: StorageKey.people, data: try RecordStore.encoded(manifest.people)),
-          (key: StorageKey.aiHistory, data: try RecordStore.encoded(manifest.aiHistory)),
+          (key: StorageKey.aiHistory, data: try RecordStore.encoded(restoredHistory)),
           (key: StorageKey.aiMemories, data: try RecordStore.encoded(manifest.aiMemories ?? aiMemories)),
           (key: "memora.mailDrafts.v1", data: try RecordStore.encoded(manifest.mailDrafts ?? mailDrafts)),
           (key: "memora.companyTemplates.v1", data: try RecordStore.encoded(manifest.companyTemplates ?? companyTemplates)),
@@ -310,7 +311,7 @@ extension MemoraModel {
       tasks = manifest.tasks
       lifeLogEntries = manifest.lifeLogEntries
       people = manifest.people
-      aiHistory = manifest.aiHistory
+      aiHistory = restoredHistory
       aiMemories = manifest.aiMemories ?? aiMemories
       companyTemplates = manifest.companyTemplates ?? companyTemplates
       mailDrafts = manifest.mailDrafts ?? mailDrafts

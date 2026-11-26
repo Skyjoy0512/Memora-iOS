@@ -19,6 +19,14 @@ struct AIConversationEntry: Identifiable, Hashable, Codable {
   var attachmentCitations: [AIAttachmentCitation]?
   var attachment: AIAttachmentFileReference?
 
+  /// A backup restores what was read without restoring permission to send it.
+  var withoutCloudReplayAuthorization: Self {
+    var entry = self
+    entry.cloudProvenance?.cloudReplayAuthorizationVersion = nil
+    entry.episode?.provenance?.cloudReplayAuthorizationVersion = nil
+    return entry
+  }
+
   init(
     id: UUID,
     question: String,
