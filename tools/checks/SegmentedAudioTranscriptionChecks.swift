@@ -10,6 +10,8 @@ enum SegmentedAudioTranscriptionChecks {
     let second = originals.appendingPathComponent("second.wav")
     try tone(first, rate: 8_000, frames: 450 * 8_000, frequency: 440)
     try tone(second, rate: 8_000, frames: 451 * 8_000, frequency: 880)
+    let unchangedDate = Date(timeIntervalSince1970: 1_700_000_000)
+    try FileManager.default.setAttributes([.modificationDate: unchangedDate], ofItemAtPath: second.path)
     let manifest = RecordingAudioManifest(recordingID: UUID(), sampleRate: 8_000, parts: [
       .init(fileName: "first.wav", frameOffset: 0, frameCount: 450 * 8_000, state: .finalized),
       .init(fileName: "second.wav", frameOffset: 450 * 8_000, frameCount: 451 * 8_000, state: .finalized)
@@ -45,18 +47,19 @@ enum SegmentedAudioTranscriptionChecks {
     precondition(same == segments)
 
     // Same file size and mtime cannot reuse the old content's result.
-    let attrs = try second.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey])
-    let handle = try FileHandle(forUpdating: second)
-    try handle.seek(toOffset: UInt64(attrs.fileSize! - 4))
-    try handle.write(contentsOf: Data([0, 0, 0, 0]))
-    try handle.close()
-    try FileManager.default.setAttributes([.modificationDate: attrs.contentModificationDate!], ofItemAtPath: second.path)
+    let originalSize = try second.resourceValues(forKeys: [.fileSizeKey]).fileSize
+    // Replace the samples through the encoder to keep the WAV container valid.
+    try tone(second, rate: 8_000, frames: 451 * 8_000, frequency: 660)
+    try FileManager.default.setAttributes([.modificationDate: unchangedDate], ofItemAtPath: second.path)
+    let replacement = try URL(fileURLWithPath: second.path).resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey])
+    precondition(replacement.fileSize == originalSize && replacement.contentModificationDate == unchangedDate)
     let changedCalls = Mutex(0)
     let changed = await RecordedAudioTranscription.transcribe(input, locale: .init(identifier: "ja-JP"), vocabulary: [],
       checkpointStore: .init(directory: cache), staging: staging, checkReadiness: {}) { _ in
         changedCalls.withLock { $0 += 1 }; return segment()
       }
-    guard case .segments = changed else { preconditionFailure("Changed original failed") }
+    if case .failed(let reason) = changed { preconditionFailure("Changed original failed: \(reason)") }
+    guard case .segments = changed else { preconditionFailure("Changed original produced no segments") }
     precondition(changedCalls.withLock { $0 } == 2)
 
     let mutated = Mutex(false)

@@ -2,7 +2,7 @@ import Foundation
 
 @main
 enum LicensePersistenceChecks {
-  static func main() throws {
+  @MainActor static func main() throws {
     let model = MemoraModel()
     KeychainStore.succeeds = false
     do { try model.activateLicense(code: "A"); preconditionFailure("Failed Keychain write activated license") }
@@ -43,7 +43,7 @@ enum LicensePersistenceChecks {
   }
 }
 
-final class MemoraModel {
+@MainActor final class MemoraModel {
   var license: MemoraLicense?
   var plan: MemoraPlan?
   var isSubscribed = false
