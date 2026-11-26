@@ -283,6 +283,7 @@ extension MemoraModel {
       // The records go in as one write. If it fails, only the files this restore
       // just created are taken back, so the device is left as it was.
       let restoredHistory = manifest.aiHistory.map(\.withoutCloudReplayAuthorization)
+      let restoredProjectChats = (manifest.projectChats ?? []).map(\.withoutCloudReplayAuthorization)
       let stored = persistBatch {
         [
           (key: StorageKey.meetings, data: try RecordStore.encoded(manifest.meetings)),
@@ -296,7 +297,7 @@ extension MemoraModel {
           (key: "memora.companyTemplates.v1", data: try RecordStore.encoded(manifest.companyTemplates ?? companyTemplates)),
           (key: StorageKey.documents, data: try RecordStore.encoded(manifest.documents ?? [])),
           (key: StorageKey.projectSources, data: try RecordStore.encoded(manifest.projectSources ?? [])),
-          (key: StorageKey.projectChats, data: try RecordStore.encoded(manifest.projectChats ?? [])),
+          (key: StorageKey.projectChats, data: try RecordStore.encoded(restoredProjectChats)),
           (key: "memora.webResearch.v1", data: try RecordStore.encoded(manifest.webResearchReports ?? [])),
           (key: StorageKey.customSkills, data: try RecordStore.encoded(manifest.customSkills ?? [])),
           (key: StorageKey.skillUsage, data: try RecordStore.encoded(manifest.skillSelections ?? []))
@@ -317,7 +318,7 @@ extension MemoraModel {
       mailDrafts = manifest.mailDrafts ?? mailDrafts
       documents = manifest.documents ?? []
       projectSources = manifest.projectSources ?? []
-      projectChats = manifest.projectChats ?? []
+      projectChats = restoredProjectChats
       webResearchReports = manifest.webResearchReports ?? []
       customSkills = manifest.customSkills ?? []
       skillLastSelectedAt = Dictionary((manifest.skillSelections ?? []).map { ($0.skillID, $0.selectedAt) }, uniquingKeysWith: max)

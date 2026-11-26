@@ -67,7 +67,47 @@ struct ProjectChatDispatchChecks {
     precondition(model.projectChats.isEmpty && model.projectChatJobs.isEmpty && model.projectChatRequestIDs.isEmpty)
     precondition(model.projectChatStages.isEmpty && model.projectChatPartialAnswers.isEmpty && model.projectChatBusyIDs.isEmpty)
     precondition(AIEngineService.pending.isEmpty)
-    print("ProjectChatDispatchChecks: passed (production send/cancel/delete + memory storage/model mocks, suspended retrieval, immediate resend, A-B-A, late callbacks/final/cleanup; no API, keys or files)")
+
+    let target = ProjectCitation.Target.meeting(UUID())
+    let photo = ProjectCitation(target: target, title: "ホワイトボード", excerpt: "端末内の写真の文字",
+      photo: .init(name: "private.jpg", byteCount: 1_024, modifiedAt: .now, textReadAt: .now))
+    let ordinary = ProjectCitation(target: target, title: "議事録", excerpt: "参照を許可した資料の文字")
+    let localTurn = ProjectChatTurn(role: .assistant, text: photo.excerpt, contextReferences: [photo])
+    model.projectChats = [ProjectChatThread(id: id, projectID: project, title: "会話",
+      messages: [ProjectChatTurn(role: .user, text: "写真の確認"), localTurn])]
+    model.contextReferences = [ordinary]
+    precondition(model.sendProjectChat(id, question: "local-follow-up"))
+    let localJob = model.projectChatJobs[id]!
+    await until { AIEngineService.pending["local-follow-up"] != nil }
+    precondition(AIEngineService.histories["local-follow-up"]?.contains(photo.excerpt) == true)
+    AIEngineService.finish("local-follow-up", text: "写真を含む会話の続き")
+    await localJob.value
+    let derivedTurn = model.projectChat(id: id)?.messages.last
+    precondition(derivedTurn?.contextReferences == [ordinary, photo] && derivedTurn?.cloudReplayAuthorizationVersion == nil)
+
+    model.revokedEvidence = [photo]
+    precondition(model.sendProjectChat(id, question: "after-revocation"))
+    let revokedJob = model.projectChatJobs[id]!
+    await until { AIEngineService.pending["after-revocation"] != nil }
+    precondition(AIEngineService.histories["after-revocation"] == "")
+    AIEngineService.finish("after-revocation", text: ordinary.excerpt)
+    await revokedJob.value
+
+    model.askAIConfiguration.engine = .cloud
+    precondition(model.sendProjectChat(id, question: "cloud-follow-up", allowsPaidRequest: true))
+    let cloudJob = model.projectChatJobs[id]!
+    await until { AIEngineService.pending["cloud-follow-up"] != nil }
+    precondition(AIEngineService.histories["cloud-follow-up"] == "")
+    AIEngineService.finish("cloud-follow-up", text: ordinary.excerpt)
+    await cloudJob.value
+    precondition(model.projectChat(id: id)?.messages.last?.cloudReplayAuthorizationVersion == 1)
+    precondition(model.sendProjectChat(id, question: "authorized-cloud-follow-up", allowsPaidRequest: true))
+    let replayJob = model.projectChatJobs[id]!
+    await until { AIEngineService.pending["authorized-cloud-follow-up"] != nil }
+    precondition(AIEngineService.histories["authorized-cloud-follow-up"]?.contains("ユーザー: cloud-follow-up") == true)
+    AIEngineService.finish("authorized-cloud-follow-up", text: ordinary.excerpt)
+    await replayJob.value
+    print("ProjectChatDispatchChecks: passed (production dispatch, generation, transitive evidence, revocation and cloud replay; model and persistence fixtures)")
   }
 
   private static func until(_ predicate: () -> Bool) async {
@@ -101,6 +141,8 @@ final class MemoraModel {
   var enabledAgentTools: [AgentTool] = []
   var suspendNextContext = false
   var contextContinuation: CheckedContinuation<Void, Never>?
+  var contextReferences: [ProjectCitation] = []
+  var revokedEvidence: Set<ProjectCitation> = []
 
   func persistNow(_ value: [ProjectChatThread], forKey: String) -> Bool { true }
   func space(id: UUID) -> MockProject? { MockProject(name: "架空プロジェクト") }
@@ -110,9 +152,11 @@ final class MemoraModel {
       suspendNextContext = false
       await withCheckedContinuation { contextContinuation = $0 }
     }
-    return .init(text: "架空の資料", used: [])
+    return .init(text: "架空の資料", used: contextReferences)
   }
-  func projectEvidenceStillAvailable(_ references: [ProjectCitation], projectID: UUID, cloud: Bool) async -> Bool { true }
+  func projectEvidenceStillAvailable(_ references: [ProjectCitation], projectID: UUID, cloud: Bool) async -> Bool {
+    revokedEvidence.isDisjoint(with: references)
+  }
   func projectCitationAllowed(_ citation: ProjectCitation, projectID: UUID, cloud: Bool) -> Bool { true }
   func projectMentionSelection(_ ids: [String], projectID: UUID) -> ProjectMentionSelection? {
     guard ids.isEmpty else { return nil }
@@ -145,6 +189,7 @@ enum AIEngineService {
   static var pending: [String: CheckedContinuation<AIAnswerResult, Never>] = [:]
   static var callbacks: [String: @MainActor (String) -> Void] = [:]
   static var requests: [String] = []
+  static var histories: [String: String] = [:]
   static func effectiveEngine(_ engine: MockEngine) -> MockEngine { engine }
   static func contextCharacterLimit(for engine: MockEngine) -> Int { 10_000 }
   static func contextCharacterLimit(for engine: MockEngine, llm: MockLLM, task: ContextTaskKind) -> Int { 10_000 }
@@ -152,6 +197,7 @@ enum AIEngineService {
   static func answer(engine: MockEngine, llm: MockLLM, question: String, scopeLabel: String, context: String,
                      history: String, onText: (@MainActor (String) -> Void)?, authorize: (@MainActor () -> Bool)? = nil) async -> AIAnswerResult {
     requests.append(question)
+    histories[question] = history
     callbacks[question] = onText
     onText?("partial " + question)
     return await withCheckedContinuation { pending[question] = $0 }

@@ -11,4 +11,12 @@ struct ProjectChatThread: Identifiable, Hashable, Codable, Sendable {
   var messages: [ProjectChatTurn] = []
   var pendingMessageID: UUID?
   var lastFailure: String?
+
+  var withoutCloudReplayAuthorization: Self {
+    var thread = self
+    for index in thread.messages.indices {
+      thread.messages[index].cloudReplayAuthorizationVersion = nil
+    }
+    return thread
+  }
 }

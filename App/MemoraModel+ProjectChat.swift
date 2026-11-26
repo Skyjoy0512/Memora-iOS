@@ -107,7 +107,7 @@ extension MemoraModel {
       for message in historyMessages.suffix(8) {
         guard isCurrentExecution() else { return }
         if message.role == .user { verifiedHistory.append(message); continue }
-        let references = message.contextReferences ?? message.citations
+        let references = ProjectChatHistory.referencesForReplay(message, cloud: cloud)
         if !references.isEmpty, references.allSatisfy({ selection.permits($0.target) }),
            await projectEvidenceStillAvailable(references, projectID: projectID, cloud: cloud) {
           verifiedHistory.append(message)
@@ -118,9 +118,8 @@ extension MemoraModel {
           verifiedHistory.append(rejected)
         }
       }
-      let allowed = Set(verifiedHistory.flatMap { ($0.contextReferences ?? $0.citations).map(\.target) })
-      let history = ProjectChatHistory.text(verifiedHistory, allowed: allowed, budget: limit / 3)
-      let allEvidence = context.used + verifiedHistory.flatMap { $0.contextReferences ?? $0.citations }
+      let history = ProjectChatHistory.context(verifiedHistory, budget: limit / 3)
+      let allEvidence = context.used + history.references
       guard isCurrentExecution(),
             await projectEvidenceStillAvailable(allEvidence, projectID: projectID, cloud: cloud), isCurrentExecution() else {
         finishProjectChatFailure(id, requestID: user.id, message: "ソースの内容・所属・許可が変更されました。もう一度確認してください。")
@@ -145,9 +144,9 @@ extension MemoraModel {
       if cloud, configuration.llm.supportsToolCalling, !configuration.llm.isMemoraIntelligence,
          [.searchRecords, .readRecord, .listTasks].contains(where: { enabledAgentTools.contains($0) && selection.toolNames.contains($0.rawValue) }) {
         let outcome = await answerProjectAgent(question: question, projectID: projectID, llm: configuration.llm,
-          initialContext: context, history: history,
+          initialContext: context, history: history.text,
           selection: selection,
-          historyEvidence: verifiedHistory.flatMap { $0.contextReferences ?? $0.citations },
+          historyEvidence: history.references,
           characterBudget: min(16_000, limit * 2 / 3),
           isCurrent: isCurrentExecution,
           onText: onText, onStage: { stage in
@@ -158,7 +157,7 @@ extension MemoraModel {
         sentReferences = outcome.references
       } else {
         result = await AIEngineService.answer(engine: configuration.engine, llm: configuration.llm,
-          question: question, scopeLabel: project.name, context: instruction + context.text + selection.guidance, history: history, onText: onText, authorize: canUseEvidence)
+          question: question, scopeLabel: project.name, context: instruction + context.text + selection.guidance, history: history.text, onText: onText, authorize: canUseEvidence)
       }
       guard isCurrentExecution(),
             await projectEvidenceStillAvailable(allEvidence + sentReferences, projectID: projectID, cloud: cloud), isCurrentExecution() else {
@@ -171,10 +170,13 @@ extension MemoraModel {
       current.pendingMessageID = nil
       switch result {
       case .answer(let text):
+        var seen = Set<ProjectCitation>()
+        let contextReferences = (sentReferences + history.references).filter { seen.insert($0).inserted }
         let response = ProjectChatTurn(role: .assistant, text: text,
           engineLabel: AIEngineService.effectiveEngine(configuration.engine).label,
           modelLabel: AIEngineService.modelLabel(engine: configuration.engine, llm: configuration.llm),
-          citations: ProjectContextBuilder.cited(text, from: sentReferences), contextReferences: sentReferences)
+          citations: ProjectContextBuilder.cited(text, from: sentReferences), contextReferences: contextReferences,
+          cloudReplayAuthorizationVersion: cloud ? 1 : nil)
         current.messages.append(response)
         current.lastFailure = nil
       case .failure(let reason): current.lastFailure = reason.message
