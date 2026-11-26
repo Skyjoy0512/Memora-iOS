@@ -14,6 +14,8 @@ parser.add_argument('--segments-per-record', type=int, choices=[0, 20], default=
 parser.add_argument('--samples', type=int, choices=range(3, 22, 2), default=21, metavar='ODD_COUNT',
                     help='Write samples per record count, from 3 to 21.')
 parser.add_argument('--store-revision', help='Compile LocalStore from this Git revision for comparison.')
+parser.add_argument('--layout', choices=['collection', 'records'], default='collection',
+                    help='Compare whole-array writes with record-sized updates in an isolated database.')
 args = parser.parse_args()
 names = ['Meeting', 'MeetingSource', 'MeetingStatus', 'RecordingMarker', 'TranscriptSegment',
          'RecordingAudioPart', 'RecordingAudioManifest',
@@ -33,6 +35,6 @@ with tempfile.TemporaryDirectory(prefix='memora-meeting-performance-', dir=os.en
     subprocess.run(['swiftc', '-O', 'Shared/MemoraIcon.swift', *['App/' + name + '.swift' for name in names],
                     str(local_store), 'tools/checks/MeetingPersistencePerformanceChecks.swift', '-o', binary], check=True)
     for count in args.counts:
-        subprocess.run([binary, str(count), directory, str(args.segments_per_record), str(args.samples)],
+        subprocess.run([binary, str(count), directory, str(args.segments_per_record), str(args.samples), args.layout],
                        check=True, timeout=240,
                        env={**os.environ, 'SWIFT_BACKTRACE': 'enable=no'})

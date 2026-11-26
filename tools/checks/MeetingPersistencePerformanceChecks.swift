@@ -2,7 +2,7 @@ import Foundation
 import Darwin
 import SQLite3
 
-/// Measures whole-document storage using synthetic meetings and production SQLite.
+/// Compares whole-collection and record-sized writes using synthetic meetings and production SQLite.
 @main
 enum MeetingPersistencePerformanceChecks {
   static func main() throws {
@@ -10,6 +10,7 @@ enum MeetingPersistencePerformanceChecks {
     let folder = URL(fileURLWithPath: CommandLine.arguments[2], isDirectory: true)
     let segmentCount = Int(CommandLine.arguments[3])!
     let sampleCount = Int(CommandLine.arguments[4])!
+    let byRecord = CommandLine.arguments[5] == "records"
     let url = folder.appendingPathComponent("meetings-\(count).sqlite")
     let store = LocalStore(fileURL: url)
     try store.prepare()
@@ -19,23 +20,42 @@ enum MeetingPersistencePerformanceChecks {
       duration: 300, source: .importFile, status: .ready, summary: String(repeating: "承認は未確定。条件を維持する。", count: 20),
       keyPoints: ["予算150万円"], decisions: [], openQuestions: ["承認日"], transcript: transcript,
       privacy: RecordPrivacy(updatedAt: Date(timeIntervalSince1970: 1_700_000_000))) }
+    let encoder = JSONEncoder()
+    let decoder = JSONDecoder()
+    let recordKeys = meetings.map { "fixture-meeting.\($0.id.uuidString)" }
+    if byRecord {
+      // Seed the alternative layout outside the write measurement. Batch sizes
+      // stay bounded so setup does not need the whole corpus encoded at once.
+      for start in stride(from: 0, to: count, by: 500) {
+        try autoreleasepool {
+          let writes = try (start..<min(count, start + 500)).map { index in
+            (recordKeys[index], try encoder.encode(meetings[index]))
+          }
+          try store.applyBatch(writes: writes, removing: [])
+        }
+      }
+    }
     var copyMS: [Double] = [], encodeMS: [Double] = [], sqliteMS: [Double] = [], totalMS: [Double] = []
+    var jsonBytes = 0
     var before = rusage()
     precondition(getrusage(RUSAGE_SELF, &before) == 0)
     for trial in 0..<sampleCount {
       try autoreleasepool {
         let start = ContinuousClock.now
+        var edited = meetings[count - 1]
+        edited.summary += "変更試行\(trial)"
         var candidate = meetings
-        candidate[count - 1].summary += "変更試行\(trial)"
+        if !byRecord { candidate[count - 1] = edited }
         let copied = ContinuousClock.now
-        let data = try JSONEncoder().encode(candidate)
+        let data = try byRecord ? encoder.encode(edited) : encoder.encode(candidate)
         let encoded = ContinuousClock.now
-        try store.applyBatch(writes: [("memoraMeetings", data), ("memoraTasks", Data("[]".utf8)),
+        try store.applyBatch(writes: [(byRecord ? recordKeys[count - 1] : "memoraMeetings", data), ("memoraTasks", Data("[]".utf8)),
           ("memoraPendingSummaryJobs", Data("[]".utf8))], removing: [])
         let saved = ContinuousClock.now
         copyMS.append(ms(start, copied)); encodeMS.append(ms(copied, encoded))
         sqliteMS.append(ms(encoded, saved)); totalMS.append(ms(start, saved))
-        precondition(candidate[0] == meetings[0] && candidate[count - 1].transcript == transcript)
+        jsonBytes = data.count
+        precondition(candidate[0] == meetings[0] && edited.transcript == transcript)
       }
     }
     var after = rusage()
@@ -44,10 +64,27 @@ enum MeetingPersistencePerformanceChecks {
     let reopened = LocalStore(fileURL: url)
     try reopened.prepare()
     let opened = ContinuousClock.now
-    guard case .data(let saved) = reopened.readOutcome("memoraMeetings") else { preconditionFailure("No saved record") }
-    let read = ContinuousClock.now
-    let decoded = try JSONDecoder().decode([Meeting].self, from: saved)
-    let decodeFinished = ContinuousClock.now
+    var readMS = 0.0
+    var decodeMS = 0.0
+    var decoded: [Meeting] = []
+    if byRecord {
+      for key in recordKeys {
+        try autoreleasepool {
+          let start = ContinuousClock.now
+          guard case .data(let saved) = reopened.readOutcome(key) else { preconditionFailure("Missing record") }
+          let read = ContinuousClock.now
+          decoded.append(try decoder.decode(Meeting.self, from: saved))
+          readMS += ms(start, read)
+          decodeMS += ms(read, .now)
+        }
+      }
+    } else {
+      guard case .data(let saved) = reopened.readOutcome("memoraMeetings") else { preconditionFailure("Missing collection") }
+      let read = ContinuousClock.now
+      decoded = try decoder.decode([Meeting].self, from: saved)
+      readMS = ms(opened, read)
+      decodeMS = ms(read, .now)
+    }
     var afterRead = rusage()
     precondition(getrusage(RUSAGE_SELF, &afterRead) == 0)
     precondition(decoded.count == count)
@@ -55,12 +92,13 @@ enum MeetingPersistencePerformanceChecks {
     var expectedLast = meetings[count - 1]
     expectedLast.summary += "変更試行\(sampleCount - 1)"
     precondition(decoded.last == expectedLast)
-    let row: [String: Any] = ["records": count, "segmentsPerRecord": segmentCount, "samples": sampleCount, "jsonBytes": saved.count,
+    let row: [String: Any] = ["layout": byRecord ? "records" : "collection", "records": count,
+      "segmentsPerRecord": segmentCount, "samples": sampleCount, "jsonBytes": jsonBytes,
       "copy": stats(copyMS), "encode": stats(encodeMS), "sqliteAtomicBatch": stats(sqliteMS), "total": stats(totalMS),
       "processPeakRSSBytes": after.ru_maxrss,
       "processCPUms": cpu(after) - cpu(before),
-      "warmReopen": ["openMS": ms(reopenStart, opened), "readMS": ms(opened, read),
-        "decodeMS": ms(read, decodeFinished), "processPeakRSSBytes": afterRead.ru_maxrss]]
+      "warmReopen": ["openMS": ms(reopenStart, opened), "readMS": readMS,
+        "decodeMS": decodeMS, "processPeakRSSBytes": afterRead.ru_maxrss]]
     print(String(decoding: try JSONSerialization.data(withJSONObject: row, options: .sortedKeys), as: UTF8.self))
     fflush(stdout)
   }
