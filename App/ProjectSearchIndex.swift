@@ -77,7 +77,13 @@ actor ProjectSearchIndex {
 
   private func open() throws {
     guard db == nil else { return }
-    try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+    let folder = fileURL.deletingLastPathComponent()
+    #if os(iOS)
+    guard MediaFiles.prepareProtectedDirectory(at: folder) else { throw Failure.database }
+    try protectIndexFiles()
+    #else
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    #endif
     var handle: OpaquePointer?
     guard sqlite3_open_v2(fileURL.path, &handle, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, nil) == SQLITE_OK,
           let handle else { if let handle { sqlite3_close(handle) }; throw Failure.database }
@@ -86,11 +92,25 @@ actor ProjectSearchIndex {
       try execute("PRAGMA journal_mode=WAL;")
       try execute("CREATE TABLE IF NOT EXISTS project_manifest (project TEXT NOT NULL, target TEXT NOT NULL, fingerprint TEXT NOT NULL, PRIMARY KEY(project,target));")
       try execute("CREATE VIRTUAL TABLE IF NOT EXISTS project_chunks USING fts5(project UNINDEXED, target UNINDEXED, payload UNINDEXED, tokens);")
+      #if os(iOS)
+      // New sidecars can appear when WAL starts. Apply protection before any
+      // derived record text is written through the newly opened connection.
+      try protectIndexFiles()
+      #endif
     } catch {
       sqlite3_close(handle); db = nil
       throw error
     }
   }
+
+  #if os(iOS)
+  private func protectIndexFiles() throws {
+    let manager = FileManager.default
+    for path in [fileURL.path, fileURL.path + "-wal", fileURL.path + "-shm"] where manager.fileExists(atPath: path) {
+      try manager.setAttributes([.protectionKey: FileProtectionType.complete], ofItemAtPath: path)
+    }
+  }
+  #endif
 
   private func synchronize(projectID: UUID, inputs: [ProjectEvidenceInput], maximumCharacters: Int) throws {
     let characterLimit = max(1, min(16_000_000, maximumCharacters))
