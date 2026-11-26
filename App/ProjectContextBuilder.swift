@@ -32,17 +32,23 @@ enum ProjectContextBuilder {
   static func build(question: String, projectID: UUID, chunks: [ProjectEvidenceChunk],
                     allowed: Set<ProjectCitation.Target>, characterBudget: Int,
                     selectedTarget: ProjectCitation.Target? = nil, marker: CitationMarker = .material) -> Context {
-    let terms = queryGrams(question)
-    let topics = question.components(separatedBy: "と").filter { !informativeGrams($0).isEmpty }
+    let dated = recordingDateQuery(question)
+    let query = dated?.topic ?? question
+    let terms = queryGrams(query)
+    let topics = query.components(separatedBy: "と").filter { !informativeGrams($0).isEmpty }
     let asksMultipleTopics = topics.count >= 2
-    let numbers = numberTokens(question)
+    let numbers = numberTokens(query)
     let requiredNumber = !asksMultipleTopics && numbers.count == 1 ? numbers.first.flatMap { $0.count >= 2 ? $0 : nil } : nil
-    let latinWords = question.contains(where: { $0.isLetter && !$0.isASCII }) ? Set<String>() : wordTokens(question)
-    let usesExplicitContext = selectedTarget != nil || allowsContextFallback(question)
+    let latinWords = query.contains(where: { $0.isLetter && !$0.isASCII }) ? Set<String>() : wordTokens(query)
+    let usesExplicitContext = selectedTarget != nil || allowsContextFallback(query)
     var seen = Set<ProjectEvidenceChunk>()
-    let scoped = chunks.filter {
-      $0.projectID == projectID && allowed.contains($0.target) && (selectedTarget == nil || $0.target == selectedTarget)
-        && seen.insert($0).inserted
+    let scoped = chunks.filter { chunk in
+      chunk.projectID == projectID && allowed.contains(chunk.target) && (selectedTarget == nil || chunk.target == selectedTarget)
+        && (dated.map { dateQuery in
+          guard let date = chunk.recordedAt else { return false }
+          return date >= dateQuery.interval.start && date < dateQuery.interval.end
+        } ?? true)
+        && seen.insert(chunk).inserted
     }
     var ranked: [(Int, ProjectEvidenceChunk, Int, Set<String>)] = []
     var titleTerms: [String: Set<String>] = [:]
@@ -100,6 +106,33 @@ enum ProjectContextBuilder {
       perSource[chunk.target, default: 0] += 1
     }
     return Context(text: text, used: used, matchedCount: matched.count)
+  }
+
+  private static let recordingDayExpression = try? NSRegularExpression(
+    pattern: #"^\s*(?:記録日|会議日|録音日)\s*[:：が]?\s*([0-9]{4})[年/-]([0-9]{1,2})[月/-]([0-9]{1,2})(?:日)?(?:の|\s|$)"#)
+  private static let calendarDateExpression = try? NSRegularExpression(
+    pattern: #"[0-9]{4}[年/-][0-9]{1,2}[月/-][0-9]{1,2}"#)
+
+  /// Dates mentioned as deadlines or as part of a comparison stay in the
+  /// topical query. Only an explicit record-day qualifier narrows the scope.
+  static func recordingDateQuery(_ question: String) -> (interval: DateInterval, topic: String)? {
+    let normalized = question.folding(options: .widthInsensitive, locale: Locale(identifier: "ja_JP"))
+    guard let match = recordingDayExpression?.firstMatch(in: normalized,
+      range: NSRange(normalized.startIndex..., in: normalized)),
+      let prefix = Range(match.range, in: normalized) else { return nil }
+    let topic = normalized[prefix.upperBound...].trimmingCharacters(in: .whitespacesAndNewlines)
+    guard calendarDateExpression?.firstMatch(in: topic, range: NSRange(topic.startIndex..., in: topic)) == nil else { return nil }
+    let parts = (1...3).compactMap { index in
+      Range(match.range(at: index), in: normalized).flatMap { Int(normalized[$0]) }
+    }
+    guard parts.count == 3, parts[0] > 0 else { return nil }
+    let calendar = Calendar(identifier: .gregorian)
+    let components = DateComponents(year: parts[0], month: parts[1], day: parts[2])
+    guard let date = calendar.date(from: components),
+          let interval = calendar.dateInterval(of: .day, for: date) else { return nil }
+    let resolved = calendar.dateComponents([.year, .month, .day], from: date)
+    guard resolved.year == components.year, resolved.month == components.month, resolved.day == components.day else { return nil }
+    return (interval, topic)
   }
 
   static func cited(_ answer: String, from sent: [ProjectCitation]) -> [ProjectCitation] {

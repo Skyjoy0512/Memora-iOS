@@ -99,6 +99,18 @@ struct ProjectContextChecks {
     let deniedPhoto = ProjectContextBuilder.build(question: "接続仕様", projectID: project,
       chunks: photographed, allowed: [], characterBudget: 500)
     precondition(deniedPhoto.used.isEmpty)
+    precondition(ProjectContextBuilder.recordingDateQuery("会議日が２０２６年１１月５日の公開判定")?.topic == "公開判定")
+    precondition(ProjectContextBuilder.recordingDateQuery("記録日: 2026-02-30") == nil)
+    precondition(ProjectContextBuilder.recordingDateQuery("公開予定は2026年11月5日ですか？") == nil)
+    precondition(ProjectContextBuilder.recordingDateQuery("記録日: 2026/11/05 と2026/11/12の変更点") == nil)
+    let requested = ProjectContextBuilder.recordingDateQuery("録音日: 2026/11/05")!
+    let startChunk = ProjectContextBuilder.split("対象日の記録", projectID: project,
+      target: meeting, title: "対象日", recordedAt: requested.interval.start)
+    let endChunk = ProjectContextBuilder.split("翌日の記録", projectID: project,
+      target: meeting, title: "翌日", recordedAt: requested.interval.end)
+    let byDay = ProjectContextBuilder.build(question: "録音日: 2026/11/05", projectID: project,
+      chunks: startChunk + endChunk + kana, allowed: [source, meeting], characterBudget: 500)
+    precondition(byDay.used.count == 1 && byDay.used[0].title == "対象日")
     print("ProjectContextChecks: passed (chunk/page/date fidelity, isolation, budgets, follow-ups, citations, hiragana/title search, no-match abstention, local aliases)")
   }
 }

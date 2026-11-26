@@ -51,8 +51,10 @@ extension MemoraModel {
     let entries = mediaIndexEntries.filter { recordIDs.contains($0.recordID) && $0.textReadAt != nil && !$0.text.isEmpty }
     guard !entries.isEmpty else { return empty }
     let candidates = await Task.detached(priority: .userInitiated) {
-      let terms = ProjectContextBuilder.queryGrams(question).sorted().prefix(24)
+      let dated = ProjectContextBuilder.recordingDateQuery(question)
+      let terms = ProjectContextBuilder.queryGrams(dated?.topic ?? question).sorted().prefix(24)
       let ranked = entries.enumerated().compactMap { index, entry -> (Int, Int, MediaIndexEntry)? in
+        if let interval = dated?.interval, !(entry.recordDate >= interval.start && entry.recordDate < interval.end) { return nil }
         let matches = terms.count { entry.text.range(of: $0, options: [.caseInsensitive, .widthInsensitive]) != nil }
         return matches > 0 ? (index, matches, entry) : nil
       }.sorted { left, right in

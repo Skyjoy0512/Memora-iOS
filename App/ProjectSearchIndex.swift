@@ -34,16 +34,25 @@ actor ProjectSearchIndex {
   func retrieve(question: String, projectID: UUID, inputs: [ProjectEvidenceInput], maximumCharacters: Int = 2_000_000) throws -> [ProjectEvidenceChunk] {
     try open()
     try synchronize(projectID: projectID, inputs: inputs, maximumCharacters: maximumCharacters)
-    let terms = ProjectContextBuilder.queryGrams(question).sorted().prefix(32)
+    let dated = ProjectContextBuilder.recordingDateQuery(question)
+    let topic = dated?.topic ?? question
+    let dateConditions = dated == nil ? "" : """
+       AND json_extract(payload, '$.recordedAt') >= CAST(? AS REAL)
+       AND json_extract(payload, '$.recordedAt') < CAST(? AS REAL)
+      """
+    let dateValues = dated.map { [String($0.interval.start.timeIntervalSinceReferenceDate),
+      String($0.interval.end.timeIntervalSinceReferenceDate)] } ?? []
+    let terms = ProjectContextBuilder.queryGrams(topic).sorted().prefix(32)
     let expression = terms.map { "\"" + $0.replacingOccurrences(of: "\"", with: "\"\"") + "\"" }.joined(separator: " OR ")
     var result: [ProjectEvidenceChunk] = []
     if !expression.isEmpty {
-      result = try query("SELECT payload FROM project_chunks WHERE project = ? AND tokens MATCH ? ORDER BY bm25(project_chunks) LIMIT 200;",
-                         values: [projectID.uuidString, expression])
+      result = try query("SELECT payload FROM project_chunks WHERE project = ? AND tokens MATCH ?\(dateConditions) ORDER BY bm25(project_chunks) LIMIT 200;",
+                         values: [projectID.uuidString, expression] + dateValues)
     }
     // Follow-ups can refer to the previous answer without repeating its words.
-    if result.isEmpty, ProjectContextBuilder.allowsContextFallback(question) {
-      result = try query("SELECT payload FROM project_chunks WHERE project = ? ORDER BY rowid DESC LIMIT 200;", values: [projectID.uuidString])
+    if result.isEmpty, ProjectContextBuilder.allowsContextFallback(topic) {
+      result = try query("SELECT payload FROM project_chunks WHERE project = ?\(dateConditions) ORDER BY rowid DESC LIMIT 200;",
+                         values: [projectID.uuidString] + dateValues)
     }
     return result
   }

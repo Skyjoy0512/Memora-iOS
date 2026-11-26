@@ -42,7 +42,10 @@ struct ProjectLongitudinalChecks {
           relevant: [initial.target, revised.target, audit.target]),
         Query(name: "task", question: "署名鍵の棚卸しはありますか？", relevant: [task.target]),
         Query(name: "unknown", question: "火星探査機の推進方式は何ですか？", relevant: []),
-        Query(name: "date-specific", question: "2026年11月5日の公開判定の判断基準は何ですか？",
+        Query(name: "date-specific", question: "記録日\(dayLabel(revised.recordedAt!))の公開判定の判断基準は何ですか？",
+          relevant: [revised.target]),
+        Query(name: "date-only", question: "記録日: \(dayLabel(revised.recordedAt!))", relevant: [revised.target]),
+        Query(name: "unqualified-date", question: "\(dayLabel(revised.recordedAt!))の公開判定の判断基準は何ですか？",
           relevant: [revised.target], observesExtraEvidence: true)
       ]
     }
@@ -79,8 +82,8 @@ struct ProjectLongitudinalChecks {
       print(String(format: "%@ relevant=%d missed=%d unrelated=%d sources=%d excerpts=%d characters=%d latency=%.2fms",
         query.name, hits, misses, unrelated, retrieved.count, context.used.count, context.text.count, latency))
       precondition(misses == 0, "Missing fixture evidence for \(query.name)")
-      // Date labels are carried into the context. Exact date filtering is
-      // missing in the ranker, so track extra results for the dated question.
+      // An unqualified date may refer to a deadline or an event discussed
+      // in another meeting. Only the explicit record day narrows those rows.
       if !query.observesExtraEvidence {
         precondition(unrelated == 0, "Unrelated evidence for \(query.name)")
       }
@@ -109,6 +112,11 @@ struct ProjectLongitudinalChecks {
     let dateUpdate = try await retrieve(index, question: question, project: corpus.alpha, inputs: current, budget: budget)
     precondition(dateUpdate.used.contains { $0.target == edited.target && $0.recordedAt == edited.recordedAt && $0.time == 220 })
     precondition(!dateUpdate.used.contains { $0.target == edited.target && $0.recordedAt == corpus.revised.recordedAt })
+    let oldDay = try await retrieve(index, question: "記録日\(dayLabel(corpus.revised.recordedAt!))", project: corpus.alpha,
+      inputs: current, budget: budget)
+    let newDay = try await retrieve(index, question: "記録日\(dayLabel(edited.recordedAt!))", project: corpus.alpha,
+      inputs: current, budget: budget)
+    precondition(oldDay.used.isEmpty && newDay.used.map(\.target) == [edited.target])
     edited.blocks = [.init(text: "公開判定の判断基準は承認者三名に変更した。二名の案は廃止する。", time: 315)]
     current = current.map { $0.target == edited.target ? edited : $0 }
     let revision = try await retrieve(index, question: question, project: corpus.alpha, inputs: current, budget: budget)
@@ -165,6 +173,11 @@ struct ProjectLongitudinalChecks {
 
   private static func date(_ value: String) -> Date {
     ISO8601DateFormatter().date(from: value)!
+  }
+
+  private static func dayLabel(_ date: Date) -> String {
+    let parts = Calendar(identifier: .gregorian).dateComponents([.year, .month, .day], from: date)
+    return "\(parts.year!)年\(parts.month!)月\(parts.day!)日"
   }
 
   private static func meeting(_ id: Int, date recordedAt: String, time: TimeInterval,
