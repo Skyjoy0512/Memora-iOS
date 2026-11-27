@@ -12,7 +12,7 @@ afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
 // The fixture comes from the actual validator + SummaryMarkdownBuilder host
 // check, not an AI run. The model/session and real audio are not exercised.
-test('validated on-device summary relations survive reading, editing and restart', { timeout: 240_000 }, async ({ app, device, screen }) => {
+test('validated on-device summary relations survive reading, editing and restart', { timeout: 240_000, skip: 'The one-page summary poster is compiled off (FeatureFlags.isInlineSummaryPosterEnabled is false).' }, async ({ app, device, screen }) => {
   const supplied = process.env.MEMORA_SUMMARY_RELATION_FIXTURE;
   const temporary = supplied ? undefined : mkdtempSync(join(process.env.MEMORA_CHECK_ROOT ?? tmpdir(), 'memora-relation-e2e-'));
   const path = supplied ?? join(temporary!, 'fixture.json');

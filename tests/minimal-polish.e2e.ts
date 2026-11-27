@@ -1,6 +1,6 @@
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { focusComposer, launchMemora, tapControl, tapTab } from './ui-helpers';
+import { focusComposer, launchMemora, scrollToControl, tapControl, tapTab } from './ui-helpers';
 
 test('minimal polish: sidebar switching keeps the conversation and settles on one canvas', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
@@ -14,7 +14,7 @@ test('minimal polish: sidebar switching keeps the conversation and settles on on
     await tapTab(screen, destination);
     await expect.poll(async () => {
       const box = await screen.getByLabel('メニュー').first().boundingBox();
-      return !!box && box.x < 60 && box.width >= 44;
+      return !!box && box.x < 200 && box.width >= 44;
     }).toBe(true);
     if (destination === 'ツール') {
       await expect(screen.getByTestId('ai.composer.input')).not.toBeVisible();
@@ -28,14 +28,16 @@ test('minimal polish: sidebar switching keeps the conversation and settles on on
 test('minimal polish: Tools menus, article actions and connectors stay usable', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await tapTab(screen, 'ツール');
-  const add = screen.getByLabel('ツールを追加');
+  const add = screen.getByLabel('マーケットプレイスの操作');
   await tapControl(screen, add);
   await tapControl(screen, screen.getByRole('button', { name: 'スキルを作成', exact: true }));
   await expect(screen.getByPlaceholder('スキル名')).toBeVisible();
   await tapControl(screen, screen.getByRole('button', { name: 'キャンセル', exact: true }));
   await expect(add).toBeVisible();
-  await tapControl(screen, screen.getByRole('button', { name: /プロジェクトの要点整理/ }));
-  await expect(screen.getByText('目的とシナリオ', { exact: true })).toBeVisible();
+  const article = screen.getByRole('button', { name: /プロジェクトの要点整理/ }).first();
+  await expect(article).toBeVisible();
+  await tapControl(screen, article);
+  await expect(screen.getByText('できあがるもの', { exact: true })).toBeVisible();
   const use = screen.getByRole('button', { name: 'チャットで使用', exact: true });
   const box = await use.boundingBox();
   expect(box?.height).toBeGreaterThanOrEqual(44);
@@ -45,8 +47,9 @@ test('minimal polish: Tools menus, article actions and connectors stay usable', 
   await expect(screen.getByRole('button', { name: 'Markdownを共有', exact: true })).toBeVisible();
   await screen.tapAt({ x: 160, y: 200 });
   await tapControl(screen, screen.getByLabel('1つ前に戻る'));
-  await tapControl(screen, screen.getByRole('tab', { name: 'コネクタ', exact: true }));
+  await tapControl(screen, screen.getByRole('button', { name: 'コネクタ', exact: true }));
   await app.screenshot('minimal-connectors');
-  await tapControl(screen, screen.getByRole('button', { name: 'Gmail', exact: true }));
+  await tapControl(screen, screen.getByRole('button', { name: 'Gmailを追加・接続', exact: true }));
+  await tapControl(screen, screen.getByText('アクセスと利用設定', { exact: true }).first());
   await expect(screen.getByText('読み取り専用。取得した内容は選択中のAIに渡されます。', { exact: true })).toBeVisible();
 });
