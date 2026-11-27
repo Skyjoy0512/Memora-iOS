@@ -8,14 +8,12 @@ import { tapControl, tapTab, scrollToControl, openSummaryPoster } from './ui-hel
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
-// The one-page poster is compiled off (FeatureFlags.isInlineSummaryPosterEnabled
-// is false), and the old summary sections became editable Markdown. Keep the
-// scenario until the poster returns; its assertions describe that surface.
-test('summary decisions remain editable without transcript confirmation links', { timeout: 240_000, skip: 'The decisions section was replaced by the editable Markdown summary.' }, async ({ app, device, screen }) => {
+// Decisions are edited in the highlights sheet the record's options menu opens;
+// the old summary sections were replaced by one editable Markdown document.
+test('highlight decisions stay editable without transcript confirmation links', { timeout: 240_000 }, async ({ app, device, screen }) => {
   const { database, title, fixture, raw, summary } = await seedSummaryFixture(app, device, screen);
   const read = () => JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"));
   // This UUID-marked, fresh test database is owned by the fixture helper.
-  // One exact source match and one unmatched decision used to show both labels.
   await device.closeApp();
   const records = read();
   expect(records).toHaveLength(1);
@@ -36,30 +34,27 @@ test('summary decisions remain editable without transcript confirmation links', 
   await app.restart();
   await tapTab(screen, 'ライブラリ');
   await tapControl(screen.getByRole('button', { name: new RegExp('^' + title) }).first());
-  await scrollToControl(screen, screen.getByRole('button', { name: '決まったこと', exact: true }));
-  await tapControl(screen.getByRole('button', { name: '決まったこと', exact: true }));
-  const first = screen.getByRole('button', { name: raw, exact: true });
-  await scrollToControl(screen, first);
-  await expect(first).toBeVisible();
-  await expect(screen.getByRole('button', { name: unmatched, exact: true })).toBeVisible();
   await expect(screen.getByRole('button', { name: /^(文字起こしを確認|一致する発言：)/ })).toHaveCount(0);
-  await app.screenshot('summary-decisions-without-transcript-links');
-  await tapControl(first);
-  const field = screen.getByRole('textbox', { name: '本文', exact: true });
-  await expect(field).toHaveValue([raw, unmatched].join('\n'));
-  await expect(field).toBeFocused();
+  await tapControl(screen.getByRole('button', { name: 'その他', exact: true }));
+  await tapControl(screen.getByRole('button', { name: '要点・決定事項を編集', exact: true }));
+  const decisions = screen.getByRole('textbox', { name: '決定事項', exact: true });
+  await expect(decisions).toBeEnabled();
+  await expect(decisions).toHaveValue([raw, unmatched].join('\n'));
   const edited = '予算の承認はまだ得られていません。';
-  await field.fill([edited, unmatched].join('\n'));
-  await tapControl(screen.getByRole('button', { name: '完了', exact: true }));
+  await decisions.fill([edited, unmatched].join('\n'));
+  await tapControl(screen.getByTestId('meeting.highlights.save'));
   await expect.poll(() => read()[0].decisions).toEqual([edited, unmatched]);
   expect(read()[0].summary).toBe(summary);
   expect(normalizedTranscript(read()[0].transcript)).toEqual(originalTranscript);
   await app.restart();
   await tapTab(screen, 'ライブラリ');
   await tapControl(screen.getByRole('button', { name: new RegExp('^' + title) }).first());
-  await scrollToControl(screen, screen.getByRole('button', { name: edited, exact: true }));
-  await expect(screen.getByRole('button', { name: edited, exact: true })).toBeVisible();
   await expect(screen.getByRole('button', { name: /^(文字起こしを確認|一致する発言：)/ })).toHaveCount(0);
+  await tapControl(screen.getByRole('button', { name: 'その他', exact: true }));
+  await tapControl(screen.getByRole('button', { name: '要点・決定事項を編集', exact: true }));
+  await expect(screen.getByRole('textbox', { name: '決定事項', exact: true })).toHaveValue([edited, unmatched].join('\n'));
+  await app.screenshot('editable-decisions');
+  await tapControl(screen.getByRole('button', { name: 'キャンセル', exact: true }));
   const transcript = screen.getByRole('button', { name: '文字起こし', exact: true });
   await scrollToControl(screen, transcript, { minimumY: 90, maximumY: 750 });
   await tapControl(transcript);
