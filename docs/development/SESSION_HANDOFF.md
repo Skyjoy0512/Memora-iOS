@@ -21,7 +21,7 @@ Bitrig の iOS プロジェクトで継続する。[実行状態](EXECUTION_STAT
 
 ## 続きの作業
 
-1. QA-02: `summary-polish`、`summary-adaptive`、`summary-infographic` の4件は旧UIを参照して失敗する。要約は Markdown 表示に移り `決まったこと` 節は無く、`summary.poster.inline` は `FeatureFlags.isInlineSummaryPosterEnabled = false`。現行の読み面に合わせて断言を置き換えるか、保留機能として明示する。
+1. QA-02 は判断の編集を「その他 › 要点・決定事項を編集」で再検証済み。ポスター3件は `FeatureFlags.isInlineSummaryPosterEnabled = false` のため skip。QA-03 の `screen-polish`／`experience-polish` は17件すべて成功し、タスク画面のタイトル重なりも `ff8d918d` で修正した。
 2. STORE-02 はページ読込の検証が済んだ。各入口（録音・要約・復元）の書込順序と競合契約を決め、音声を含む実データで切替える前に復元とロールバックの受け入れ条件を満たす。
 3. グローバル Ask AI の原画像参照は読取済み写真を対象とし、写真を含む旧回答はそのまま再投入しない。実機の Apple Intelligence で回答と引用を検証し、資料生成で同じ根拠の参照を実装する。
 4. 統合品質ゲートは `run-quality-checks.py --output-dir` で11スイート。`2dc48020` と `c489bcfb` は11/11成功。`c489bcfb` の結果は `/Volumes/DevSSD/Development/Temp/memora-release-qa.JE0mxQ/run/summary.json`。

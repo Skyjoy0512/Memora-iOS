@@ -101,9 +101,9 @@ test('screen polish: account and plan retain honest states and usable controls',
   await tapControl(screen.getByTestId('sidebar.settings'));
   await tapControl(screen.getByTestId('settings.category.account'));
   await tapControl(screen.getByRole('button', { name: /^サインイン \/ 新規登録/ }));
-  await expect(screen.getByText(/アカウント連携と複数端末の同期は準備中/)).toBeVisible();
+  await expect(screen.getByText(/ログインせず、このiPhoneで使えます。/)).toBeVisible();
   await app.screenshot('account-local');
-  await tapControl(screen.getByLabel('あとで').first());
+  await tapControl(screen.getByTestId('auth.continueLocal'));
   await tapControl(screen.getByTestId('BackButton'));
   await tapControl(screen.getByTestId('settings.category.plan'));
 
@@ -149,8 +149,8 @@ test('screen polish: account and plan retain honest states and usable controls',
 
 test('screen polish: the task editor still saves to the local store', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
-  await tapTab(screen, 'ジャーナル');
-  await tapControl(screen, screen.getByLabel('すべてのタスクを見る'));
+  await tapControl(screen, screen.getByLabel('メニュー').first());
+  await tapControl(screen, screen.getByRole('button', { name: 'タスク', exact: true }).last());
   await tapControl(screen, screen.getByRole('button', { name: 'タスクを追加', exact: true }).last());
   await screen.getByPlaceholder('すること').fill('UI screen audit task');
   await tapControl(screen, screen.getByRole('button', { name: '追加', exact: true }));
@@ -158,8 +158,8 @@ test('screen polish: the task editor still saves to the local store', async ({ a
   await expect(task).toBeVisible();
   await app.screenshot('task-editor-saved');
   await app.restart();
-  await tapTab(screen, 'ジャーナル');
-  await tapControl(screen, screen.getByLabel('すべてのタスクを見る'));
+  await tapControl(screen, screen.getByLabel('メニュー').first());
+  await tapControl(screen, screen.getByRole('button', { name: 'タスク', exact: true }).last());
   await expect(task).toBeVisible();
 });
 

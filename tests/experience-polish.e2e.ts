@@ -20,20 +20,35 @@ async function expectTouchTarget(control: any) {
   }).toBe(true);
 }
 
+// The journal shows its dates in Japanese; a day row is named for the date.
+function dayName(date: Date) {
+  return new RegExp(`^${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}[日月火水木金土]曜日`);
+}
+
+async function openTasks(screen: any) {
+  await tapControl(screen, screen.getByLabel('メニュー').first());
+  await tapControl(screen, screen.getByRole('button', { name: 'タスク', exact: true }).last());
+  // The drawer keeps covering the list while it slides away; a tap there
+  // dismisses it instead of reaching the screen.
+  await expect(screen.getByTestId('sidebar.settings')).not.toBeVisible();
+  await expect(screen.getByTestId('root.tab.home')).toBeSelected();
+  await expect(screen.getByRole('button', { name: 'タスクを追加', exact: true }).last()).toBeVisible();
+}
+
 test('experience: journal, library and create menu remain coherent in both appearances', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   for (const appearance of ['light', 'dark'] as const) {
     await device.setAppearance(appearance);
     await journal(device, screen);
-    await expect(screen.getByText('今日のタスク')).toBeVisible();
+    await expect(screen.getByRole('button', { name: dayName(new Date()) }).first()).toBeVisible();
     await app.screenshot(`journal-${appearance}`);
     await tapTab(screen, 'ライブラリ');
     await device.openLink('memora://projects');
     await tapControl(screen, screen.getByRole('button', { name: 'ファイル', exact: true }).first());
-    await expect(screen.getByRole('button', { name: '録音または読み込み', exact: true }).first()).toBeVisible();
+    await expect(screen.getByRole('button', { name: '録音する', exact: true }).first()).toBeVisible();
     await app.screenshot(`library-${appearance}`);
-    await tapControl(screen, screen.getByRole('button', { name: '作成メニューを開く', exact: true }));
-    for (const title of ['録音を開始', '音声を取り込む', 'オンライン会議']) {
+    await tapControl(screen, screen.getByRole('button', { name: '追加メニュー', exact: true }));
+    for (const title of ['録音する', '音声を取り込む', 'ノートを追加']) {
       await expect(screen.getByRole('button', { name: title, exact: true })).toBeVisible();
     }
     await app.screenshot(`create-menu-${appearance}`);
@@ -43,22 +58,20 @@ test('experience: journal, library and create menu remain coherent in both appea
 
 test('experience: empty task action creates a task, completes it and keeps it after restart', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
-  await expectTouchTarget(screen.getByLabel('すべてのタスクを見る'));
-  await tapControl(screen, screen.getByLabel('すべてのタスクを見る'));
+  await openTasks(screen);
   const add = screen.getByRole('button', { name: 'タスクを追加', exact: true }).last();
   await tapControl(screen, add);
   await screen.getByPlaceholder('すること').fill('E2E 操作を磨き込む');
   await tapControl(screen, screen.getByRole('button', { name: '追加', exact: true }));
   await expect(screen.getByRole('button', { name: /^E2E 操作を磨き込む、/ })).toBeVisible();
-  const complete = screen.getByRole('button', { name: '完了にする', exact: true });
+  const complete = screen.getByRole('button', { name: /を完了にする$/ });
   await expectTouchTarget(complete);
   await app.screenshot('tasks-active');
   await tapControl(screen, complete);
   await tapControl(screen, screen.getByRole('button', { name: '完了', exact: true }));
   await expect(screen.getByRole('button', { name: /^E2E 操作を磨き込む、/ })).toBeVisible();
   await app.restart();
-  await journal(device, screen);
-  await tapControl(screen, screen.getByLabel('すべてのタスクを見る'));
+  await openTasks(screen);
   await tapControl(screen, screen.getByRole('button', { name: '完了', exact: true }));
   await expect(screen.getByRole('button', { name: /^E2E 操作を磨き込む、/ })).toBeVisible();
 });
@@ -98,7 +111,7 @@ test('experience: document action returns to Ask AI without clearing the draft',
   await journal(device, screen);
   await tapControl(screen, screen.getByLabel('メニュー'));
   await tapControl(screen, screen.getByRole('button', { name: '資料', exact: true }));
-  await tapControl(screen, screen.getByRole('button', { name: 'Ask AIを開く', exact: true }));
+  await tapControl(screen, screen.getByRole('button', { name: 'AIで資料を作る', exact: true }));
   await expect(input).toHaveValue('次に相談する下書きを保持します');
   await expect(screen.getByLabel('新しいチャット')).toBeVisible();
 });
@@ -109,25 +122,23 @@ test('experience: source-only search reports a real match instead of zero', asyn
   await tapControl(screen, screen.getByRole('button', { name: 'プロジェクトを作成', exact: true }).first());
   await screen.getByPlaceholder('例：新規アプリ').fill('E2E Source Count');
   await tapControl(screen, screen.getByRole('button', { name: '作成', exact: true }));
-  await tapControl(screen, screen.getByRole('button', { name: 'ソース', exact: true }).first());
-  await tapControl(screen, screen.getByLabel('ソースを追加').first());
-  await screen.getByPlaceholder('タイトル').fill('E2ESourceCountEvidence');
-  await tapControl(screen, screen.getByLabel('キーボードを閉じる'));
-  const body = screen.getByLabel('メモ本文');
+  await tapControl(screen, screen.getByRole('button', { name: '参考資料', exact: true }).first());
+  await tapControl(screen, screen.getByLabel('参考資料を追加').first());
+  await screen.getByRole('textbox', { name: 'タイトル', exact: true }).fill('E2ESourceCountEvidence');
+  const body = screen.getByTestId('source.content');
   await scrollToControl(screen, body);
   await tapControl(screen, body);
   await body.fill('端末内だけの検索検証メモ。');
-  await tapControl(screen, screen.getByLabel('キーボードを閉じる'));
-  await scrollToControl(screen, screen.getByRole('button', { name: 'メモを保存', exact: true }));
-  await tapControl(screen, screen.getByRole('button', { name: 'メモを保存', exact: true }));
-  await expect(body).toHaveValue('');
-  await tapControl(screen, screen.getByLabel('閉じる'));
+  await scrollToControl(screen, screen.getByTestId('source.add'));
+  await tapControl(screen.getByTestId('source.add'));
+  await expect(body).not.toBeVisible();
   await device.openLink('memora://projects');
   await tapControl(screen, screen.getByRole('button', { name: 'ファイル', exact: true }).first());
   await openSidebarSearch(screen);
-  await expect(screen.getByText('ファイルを検索')).toBeVisible();
+  const fileSearch = screen.getByTestId('collection.search.input');
+  await expect(fileSearch).toBeVisible();
   await expect(screen.getByText('E2ESourceCountEvidence')).not.toBeVisible();
-  await screen.getByRole('textbox').first().fill('E2ESourceCountEvidence');
+  await fileSearch.fill('E2ESourceCountEvidence');
   await expect(screen.getByText('E2ESourceCountEvidence')).toBeVisible();
   const count = screen.getByLabel('1件の検索結果');
   await scrollToControl(screen, count);
@@ -140,39 +151,33 @@ test('experience: selected day returns to today through a real 44-point action',
   await journal(device, screen);
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  const dayName = (date: Date) => `${date.toLocaleString('en-US', { month: 'long' })} ${date.getDate()}, ${date.getFullYear()}`;
-  await tapControl(screen, screen.getByRole('button', { name: new RegExp(dayName(yesterday)) }));
+  await tapControl(screen, screen.getByRole('button', { name: dayName(yesterday) }));
   const today = screen.getByRole('button', { name: '今日に戻る', exact: true });
   await expect(today).toBeVisible();
   await expectTouchTarget(today);
   await app.screenshot('journal-selected-day');
   await tapControl(screen, today);
-  await expect(screen.getByRole('button', { name: new RegExp(dayName(new Date())), selected: true })).toBeVisible();
-  await expect(today).toBeDisabled();
+  await expect(screen.getByRole('button', { name: dayName(new Date()), selected: true })).toBeVisible();
+  await expect(today).not.toBeVisible();
 });
 
-test('experience: capture actions scroll at large text and open the real preparation screen', async ({ app, device, screen }) => {
+test('experience: capture menu offers its enabled entries without a header', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
-  await tapControl(screen, screen.getByRole('button', { name: '作成メニューを開く', exact: true }));
-  await expect(screen.getByText('新しい記録')).toBeVisible();
-  const online = screen.getByRole('button', { name: 'オンライン会議', exact: true });
-  await scrollToControl(screen, online);
-  await expectTouchTarget(online);
-  await app.screenshot('create-menu-scrolled');
-  await tapControl(screen, online);
-  await expect(screen.getByText('Zoom')).toBeVisible();
-  const prepare = screen.getByRole('button', { name: '録音の準備をする', exact: true });
-  await scrollToControl(screen, prepare);
-  await expect(prepare).toBeVisible();
-  await app.screenshot('online-meeting-preparation');
-  await tapControl(screen, screen.getByRole('button', { name: '閉じる', exact: true }));
-  await expect(screen.getByText('今日のタスク')).toBeVisible();
+  await tapControl(screen, screen.getByRole('button', { name: '追加メニュー', exact: true }));
+  // Online meeting capture is compiled off (FeatureFlags.isOnlineMeetingCaptureEnabled),
+  // and the sheet deliberately has no title or close header.
+  for (const title of ['録音する', '音声を取り込む', 'ノートを追加']) {
+    const item = screen.getByRole('button', { name: title, exact: true });
+    await expect(item).toBeVisible();
+    await expectTouchTarget(item);
+  }
+  await expect(screen.getByText('新しい記録')).not.toBeVisible();
+  await app.screenshot('create-menu');
 });
 
 test('experience: task, people and document screens retain their working actions', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
-  await journal(device, screen);
-  await tapControl(screen, screen.getByLabel('すべてのタスクを見る'));
+  await openTasks(screen);
   await expect(screen.getByText('タスクはありません')).toBeVisible();
   await app.screenshot('tasks-empty');
   await journal(device, screen);
