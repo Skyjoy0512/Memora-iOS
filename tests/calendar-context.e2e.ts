@@ -10,15 +10,17 @@ test('calendar context: disabled AI use persists and re-enabling does not grant 
   await launchMemora(app, device, screen);
   async function openCalendar() {
     await tapTab(screen, 'ツール');
-    await tapControl(screen, screen.getByRole('tab', { name: 'コネクタ', exact: true }));
-    await tapControl(screen, screen.getByRole('button', { name: 'この端末のカレンダー', exact: true }));
+    await tapControl(screen, screen.getByRole('button', { name: 'コネクタ', exact: true }));
+    await tapControl(screen, screen.getByRole('button', { name: 'この端末のカレンダーを追加・接続', exact: true }));
+    await tapControl(screen, screen.getByText('アクセスと利用設定', { exact: true }).first());
     await expect(screen.getByText('Google Calendarへの直接OAuth接続ではありません。', { exact: false })).toBeVisible();
   }
   await openCalendar();
-  const enabled = screen.getByRole('switch', { name: 'Ask AIで利用する', exact: true });
+  const enabled = screen.getByRole('switch', { name: 'Ask AIで使う', exact: true });
   await scrollToControl(screen, enabled);
   await expect(enabled).toBeChecked();
-  const permission = screen.getByRole('button', { name: 'カレンダーへのアクセスを許可', exact: true });
+  // The footer asks to connect; the EventKit prompt only appears after a tap.
+  const permission = screen.getByRole('button', { name: '接続', exact: true }).last();
   await expect(permission).toBeVisible();
   await app.screenshot('calendar-unconfigured-light');
   await enabled.uncheck();

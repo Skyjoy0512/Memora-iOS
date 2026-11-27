@@ -9,10 +9,11 @@ test('unconfigured Gmail stays disconnected and explains read-only access in Lig
     for (const appearance of ['light', 'dark'] as const) {
       await device.setAppearance(appearance);
       await tapTab(screen, 'ツール');
-      await tapControl(screen.getByRole('tab', { name: 'コネクタ', exact: true }));
-      await tapControl(screen.getByRole('button', { name: 'Gmail', exact: true }));
+      await tapControl(screen.getByRole('button', { name: 'コネクタ', exact: true }));
+      await tapControl(screen.getByRole('button', { name: 'Gmailを追加・接続', exact: true }));
+      await tapControl(screen.getByText('アクセスと利用設定', { exact: true }).first());
       await expect(screen.getByText('読み取り専用。取得した内容は選択中のAIに渡されます。', { exact: true })).toBeVisible();
-      const setup = screen.getByText('接続・認証設定', { exact: true });
+      const setup = screen.getByRole('button', { name: '接続', exact: true }).last();
       await scrollToControl(screen, setup);
       await tapControl(setup);
       const connect = screen.getByRole('button', { name: 'Gmailと連携', exact: true });

@@ -8,9 +8,9 @@ test('unconnected MCP keeps setup reachable and cancels an unsaved server in Lig
     for (const appearance of ['light', 'dark'] as const) {
       await device.setAppearance(appearance);
       await tapTab(screen, 'ツール');
-      await tapControl(screen.getByRole('tab', { name: 'コネクタ', exact: true }));
-      await tapControl(screen.getByRole('button', { name: 'MCPサーバー', exact: true }));
-      const manage = screen.getByText('接続先を管理', { exact: true });
+      await tapControl(screen.getByRole('button', { name: 'コネクタ', exact: true }));
+      await tapControl(screen.getByRole('button', { name: 'MCPサーバーを追加・接続', exact: true }));
+      const manage = screen.getByRole('button', { name: 'コネクタを追加・管理', exact: true });
       await scrollToControl(screen, manage);
       await tapControl(manage);
       await expect(screen.getByText('まだ接続先がありません', { exact: true })).toBeVisible();

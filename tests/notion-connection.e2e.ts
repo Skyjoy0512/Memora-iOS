@@ -6,9 +6,9 @@ test('unconfigured Notion keeps native parent editing durable without claiming a
   await launchMemora(app, device, screen);
   async function openSettings() {
     await tapTab(screen, 'ツール');
-    await tapControl(screen.getByRole('tab', { name: 'コネクタ', exact: true }));
-    await tapControl(screen.getByRole('button', { name: 'Notion', exact: true }));
-    const setup = screen.getByText('接続・認証設定', { exact: true });
+    await tapControl(screen.getByRole('button', { name: 'コネクタ', exact: true }));
+    await tapControl(screen.getByRole('button', { name: 'Notionを追加・接続', exact: true }));
+    const setup = screen.getByRole('button', { name: '接続', exact: true }).last();
     await scrollToControl(screen, setup);
     await tapControl(setup);
   }
