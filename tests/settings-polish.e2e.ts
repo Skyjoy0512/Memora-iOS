@@ -31,20 +31,13 @@ test('settings polish: topic hierarchy, profile editing and shared sidebar icons
     await tapControl(screen, screen.getByLabel('メニュー'));
     await expect(screen.getByLabel('ワークスペース', { exact: true })).not.toBeVisible();
     await app.screenshot(`sidebar-top-${appearance}`);
-    // The drawer's destination follows the same-named Library segment in AX.
-    await scrollToControl(screen, screen.getByRole('button', { name: 'プロジェクト', exact: true }).last());
-    await expect(screen.getByText('プロジェクト', { exact: true }).last()).toBeVisible();
-    await scrollToControl(screen, screen.getByRole('button', { name: '人物', exact: true }));
-    await expect(screen.getByText('人物', { exact: true })).toBeVisible();
-    await expect(screen.getByRole('button', { name: 'Memora Plus、プランと利用状況', exact: true })).toBeVisible();
+    // The drawer keeps the app's destinations and its settings entry; projects
+    // live in the Library, and the recorder lives under Settings › 録音.
+    for (const name of ['マーケットプレイス', 'タスク', '資料', '人物']) {
+      await expect(screen.getByRole('button', { name, exact: true }).first()).toBeVisible();
+    }
+    await expect(screen.getByTestId('sidebar.settings')).toBeVisible();
     await app.screenshot(`sidebar-${appearance}`);
-    const recorder = screen.getByText('外部レコーダー', { exact: true });
-    await scrollToControl(screen, recorder);
-    const titleBox = await recorder.boundingBox();
-    if (!titleBox) throw new Error('recorder title has no frame');
-    // A narrow title/status split must not turn Japanese into one-character columns.
-    expect(titleBox.height).toBeLessThanOrEqual(titleBox.width * 2);
-    await app.screenshot(`sidebar-devices-${appearance}`);
     await tapControl(screen, screen.getByRole('button', { name: '設定', exact: true }).last());
     await expect(screen.getByRole('switch')).not.toBeVisible();
     await expect(screen.getByText('Gmail', { exact: true })).not.toBeVisible();
@@ -100,22 +93,24 @@ test('settings polish: appearance preferences survive restart without changing r
   await launchMemora(app, device, screen);
   await openSettings(screen);
   await category(screen, 'appearance');
-  const dark = screen.getByRole('switch', { name: 'ダークモード', exact: true });
+  const appearance = screen.getByRole('button', { name: /^外観/ }).first();
   const haptics = screen.getByRole('switch', { name: '触覚フィードバック', exact: true });
-  await expect(dark).not.toBeChecked();
+  await expect(appearance).toHaveAccessibleName(/システムに合わせる|ライト|ダーク/);
   await expect(haptics).toBeChecked();
-  await tapControl(screen, dark);
-  await tapControl(screen, haptics);
-  await expect(dark).toBeChecked();
+  await tapControl(appearance);
+  await tapControl(screen.getByRole('button', { name: 'ダーク', exact: true }));
+  await tapControl(haptics);
+  await expect(appearance).toHaveAccessibleName(/ダーク/);
   await expect(haptics).not.toBeChecked();
   await app.screenshot('appearance-preferences-dark');
   await app.restart();
   await openSettings(screen);
   await category(screen, 'appearance');
-  await expect(dark).toBeChecked();
+  await expect(appearance).toHaveAccessibleName(/ダーク/);
   await expect(haptics).not.toBeChecked();
-  await tapControl(screen, dark);
-  await tapControl(screen, haptics);
+  await tapControl(appearance);
+  await tapControl(screen.getByRole('button', { name: 'システムに合わせる', exact: true }));
+  await tapControl(haptics);
 });
 
 test('settings polish: relocated AI, recording, plan and connection controls remain reachable', async ({ app, device, screen }) => {

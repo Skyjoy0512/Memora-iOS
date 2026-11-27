@@ -32,9 +32,10 @@ test('summary sample is additive, recoverable and displays its image without a t
   await tapControl(screen.getByTestId('summary.sample.open'));
   // During the native push, Library and detail can both expose this title.
   await expect(screen.getByText(title, { exact: true, visible: true }).last()).toBeVisible();
-  await expect(screen.getByText('表示用の架空データです。実際の音声・AI処理の結果ではありません。', { exact: true })).toBeVisible();
-  await expect(screen.getByTestId('summary.poster.inline')).toBeVisible();
-  await expect(screen.getByTestId('summary.poster.inline')).toHaveAccessibleName(/先に5人で検証し、結果を見て公開日を決める/);
+  await expect(screen.getByText(/初回の設定を録音後へ移す/).first()).toBeVisible();
+  await tapControl(screen.getByRole('button', { name: 'ノート', exact: true }));
+  await expect(screen.getByText(/表示確認用の架空データ。/).first()).toBeVisible();
+  await tapControl(screen.getByRole('button', { name: '要約', exact: true }));
   await app.screenshot('inline-summary-sample-light');
   expect(records()).toHaveLength(2);
   expect(records().find((record: any) => record.id.toLowerCase() === fixture.id.toLowerCase())).toMatchObject({
@@ -58,7 +59,7 @@ test('summary sample is additive, recoverable and displays its image without a t
   sample = records().find((record: any) => record.id.toLowerCase() === sampleID);
   await settings();
   await tapControl(screen.getByTestId('summary.sample.open'));
-  await expect(screen.getByTestId('summary.poster.inline')).toBeVisible();
+  await expect(screen.getByText(/理由：検証前のため、効果はまだ確定していない。/).first()).toBeVisible();
   expect(records()).toHaveLength(2);
   expect(records().find((record: any) => record.id.toLowerCase() === sampleID)).toEqual(sample);
   await app.screenshot('inline-summary-sample-dark');

@@ -13,7 +13,9 @@ test('waiting evidence uses actual status components with local display fixtures
   const destination = screen.getByRole('button', { name: 'Ask AIの経過（表示の確認）', exact: true });
   await scrollToControl(screen, destination);
   await tapControl(destination);
-  await expect(screen.getByText('作業しています', { exact: true }).first()).toBeVisible();
+  const statuses = screen.getByTestId('ai.waitingStatus');
+  await expect(statuses.first()).toHaveAccessibleName('考えています');
+  await expect(statuses.last()).toHaveAccessibleName('確認を待っています（表示例）');
   for (const appearance of ['light', 'dark'] as const) {
     await device.setAppearance(appearance);
     await app.screenshot(`waiting-${appearance}`);
