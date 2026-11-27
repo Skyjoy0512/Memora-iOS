@@ -34,7 +34,7 @@ test('chat surface: capture composer and sidebar in both appearances', async ({ 
     await dismissFromEmptyCanvas(screen);
     await tapControl(screen, screen.getByLabel('メニュー'));
     await expect(screen.getByLabel('ワークスペース', { exact: true })).not.toBeVisible();
-    await expect(screen.getByRole('button', { name: 'Memora Plus、プランと利用状況', exact: true })).toBeVisible();
+    await expect(screen.getByTestId('sidebar.settings')).toBeVisible();
     await app.screenshot(`chat-sidebar-${appearance}`);
     const settings = screen.getByRole('button', { name: '設定', exact: true }).last();
     await expect.poll(async () => {
@@ -50,15 +50,23 @@ test('chat surface: capture composer and sidebar in both appearances', async ({ 
   }
 });
 
-test('chat surface: stacked controls keep draft navigation available after dismissing the keyboard', async ({ app, device, screen }) => {
+test('chat surface: composer controls stay separate and keep the draft after dismissing the keyboard', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await tapTab(screen, 'Ask AI');
   const input = screen.getByTestId('ai.composer.input');
-  const attach = screen.getByLabel('添付を追加');
+  // Ask AI opens its attachment sheet from the composer's own button.
+  const attach = screen.getByTestId('ai.composer.add');
+  await expect(input).toBeVisible();
+  await expect(attach).toBeVisible();
   await expect.poll(async () => {
     const field = await input.boundingBox();
     const control = await attach.boundingBox();
-    return !!field && !!control && control.y >= field.y + field.height - 2;
+    if (!field || !control) return false;
+    // The collapsed composer puts the paperclip beside the field; the expanded
+    // one stacks it. Either way the two controls must not overlap.
+    const beside = control.x >= field.x + field.width - 2 || field.x >= control.x + control.width - 2;
+    const stacked = control.y >= field.y + field.height - 2 || field.y >= control.y + control.height - 2;
+    return beside || stacked;
   }).toBe(true);
   const focused = await focusComposer(screen);
   await focused.fill('画面を行き来しても残しておく相談の下書き');

@@ -24,6 +24,7 @@
 | プロジェクトの時系列横断 | Mac ホスト・実 FTS5、合成資料52件 | 適合9/10、取得9/9。方針変更前後の2件、監査資料を含む3件、更新・移動・削除を確認。記録日を明示した検索は対象日だけを取得し、日付だけの検索も成功。用途を指定しない日付表現では古い記録も1件返った。70回の再検索は p50 0.31 ms、p95 0.57 ms |
 | 資料生成 | Mac ホスト・実出力と Quick Look | 65型の構造と書き出し。原本と Quick Look 14型、CoreGraphics 38型に描画差。Office での編集・再保存は未確認 |
 | 統合品質ゲート | 固定コミットの Mac ホスト | `a794baac`、`54974876`、`2dc48020`、`c489bcfb` は11/11成功（`c489bcfb` は `/Volumes/DevSSD/Development/Temp/memora-release-qa.JE0mxQ/run/summary.json`）。以前の長時間 WAV の失敗は統合再実行と単独2回で再発しなかった |
+| エージェント・チャット面 E2E | iPhone 18 Pro Max 専用 E2E | `agent-approval` 2件と `chat-surface` 3件が成功。Ask AI の添付は `ai.composer.add`、折りたたみ時は入力欄の横・展開時は縦に並ぶ。サイドバーは設定ボタンで確認 |
 | 参考資料・引用の E2E | iPhone 18 Pro Max 専用 E2E | `project-source-office`、`project-source-recovery`、`source-audio-citation`、`source-web-citation` の4件が成功。ワークスペースの5セクションはインライン表示、資料の本文は「原文／ノート本文」を開いて確認する。ノートの要約準備中は「その他」が無効になるため、有効化を最大60秒待つ |
 | 要約の読み面 E2E | iPhone 18 Pro Max 専用 E2E | `adaptive-structured-summary`、`markdown-replacement` 2件、`summary-reading-accessibility`、`draft-protection` 2件が成功。共有シートを閉じた後や再起動後にアプリのツリーが外れる場合は `restartToLibrary` でライブラリから開き直す。`summary-reading` はポスター前提のため skip |
 | 要約の判断・ポスター E2E | iPhone 18 Pro／Pro Max 専用 E2E | 判断の編集は「その他 › 要点・決定事項を編集」のシートで、保存・再起動後の復元・要約と文字起こしの不変・確認リンク非表示を確認。ポスター系4件は `FeatureFlags.isInlineSummaryPosterEnabled = false` のため理由付きで skip（旧ヘルパーでも同じ失敗で、今回の変更が原因ではない）。`meeting.tasks.add` は `adaptive-structured-summary` が引き続き検証する |
