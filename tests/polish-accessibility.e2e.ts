@@ -25,9 +25,12 @@ test('transcript and purpose catalogs remain usable at largest Dynamic Type', { 
     const editShortcut = await screen.getByTestId('record.aiEdit.open').boundingBox();
     const back = await screen.getByTestId('BackButton').first().boundingBox();
     if (!composerBeforeSearch || !back) throw new Error('Missing record navigation or composer frame');
+    // The section picker pins under the navigation bar while the transcript
+    // scrolls, so it owns the top edge once it is up there.
+    const picker = screen.getByRole('button', { name: /表示する項目/ }).first();
     await scrollToControl(screen, search, {
       minimumY: back.y + back.height, maximumY: Math.min(composerBeforeSearch.y, editShortcut?.y ?? Infinity),
-    });
+    }, picker);
     await expect(search).toBeVisible();
     await device.setAppearance('dark');
     await app.screenshot('transcript-largest-dark');

@@ -174,17 +174,58 @@ export async function requireRootMenu(app: any, screen: any) {
   }
 }
 
-export async function scrollToControl(screen: any, control: any, frame?: { minimumY: number; maximumY: number }) {
-  for (const down of frame ? [true, false] : [true]) {
-    for (let attempt = 0; attempt < 9; attempt++) {
-      if (await control.isVisible()) {
-        if (!frame) return;
-        const box = await control.boundingBox();
-        if (box && box.y >= frame.minimumY && box.y + box.height <= frame.maximumY) return;
-        if (box && box.y < frame.minimumY && down) break;
-      }
-      await screen.swipe({ from: { x: 215, y: down ? 700 : 300 }, to: { x: 215, y: down ? 300 : 700 }, duration: 500 });
+export async function scrollToControl(screen: any, control: any, frame?: { minimumY: number; maximumY: number }, header?: any) {
+  // A section header pins under the navigation bar once the page scrolls, and
+  // content keeps moving beneath it: a control that reads as on screen there is
+  // still covered and takes no tap. Measure from the pinned edge when it is.
+  const visibleTop = async () => {
+    if (!frame) return 300;
+    const pinned = header ? await header.boundingBox() : null;
+    return pinned && pinned.y < 400
+      ? Math.max(frame.minimumY, pinned.y + pinned.height)
+      : frame.minimumY;
+  };
+  const settles = async () => {
+    try {
+      if (!await control.isVisible()) return false;
+      if (!frame) return true;
+      const box = await control.boundingBox();
+      return !!box && box.y >= await visibleTop() && box.y + box.height <= frame.maximumY;
+    } catch {
+      return false;
     }
+  };
+  if (await settles()) return;
+  // Swipe inside the band between the page header and the fixed bottom
+  // controls. A gesture that starts over a floating action never reaches the
+  // scroll view, and a downward drag at the page's top reverses the zoom
+  // navigation transition and leaves the screen entirely.
+  const band = async () => {
+    const top = frame ? (await visibleTop()) + 24 : 300;
+    let bottom = frame ? frame.maximumY - 24 : 700;
+    if (!frame) {
+      // A keyboard owns the bottom of the screen; a gesture that runs into it
+      // is refused rather than scrolling the page behind it.
+      try {
+        const keyboard = screen.getByRole('keyboard');
+        const box = await keyboard.isVisible() ? await keyboard.boundingBox() : null;
+        if (box) bottom = Math.min(bottom, box.y - 24);
+      } catch {}
+    }
+    const travel = Math.max(120, Math.min(bottom - top - 40,
+      frame ? Math.min(420, frame.maximumY - top - 80) : 400));
+    return { top, bottom, travel };
+  };
+  for (let attempt = 0; attempt < 12; attempt++) {
+    if (await settles()) return;
+    const { bottom, travel } = await band();
+    await screen.swipe({ from: { x: 215, y: bottom }, to: { x: 215, y: bottom - travel }, duration: 500 });
+  }
+  // Coming back only in short steps, so the page is never dragged past its top.
+  for (let attempt = 0; attempt < 12; attempt++) {
+    if (await settles()) return;
+    const { top, travel } = await band();
+    await screen.swipe({ from: { x: 215, y: top }, to: { x: 215, y: top + Math.max(60, travel / 3) }, duration: 500 });
   }
   await expect(control).toBeVisible();
 }

@@ -8,11 +8,10 @@ afterEach(async ({ device }) => { await device.setAppearance('light'); });
 // XXXL using agent-device settings. No fixed font override is injected in-app.
 test('design: mention controls remain below navigation and above native input', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
-  await device.openLink('memora://ask-ai');
-  const confirmation = screen.getByRole('button', { name: '開く', exact: true });
-  if (await confirmation.isVisible()) await confirmation.tap();
+  await tapTab(screen, 'Ask AI');
   const input = await focusComposer(screen);
-  await input.fill('@file');
+  await input.pressSequentially('@file');
+  await expect(input).toHaveValue('@file');
   const close = screen.getByLabel('候補を閉じる');
   await expect(close).toBeVisible();
   await expect(screen.getByRole('button', { name: 'ファイル・記録の検索、利用可能', exact: true })).toBeVisible();
