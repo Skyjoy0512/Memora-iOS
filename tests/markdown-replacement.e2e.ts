@@ -1,7 +1,7 @@
 import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { seedSummaryFixture } from './summary-fixture-helpers';
-import { replaceEditorWithPaste, selectAllEditorText, scrollToControl, tapControl, tapTab } from './ui-helpers';
+import { replaceEditorWithPaste, restartToLibrary, selectAllEditorText, scrollToControl, tapControl, tapTab } from './ui-helpers';
 import { sql } from './sqlite-fixture-helpers';
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
@@ -32,8 +32,7 @@ test('Japanese replacement, Unicode paste and navigation keep exact committed te
   expect(records()[0].summary.includes('第1段落')).toBe(false);
   expect(records()[0].transcript[0].text).toBe(raw);
   expect(records()[0].summary.includes('| 予算案を確認 | 承認が前提 | 佐藤 | 来週 |')).toBe(true);
-  await app.restart();
-  await tapTab(screen, 'ライブラリ');
+  await restartToLibrary(app, screen);
   await tapControl(screen.getByRole('button', { name: new RegExp('^' + title) }).first());
   const restored = screen.getByRole('button', { name: final, exact: true });
   await scrollToControl(screen, restored);
@@ -85,8 +84,7 @@ test('formatting, list and table edits change only their own source lines', { ti
   expected = expected.replace('承認が前提', '条件付き承認：公開前に再確認');
   await expect.poll(() => records()[0].summary).toBe(expected);
   expect(records()[0].transcript[0].text).toBe(raw);
-  await app.restart();
-  await tapTab(screen, 'ライブラリ');
+  await restartToLibrary(app, screen);
   await tapControl(screen.getByRole('button', { name: new RegExp('^' + title) }).first());
   const restored = screen.getByRole('button', { name: '条件付き承認：公開前に再確認', exact: true });
   await scrollToControl(screen, restored);

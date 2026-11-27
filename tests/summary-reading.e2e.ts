@@ -12,7 +12,7 @@ afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
 // Only a fresh dedicated E2E simulator, positively identified by a UI-created
 // UUID memo, receives this explicit fixture. The preview's records are untouched.
-test('summary PNG, full-text reading and reversible transcript survive restart', { timeout: 360_000 }, async ({ app, device, screen }) => {
+test('summary PNG, full-text reading and reversible transcript survive restart', { timeout: 360_000, skip: 'The one-page summary poster is compiled off (FeatureFlags.isInlineSummaryPosterEnabled is false).' }, async ({ app, device, screen }) => {
   const { database, identity, fixture, title, summary, raw, marker } = await seedSummaryFixture(app, device, screen);
   await expect(screen.getByTestId('summary.poster.inline')).toBeVisible();
   await app.screenshot('summary-entry-light');

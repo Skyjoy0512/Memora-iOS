@@ -3,7 +3,7 @@ import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { seedSummaryFixture } from './summary-fixture-helpers';
 import { sql } from './sqlite-fixture-helpers';
-import { scrollToControl, tapControl, tapTab, replaceEditorWithPaste } from './ui-helpers';
+import { scrollToControl, tapControl, tapTab, replaceEditorWithPaste, restartToLibrary } from './ui-helpers';
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
@@ -31,8 +31,7 @@ test('adaptive reading retains task operations, facts and transcript evidence', 
       coverage: [{ aspect: '担当の確定', status: 'pending' }, { aspect: '予算', status: 'notMentioned' }] } };
   const bytes = Buffer.from(JSON.stringify([{ ...fixture, summaryVersions: [version], activeSummaryVersionID: versionID }])).toString('hex');
   sql(database, `UPDATE documents SET data=X'${bytes}' WHERE key='memoraMeetings';`);
-  await app.restart();
-  await tapTab(screen, 'ライブラリ');
+  await restartToLibrary(app, screen);
   await tapControl(screen.getByRole('button', { name: new RegExp('^' + title) }).first());
   await expect(screen.getByTestId('ai.composer.input')).toBeVisible();
   await expect(screen.getByRole('button', { name: '追加メニュー', exact: true })).not.toBeVisible();
@@ -92,6 +91,10 @@ test('adaptive reading retains task operations, facts and transcript evidence', 
   await expect(screen.getByRole('listitem', { name: /^(Copy|コピー)$/ }).first()).toBeVisible();
   await app.screenshot('adaptive-native-share');
   await tapControl(screen.getByRole('button', { name: /^(Close|閉じる)$/ }).first());
+  // The system share sheet can leave the app's tree detached; come back through
+  // the app's own Library instead of assuming the detail returned.
+  await restartToLibrary(app, screen);
+  await tapControl(screen.getByRole('button', { name: new RegExp('^' + title) }).first());
   await tapControl(screen.getByRole('button', { name: 'その他', exact: true }));
   await tapControl(screen.getByTestId('meeting.summary.regenerate'));
   await expect(screen.getByTestId('summary.engineChoice')).toBeVisible();

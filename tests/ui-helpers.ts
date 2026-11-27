@@ -237,3 +237,11 @@ export async function openSettingsGallery(screen: any) {
   await tapControl(screen, diagnostics);
   await tapControl(screen, screen.getByRole('button', { name: '状態と復旧UIを確認', exact: true }));
 }
+
+// A restart can leave the driver attached to the closing scene for a moment.
+// Wait for the root again, relaunching once, before driving the tab bar.
+export async function restartToLibrary(app: any, screen: any) {
+  await app.restart();
+  await requireRootMenu(app, screen);
+  await tapTab(screen, 'ライブラリ');
+}
