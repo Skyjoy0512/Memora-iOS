@@ -4,7 +4,7 @@ import { seedSummaryFixture } from './summary-fixture-helpers';
 import { sql } from './sqlite-fixture-helpers';
 import { scrollToControl, tapControl, tapTab, openSummaryPoster, openSummaryImageMenu } from './ui-helpers';
 
-test('separate infographic restores evidence and stages three record questions without sending', { timeout: 300_000 }, async ({ app, device, screen }) => {
+test('separate infographic restores evidence and stages three record questions without sending', { timeout: 300_000, skip: 'The one-page summary poster is compiled off (FeatureFlags.isInlineSummaryPosterEnabled is false).' }, async ({ app, device, screen }) => {
   const { database, fixture, title, summary, raw } = await seedSummaryFixture(app, device, screen);
   const privacy = { classification: 'unknown', allowsCloudAI: false, allowsAutomaticAgentAccess: false,
     allowsAutomaticWebhook: false, allowsTeamSharing: false, updatedAt: fixture.createdAt };

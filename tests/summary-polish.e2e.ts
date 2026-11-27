@@ -8,7 +8,10 @@ import { tapControl, tapTab, scrollToControl, openSummaryPoster } from './ui-hel
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
-test('summary decisions remain editable without transcript confirmation links', { timeout: 240_000 }, async ({ app, device, screen }) => {
+// The one-page poster is compiled off (FeatureFlags.isInlineSummaryPosterEnabled
+// is false), and the old summary sections became editable Markdown. Keep the
+// scenario until the poster returns; its assertions describe that surface.
+test('summary decisions remain editable without transcript confirmation links', { timeout: 240_000, skip: 'The decisions section was replaced by the editable Markdown summary.' }, async ({ app, device, screen }) => {
   const { database, title, fixture, raw, summary } = await seedSummaryFixture(app, device, screen);
   const read = () => JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"));
   // This UUID-marked, fresh test database is owned by the fixture helper.
@@ -66,7 +69,7 @@ test('summary decisions remain editable without transcript confirmation links', 
   await app.screenshot('original-transcript-still-available');
 });
 
-test('long summary images stay bounded while preserving the complete saved summary', { timeout: 180_000 }, async ({ app, device, screen }) => {
+test('long summary images stay bounded while preserving the complete saved summary', { timeout: 180_000, skip: 'The one-page summary poster is compiled off (FeatureFlags.isInlineSummaryPosterEnabled is false).' }, async ({ app, device, screen }) => {
   const sentence = '正式な承認がなければ、本番には反映しません。';
   const long = sentence.repeat(20);
   const summary = `## 会議の概要\n${long}\n## 決定事項\n- 検証：${long}\n- 再確認：${long}\n- 公開前の確認\n## アクションアイテム\n- 条件確認：${long}\n- 対象確認：${long}\n- 日時確認\n## 未決事項\n- 承認日：${long}\n- 担当者：${long}\n- 確認先`;

@@ -24,7 +24,7 @@
 | プロジェクトの時系列横断 | Mac ホスト・実 FTS5、合成資料52件 | 適合9/10、取得9/9。方針変更前後の2件、監査資料を含む3件、更新・移動・削除を確認。記録日を明示した検索は対象日だけを取得し、日付だけの検索も成功。用途を指定しない日付表現では古い記録も1件返った。70回の再検索は p50 0.31 ms、p95 0.57 ms |
 | 資料生成 | Mac ホスト・実出力と Quick Look | 65型の構造と書き出し。原本と Quick Look 14型、CoreGraphics 38型に描画差。Office での編集・再保存は未確認 |
 | 統合品質ゲート | 固定コミットの Mac ホスト | `a794baac`、`54974876`、`2dc48020`、`c489bcfb` は11/11成功（`c489bcfb` は `/Volumes/DevSSD/Development/Temp/memora-release-qa.JE0mxQ/run/summary.json`）。以前の長時間 WAV の失敗は統合再実行と単独2回で再発しなかった |
-| 要約の判断・ポスター E2E | iPhone 18 Pro Max 専用 E2E | 4件失敗（旧ヘルパーでも同じ）。要約の読み面は Markdown に移り `決まったこと` 節は画面に無く、ポスターは `FeatureFlags.isInlineSummaryPosterEnabled = false`。テストが旧UIを参照している |
+| 要約の判断・ポスター E2E | iPhone 18 Pro Max 専用 E2E | 4件を理由付きで skip。要約の読み面は Markdown に移り `決まったこと` 節は画面に無く、ポスターは `FeatureFlags.isInlineSummaryPosterEnabled = false`。旧ヘルパーでも同じ失敗だったため、今回の変更が原因ではない。`meeting.tasks.add` は `adaptive-structured-summary` が引き続き検証する |
 | Bitrig iOS Debug/Release | シミュレータ向けビルド | 日付付き出典まで Debug／Release 成功。写真の根拠まで Debug 成功。実アカウント・実機は未実施 |
 
 ## SQLite 合成データの計測

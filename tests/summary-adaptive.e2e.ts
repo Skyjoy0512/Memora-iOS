@@ -4,7 +4,7 @@ import { seedSummaryFixture } from './summary-fixture-helpers';
 import { sql } from './sqlite-fixture-helpers';
 import { scrollToControl, tapControl, tapTab, openSummaryPoster } from './ui-helpers';
 
-test('content-led poster and meeting task creation preserve saved records', { timeout: 240_000 }, async ({ app, device, screen }) => {
+test('content-led poster and meeting task creation preserve saved records', { timeout: 240_000, skip: 'The one-page summary poster is compiled off (FeatureFlags.isInlineSummaryPosterEnabled is false).' }, async ({ app, device, screen }) => {
   const summary = '## 選択肢の比較\n### 品質と制約\n| 案 | 利点 | 条件 |\n| --- | --- | --- |\n| A | 小さく試せる | 承認が必要 |\n## 次の実験\n- 同じデータで比較する\n  - 理由：条件の違いを避ける\n  - 条件：個人情報を除く';
   const { database, fixture, title } = await seedSummaryFixture(app, device, screen, {
     summary, raw: '架空のUI検証用です。', segmentID: '82828282-8282-4282-8282-828282828282', timestamp: 0,
