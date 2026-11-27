@@ -81,7 +81,7 @@ test('collection polish: documents menu keeps existing actions and search empty 
   await tapControl(screen, screen.getByRole('button', { name: '今週の週報を作る', exact: true }));
   await expect(screen.getByText('今週はまだ記録がありません')).toBeVisible();
   await tapControl(screen, screen.getByRole('button', { name: '閉じる', exact: true }).last());
-  await tapControl(screen, screen.getByLabel('資料を検索'));
+  await tapControl(screen, screen.getByLabel('資料を検索').first());
   await expect(screen.getByText(/タイトル・本文/).first()).toBeVisible();
   await expect(screen.getByTestId('ai.composer.input')).not.toBeVisible();
   await screen.getByPlaceholder('タイトル・本文を検索').fill('missing');
@@ -112,11 +112,15 @@ test('collection polish: document edits confirm discard, save and restore after 
   await expect(screen.getByRole('button', { name: '保存', exact: true })).toBeDisabled();
   const originalBody = await screen.getByLabel('資料の本文').inputValue();
   await screen.getByPlaceholder('タイトル').fill('Research brief');
+  await expect(screen.getByRole('button', { name: '保存', exact: true })).toBeEnabled();
   await tapControl(screen, screen.getByRole('button', { name: '完了', exact: true }));
   await expect(screen.getByRole('keyboard')).not.toBeVisible();
   await tapControl(screen, screen.getByRole('button', { name: 'キャンセル', exact: true }));
+  // The system draws the destructive action only; tapping outside keeps editing.
+  await expect(screen.getByText('変更を破棄しますか？', { exact: true })).toBeVisible();
   await app.screenshot('document-discard-confirmation');
-  await tapControl(screen, screen.getByRole('button', { name: '編集を続ける', exact: true }));
+  await screen.tapAt({ x: 200, y: 160 });
+  await expect(screen.getByText('変更を破棄しますか？', { exact: true })).not.toBeVisible();
   await expect(screen.getByPlaceholder('タイトル')).toHaveValue('Research brief');
   await expect(screen.getByLabel('資料の本文')).toHaveValue(originalBody);
   await tapControl(screen, screen.getByRole('button', { name: 'キャンセル', exact: true }));
@@ -128,7 +132,7 @@ test('collection polish: document edits confirm discard, save and restore after 
   await tapControl(screen, screen.getByRole('button', { name: '保存', exact: true }));
   await app.restart();
   await openCollection(screen, '資料');
-  await tapControl(screen, screen.getByLabel('資料を検索'));
+  await tapControl(screen, screen.getByLabel('資料を検索').first());
   const query = screen.getByPlaceholder('タイトル・本文を検索');
   await query.fill('brief direction');
   const result = screen.getByRole('button', { name: /^Research brief、/ });

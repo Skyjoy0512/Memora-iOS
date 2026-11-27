@@ -24,8 +24,8 @@
 | プロジェクトの時系列横断 | Mac ホスト・実 FTS5、合成資料52件 | 適合9/10、取得9/9。方針変更前後の2件、監査資料を含む3件、更新・移動・削除を確認。記録日を明示した検索は対象日だけを取得し、日付だけの検索も成功。用途を指定しない日付表現では古い記録も1件返った。70回の再検索は p50 0.31 ms、p95 0.57 ms |
 | 資料生成 | Mac ホスト・実出力と Quick Look | 65型の構造と書き出し。原本と Quick Look 14型、CoreGraphics 38型に描画差。Office での編集・再保存は未確認 |
 | 統合品質ゲート | 固定コミットの Mac ホスト | `a794baac`、`54974876`、`2dc48020`、`c489bcfb` は11/11成功（`c489bcfb` は `/Volumes/DevSSD/Development/Temp/memora-release-qa.JE0mxQ/run/summary.json`）。以前の長時間 WAV の失敗は統合再実行と単独2回で再発しなかった |
-| ナビゲーション・コレクション E2E | iPhone 18 Pro Max 専用 E2E | `native-header` 4件、`root-tab-navigation` 5件が成功。`collection-polish` は3/4成功で、書類編集の破棄確認（「編集を続ける」）が出ない1件を QA-05 として残す。検索の空状態は testID ではなく文言で確認する |
-| マーケットプレイスの記事・検索 E2E | iPhone 18 Pro Max 専用 E2E | `skill-polish` 2件と `minimal-polish` 2件が成功。タブは「すべて／スキル／要約／コネクタ」のボタン、検索は `collection.search.input`、記事の節は「詳しい手順」。**一覧の行本体をタップしても詳細が開かない**ため、行の「…の操作 › 詳細を表示」から開いて検証している（QA-04） |
+| ナビゲーション・コレクション E2E | iPhone 18 Pro Max 専用 E2E | `native-header` 4件、`root-tab-navigation` 5件が成功。`collection-polish` 4件成功。書類編集の破棄確認は iOS 27 のダイアログが破棄ボタンだけを描き、外側タップで編集を続ける仕様に合わせて検証した。検索の空状態は testID ではなく文言で確認する |
+| マーケットプレイスの記事・検索 E2E | iPhone 18 Pro Max 専用 E2E | `skill-polish` 2件と `minimal-polish` 2件が成功。タブは「すべて／スキル／要約／コネクタ」のボタン、検索は `collection.search.input`、記事の節は「詳しい手順」。行本体のタップで詳細が開くようになり、テストも行を直接押す |
 | コネクタ・カレンダー E2E | iPhone 18 Pro Max 専用 E2E | `calendar-context`、`gmail-connection`、`mcp-connection`、`notion-connection` の4件が成功。一覧は「…を追加・接続」で詳細を開き、アクセス説明は「アクセスと利用設定」を展開、管理はフッターの「接続」「コネクタを追加・管理」から開く。未接続でも「Ask AIで使う」を切り替えられるよう修正した |
 | エージェント・チャット面 E2E | iPhone 18 Pro Max 専用 E2E | `agent-approval` 2件、`chat-surface` 3件、`agent-entry` 5件が成功。Ask AI の添付は `ai.composer.add`、折りたたみ時は入力欄の横・展開時は縦に並ぶ。サイドバーは設定ボタンで確認 |
 | 参考資料・引用の E2E | iPhone 18 Pro Max 専用 E2E | `project-source-office`、`project-source-recovery`、`source-audio-citation`、`source-web-citation` の4件が成功。ワークスペースの5セクションはインライン表示、資料の本文は「原文／ノート本文」を開いて確認する。ノートの要約準備中は「その他」が無効になるため、有効化を最大60秒待つ |

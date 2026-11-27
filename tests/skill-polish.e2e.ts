@@ -51,10 +51,7 @@ test('skill polish: search Tools, open an article and clear the search', async (
   const article = screen.getByRole('button', { name: /プロジェクトの要点整理/ });
   await expect(article).toBeVisible();
   await app.screenshot('tools-search-skill');
-  // Tapping the row body does not open the article yet (QA-04); the row's own
-  // menu still reaches the same detail.
-  await tapControl(screen.getByRole('pop-up-button', { name: 'プロジェクトの要点整理の操作' }).first());
-  await tapControl(screen.getByRole('button', { name: '詳細を表示', exact: true }).first());
+  await tapControl(screen, article);
   await expect(screen.getByText('詳しい手順', { exact: true })).toBeVisible();
   await tapControl(screen, screen.getByRole('button', { name: '閉じる', exact: true }));
   await tapControl(screen, screen.getByLabel('検索語を消去'));

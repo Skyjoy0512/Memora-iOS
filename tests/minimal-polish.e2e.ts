@@ -34,13 +34,12 @@ test('minimal polish: Tools menus, article actions and connectors stay usable', 
   await expect(screen.getByPlaceholder('スキル名')).toBeVisible();
   await tapControl(screen, screen.getByRole('button', { name: 'キャンセル', exact: true }));
   await expect(add).toBeVisible();
-  // Narrow the catalog so the row is on screen, then use its own menu: the row
-  // body does not open the article yet (QA-04).
   const search = screen.getByTestId('collection.search.input');
   await search.fill('プロジェクトの要点整理');
   await search.press('Enter');
-  await tapControl(screen.getByRole('pop-up-button', { name: 'プロジェクトの要点整理の操作' }).first());
-  await tapControl(screen.getByRole('button', { name: '詳細を表示', exact: true }).first());
+  const article = screen.getByRole('button', { name: /プロジェクトの要点整理/ }).first();
+  await expect(article).toBeVisible();
+  await tapControl(screen, article);
   await expect(screen.getByText('詳しい手順', { exact: true })).toBeVisible();
   const use = screen.getByRole('button', { name: 'チャットで使用', exact: true });
   const box = await use.boundingBox();

@@ -39,6 +39,9 @@ struct MarketplaceListRow: View {
         .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
         .contentShape(Rectangle())
       }
+      // Some iOS 27 builds swallow the plain button's action inside this
+      // scrolling row; the simultaneous tap keeps the row opening its detail.
+      .simultaneousGesture(TapGesture().onEnded { showsDetail = true })
       .accessibilityIdentifier("marketplace.item.\(item.id)")
 
       if isInUse {
