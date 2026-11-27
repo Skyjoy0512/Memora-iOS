@@ -28,13 +28,11 @@ struct IntegrationDetailView: View {
             }
           }
           .frame(maxWidth: .infinity, alignment: .leading)
-          if connected {
-            Toggle("Ask AIで使う", isOn: Binding(
-              get: { model.integrationIsEnabled(service.id) },
-              set: { model.setIntegrationEnabled(service.id, enabled: $0) }))
-          } else if !model.integrationIsEnabled(service.id) {
-            Button("Ask AIで有効にする") { model.setIntegrationEnabled(service.id, enabled: true) }
-          }
+          // The switch reflects the preference whether or not the service is
+          // connected, so opting in can always be undone.
+          Toggle("Ask AIで使う", isOn: Binding(
+            get: { model.integrationIsEnabled(service.id) },
+            set: { model.setIntegrationEnabled(service.id, enabled: $0) }))
           DisclosureGroup("アクセスと利用設定") {
             VStack(alignment: .leading, spacing: 12) {
               Text(service.permissions)
