@@ -14,11 +14,14 @@ Bitrig の iOS プロジェクトで継続する。[実行状態](EXECUTION_STAT
 - `54974876` の記録詳細の写真出典は本番の文脈生成と模擬 Vision を使うホスト検証および元画像・削除後の質問履歴 E2E が成功。`.e2e/release-wave-record-photo-accessibility/report.json` の写真シナリオを参照。同じ実行の最大文字サイズ・候補メニューの失敗は別途検証中。
 - `27956d28` は5万件までの移行リハーサル、`f42bb302` は会議 Bot の参加先・同意・状態遷移の専用ホスト検証。どちらも実ユーザーの移行・実会議は未実施。
 - `ab4c39b1` の最大文字サイズ・候補の枠・元画像 E2E は `.e2e/release-wave-record-photo-layout-verified/report.json` の4件成功。 `2dc48020` の端末内グローバル写真検索は専用ホストと Bitrig Debug 成功。
+- `ab50fad1` で最大文字サイズの E2E は幅402pt の iPhone 18 Pro でも3件成功（`.e2e/dbg-narrow-polish8`、`.e2e/dbg-narrow-design`）。同じ3件は iPhone 18 Pro Max でも成功（`.e2e/dbg-wide-accessibility`）。浮遊する AI 操作の上や固定見出しの下を掴まないこと、ズーム遷移を戻さないことが条件。
+- `e2f20004` の SealedReader は5万件の合成ストアで、ページ順・改変・欠落・競合・取消・封緘失敗を検出。先頭ページ0.78 ms、末尾0.70 ms（ホスト、温キャッシュ5回中央値）。本番の保存経路は全件 BLOB のまま。
+- `f43cd2b6` の記録日指定と `31becc94` の MCP 認証中断は専用ホスト検証が成功。`63626753` はリリース根拠の記録。
 - Phase 5 の長時間音声は AVFoundation、実 SQLite、合成認識結果を使ったホスト検証。計測結果は [音声計測](../AUDIO_MEASUREMENT.md)。
 
 ## 続きの作業
 
-1. 明示した記録日での範囲限定は `App/ProjectContextBuilder.swift` と `App/ProjectSearchIndex.swift`。期限と複数日の比較を誤って除外しないことをホストで確かめ、Bitrig ビルド結果を確認する。
-2. `54974876` の統合結果は `/Volumes/DevSSD/Development/Temp/memora-release-qa.doiX1E/results/summary.json` で11/11成功。 `2dc48020` は `/Volumes/DevSSD/Development/Temp/memora-release-qa.3dU0fS/results/summary.json` で実行中。実機の VoiceOver、長時間音声、モデルは未検証。
+1. QA-02: `summary-polish`、`summary-adaptive`、`summary-infographic` の4件は旧UIを参照して失敗する。要約は Markdown 表示に移り `決まったこと` 節は無く、`summary.poster.inline` は `FeatureFlags.isInlineSummaryPosterEnabled = false`。現行の読み面に合わせて断言を置き換えるか、保留機能として明示する。
+2. STORE-02 はページ読込の検証が済んだ。各入口（録音・要約・復元）の書込順序と競合契約を決め、音声を含む実データで切替える前に復元とロールバックの受け入れ条件を満たす。
 3. グローバル Ask AI の原画像参照は読取済み写真を対象とし、写真を含む旧回答はそのまま再投入しない。実機の Apple Intelligence で回答と引用を検証し、資料生成で同じ根拠の参照を実装する。
-4. STORE-02 は移行リハーサル通過後の作業として、ページ単位読込と各入口の書込順序を合成環境で検証する。音声を含む実利用データで切替を行う前に、復元とロールバックの受け入れ条件を満たす。
+4. 統合品質ゲートは `run-quality-checks.py --output-dir` で11スイート。`2dc48020` と `c489bcfb` は11/11成功。`c489bcfb` の結果は `/Volumes/DevSSD/Development/Temp/memora-release-qa.JE0mxQ/run/summary.json`。
