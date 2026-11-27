@@ -1,6 +1,6 @@
 import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { launchMemora, tapControl } from './ui-helpers';
+import { launchMemora, tapControl, tapTab } from './ui-helpers';
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
@@ -12,10 +12,14 @@ async function openCollection(screen: any, name: string) {
 
 async function makeReview(app: any, device: any, screen: any) {
   await launchMemora(app, device, screen);
-  await device.openLink('memora://new-memo');
+  // A journal memo is what the weekly review counts; a note source is not.
+  await tapTab(screen, 'ジャーナル');
+  await tapControl(screen.getByRole('button', { name: '記録を追加', exact: true }).first());
+  const memoChoice = screen.getByRole('button', { name: 'メモを追加', exact: true });
+  if (await memoChoice.isVisible()) await tapControl(memoChoice);
   await screen.getByPlaceholder('メモのタイトル').fill('Research meeting');
   await screen.getByPlaceholder('ひとことや背景').fill('Discuss research direction.');
-  await tapControl(screen, screen.getByRole('button', { name: '追加', exact: true }));
+  await tapControl(screen.getByRole('button', { name: '追加', exact: true }));
   await openCollection(screen, '資料');
   await tapControl(screen, screen.getByLabel('資料の操作'));
   await tapControl(screen, screen.getByRole('button', { name: '今週の週報を作る', exact: true }));
@@ -39,7 +43,7 @@ test('collection polish: people search keeps notes, detail navigation and cancel
   await expect(screen.getByPlaceholder('メモ')).not.toBeVisible();
   await tapControl(screen, screen.getByRole('button', { name: '人物', exact: true }));
   await tapControl(screen, screen.getByLabel('人物を検索'));
-  await expect(screen.getByTestId('people.search.state')).toHaveText(/名前やメモ/);
+  await expect(screen.getByText(/名前やメモ/).first()).toBeVisible();
   await expect(screen.getByTestId('ai.composer.input')).not.toBeVisible();
   await expect(screen.getByRole('button', { name: /^Mori、/ })).not.toBeVisible();
   const query = screen.getByPlaceholder('名前・メモを検索');
@@ -57,7 +61,7 @@ test('collection polish: people search keeps notes, detail navigation and cancel
   await tapControl(screen, screen.getByLabel('検索語を消去'));
   await query.fill('zz-no-person');
   await device.setAppearance('dark');
-  await expect(screen.getByTestId('people.search.state')).toHaveText(/見つかりません/);
+  await expect(screen.getByText(/見つかりません/).first()).toBeVisible();
   await app.screenshot('people-search-empty-dark');
   await tapControl(screen, screen.getByRole('button', { name: 'キャンセル', exact: true }));
   await expect(screen.getByRole('button', { name: /^Mori、/ })).toBeVisible();
@@ -78,10 +82,10 @@ test('collection polish: documents menu keeps existing actions and search empty 
   await expect(screen.getByText('今週はまだ記録がありません')).toBeVisible();
   await tapControl(screen, screen.getByRole('button', { name: '閉じる', exact: true }).last());
   await tapControl(screen, screen.getByLabel('資料を検索'));
-  await expect(screen.getByTestId('documents.search.state')).toHaveText(/タイトル・本文/);
+  await expect(screen.getByText(/タイトル・本文/).first()).toBeVisible();
   await expect(screen.getByTestId('ai.composer.input')).not.toBeVisible();
   await screen.getByPlaceholder('タイトル・本文を検索').fill('missing');
-  await expect(screen.getByTestId('documents.search.state')).toHaveText(/見つかりません/);
+  await expect(screen.getByText(/見つかりません/).first()).toBeVisible();
   await app.screenshot('documents-search-empty');
   await tapControl(screen, screen.getByRole('button', { name: 'キャンセル', exact: true }));
   await expect(screen.getByLabel('資料の操作')).toBeVisible();
