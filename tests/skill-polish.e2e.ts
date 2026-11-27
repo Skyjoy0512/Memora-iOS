@@ -43,16 +43,20 @@ test('skill polish: search Tools, open an article and clear the search', async (
   await launchMemora(app, device, screen);
   await tapTab(screen, 'ツール');
   await openSidebarSearch(screen);
-  const search = screen.getByPlaceholder('マーケットプレイスを検索');
+  // The prompt follows the visible catalog, so address the field itself.
+  const search = screen.getByTestId('collection.search.input');
   await search.fill('project');
   // Submitting lowers the keyboard; the first tap on a row would only dismiss it.
   await search.press('Enter');
   const article = screen.getByRole('button', { name: /プロジェクトの要点整理/ });
   await expect(article).toBeVisible();
   await app.screenshot('tools-search-skill');
-  await tapControl(screen, article);
-  await expect(screen.getByText('できあがるもの', { exact: true })).toBeVisible();
-  await tapControl(screen, screen.getByLabel('1つ前に戻る'));
+  // Tapping the row body does not open the article yet (QA-04); the row's own
+  // menu still reaches the same detail.
+  await tapControl(screen.getByRole('pop-up-button', { name: 'プロジェクトの要点整理の操作' }).first());
+  await tapControl(screen.getByRole('button', { name: '詳細を表示', exact: true }).first());
+  await expect(screen.getByText('詳しい手順', { exact: true })).toBeVisible();
+  await tapControl(screen, screen.getByRole('button', { name: '閉じる', exact: true }));
   await tapControl(screen, screen.getByLabel('検索語を消去'));
   await search.fill('zz-no-such-tool');
   await expect(screen.getByTestId('tools.empty').first()).toBeVisible();
