@@ -24,7 +24,9 @@ enum MeetingRowStagingChecks {
       try rollsBackMidBatchAndCancellation()
       try rejectsIncompleteOrInvalidStaging()
       try validatesEmptyCollection()
-      print("Meeting row staging: process reopen, transactional rollback, cancellation, competing writers, corrupt or duplicate rows and missing media passed.")
+      try readsOnlySealedPages()
+      try rejectsOversizedPage()
+      print("Meeting row staging: process reopen, transactional rollback, cancellation, competing writers, corrupt or duplicate rows, missing media and sealed page checks passed.")
     default:
       guard let count = Int(CommandLine.arguments[2]), (100...50_000).contains(count) else {
         preconditionFailure("Unexpected synthetic count")
@@ -158,7 +160,19 @@ enum MeetingRowStagingChecks {
     } catch is CancellationError {}
     let afterCancellation = try saved(store)
     precondition(afterCancellation == first && data(store, first.rowKey(1)) == nil)
-    _ = try staging.stage(maximumRows: 3)
+    let complete = try staging.stage(maximumRows: 3)
+    try sql("rollback", """
+      CREATE TRIGGER reject_seal BEFORE INSERT ON documents
+      WHEN NEW.key = '\(MeetingRowStaging.checkpointKey)'
+      BEGIN SELECT RAISE(ABORT, 'synthetic seal failure'); END;
+      """)
+    do {
+      _ = try staging.verify(mediaExists: mediaExists)
+      preconditionFailure("A failed seal was accepted")
+    } catch is LocalStore.StoreError {}
+    let afterSealFailure = try saved(store)
+    precondition(afterSealFailure == complete && data(store, complete.pageKey(0)) == nil)
+    try sql("rollback", "DROP TRIGGER reject_seal;")
     let ready = try staging.verify(mediaExists: mediaExists)
     try assertRows(rows, store: store, checkpoint: ready)
     precondition(data(store, MeetingRowStaging.collectionKey) == original)
@@ -215,6 +229,97 @@ enum MeetingRowStagingChecks {
     let verified = try staging.verify(mediaExists: mediaExists)
     precondition(verified.count == 0 && verified.verified)
     precondition(data(store, MeetingRowStaging.collectionKey) == source)
+    let reader = try MeetingRowStaging.SealedReader(store: store, verified: verified)
+    precondition(reader.count == 0 && reader.pageCount == 0)
+    expectFailure(.outOfRange) { try reader.page(0) }
+  }
+
+  private static func readsOnlySealedPages() throws {
+    let store = try open("paged")
+    let writer = try open("paged")
+    let rows = try fixtureRows(count: 131)
+    let original = collection(rows)
+    try store.write(MeetingRowStaging.collectionKey, data: original)
+    let staging = try MeetingRowStaging(store: store)
+    let pending = try staging.stage(maximumRows: rows.count)
+    expectFailure(.unfinished) { try MeetingRowStaging.SealedReader(store: store, verified: pending) }
+    let verified = try staging.verify(mediaExists: mediaExists)
+    let makeReader = { try MeetingRowStaging.SealedReader(store: store, verified: verified) }
+    var reader = try makeReader()
+    let expected = try JSONDecoder().decode([Meeting].self, from: original)
+    precondition(reader.count == rows.count && reader.pageCount == 3)
+    let pageRecords = try (0..<reader.pageCount).flatMap { index -> [Meeting] in
+      let page = try reader.page(index)
+      precondition(page.offset == index * MeetingRowStaging.pageSize)
+      precondition(page.records.count <= MeetingRowStaging.pageSize)
+      return page.records
+    }
+    precondition(pageRecords == expected)
+    expectFailure(.outOfRange) { try reader.page(-1) }
+    expectFailure(.outOfRange) { try reader.page(Int.max) }
+    do {
+      _ = try reader.page(0) { throw CancellationError() }
+      preconditionFailure("Cancelled page was returned")
+    } catch is CancellationError {}
+
+    var checks = 0
+    expectFailure(.conflict) {
+      try reader.page(0) {
+        checks += 1
+        if checks == MeetingRowStaging.pageSize + 2 {
+          try writer.write(verified.rowKey(1), data: rows[0])
+        }
+      }
+    }
+    reader = try makeReader()
+    expectFailure(.invalidRow(1)) { try reader.page(0) }
+    let unaffectedPage = try reader.page(1)
+    precondition(unaffectedPage.records == Array(expected[64..<128]))
+    try writer.write(verified.rowKey(1), data: rows[1])
+    try writer.remove(verified.rowKey(128))
+    reader = try makeReader()
+    expectFailure(.invalidRow(128)) { try reader.page(2) }
+    try writer.write(verified.rowKey(128), data: rows[128])
+
+    let digestKey = verified.pageKey(2)
+    let originalDigest = data(store, digestKey)!
+    var changedDigest = originalDigest
+    changedDigest[0] ^= 1
+    try writer.write(digestKey, data: changedDigest)
+    reader = try makeReader()
+    expectFailure(.invalidPage(2)) { try reader.page(2) }
+    try writer.remove(digestKey)
+    reader = try makeReader()
+    expectFailure(.invalidPage(2)) { try reader.page(2) }
+    try writer.write(digestKey, data: originalDigest)
+    reader = try makeReader()
+
+    var changedCheckpoint = verified
+    changedCheckpoint.pageDigests?[0][0] ^= 1
+    try writer.write(MeetingRowStaging.checkpointKey, data: JSONEncoder().encode(changedCheckpoint))
+    expectFailure(.conflict) { try reader.page(0) }
+    expectFailure(.conflict) { try makeReader() }
+    try writer.write(MeetingRowStaging.checkpointKey, data: JSONEncoder().encode(verified))
+    reader = try makeReader()
+    try staging.discard()
+    expectFailure(.conflict) { try reader.page(0) }
+    precondition(data(store, digestKey) == nil && data(store, MeetingRowStaging.collectionKey) == original)
+  }
+
+  private static func rejectsOversizedPage() throws {
+    let store = try open("oversized-page")
+    let rows = try fixtureRows(count: 2)
+    var records = try rows.map { try JSONDecoder().decode(Meeting.self, from: $0) }
+    for index in records.indices { records[index].summary = String(repeating: "x", count: 4 * 1_024 * 1_024) }
+    let original = try JSONEncoder().encode(records)
+    try store.write(MeetingRowStaging.collectionKey, data: original)
+    let staging = try MeetingRowStaging(store: store)
+    _ = try staging.stage(maximumRows: 2)
+    _ = try staging.stage(maximumRows: 2)
+    let verified = try staging.verify(mediaExists: mediaExists)
+    let reader = try MeetingRowStaging.SealedReader(store: store, verified: verified)
+    expectFailure(.pageTooLarge) { try reader.page(0) }
+    precondition(data(store, MeetingRowStaging.collectionKey) == original)
   }
 
   private static func scale(_ count: Int) throws {
@@ -240,9 +345,59 @@ enum MeetingRowStagingChecks {
     let current = try mediaDigests()
     precondition(current == mediaBefore && verified.count == count && verified.verified)
     precondition(data(store, MeetingRowStaging.collectionKey) == original)
-    let metrics: [String: Any] = ["records": count, "sourceBytes": original.count, "batches": batches,
+    var metrics: [String: Any] = ["records": count, "sourceBytes": original.count, "batches": batches,
       "stageMS": milliseconds(start, staged), "verifyMS": milliseconds(staged, finished)]
+    if count == 50_000 {
+      let reopened = try open("scale-\(count)")
+      metrics["warmReads"] = try measureWarmReads(store: reopened, verified: verified)
+    }
     print(String(decoding: try JSONSerialization.data(withJSONObject: metrics, options: .sortedKeys), as: UTF8.self))
+  }
+
+  private static func measureWarmReads(store: LocalStore, verified: MeetingRowStaging.Checkpoint) throws -> [String: Any] {
+    var checkpointTimes: [Double] = []
+    var firstPageTimes: [Double] = []
+    var latePageTimes: [Double] = []
+    var blobReadTimes: [Double] = []
+    var blobDecodeTimes: [Double] = []
+    var blobTotalTimes: [Double] = []
+    var firstPageBytes = 0
+    var latePageBytes = 0
+    let latePageIndex = verified.pageCount - 2
+    let trials = 5
+    for _ in 0..<trials {
+      let checkpointStart = ContinuousClock.now
+      let reader = try MeetingRowStaging.SealedReader(store: store, verified: verified)
+      let checkpointEnd = ContinuousClock.now
+      let first = try reader.page(0)
+      let firstEnd = ContinuousClock.now
+      let late = try reader.page(latePageIndex)
+      let lateEnd = ContinuousClock.now
+      checkpointTimes.append(milliseconds(checkpointStart, checkpointEnd))
+      firstPageTimes.append(milliseconds(checkpointEnd, firstEnd))
+      latePageTimes.append(milliseconds(firstEnd, lateEnd))
+      firstPageBytes = first.payloadBytes
+      latePageBytes = late.payloadBytes
+
+      let blobStart = ContinuousClock.now
+      guard let bytes = data(store, MeetingRowStaging.collectionKey) else { preconditionFailure("Missing original") }
+      let blobRead = ContinuousClock.now
+      let decoded = try JSONDecoder().decode([Meeting].self, from: bytes)
+      let blobEnd = ContinuousClock.now
+      blobReadTimes.append(milliseconds(blobStart, blobRead))
+      blobDecodeTimes.append(milliseconds(blobRead, blobEnd))
+      blobTotalTimes.append(milliseconds(blobStart, blobEnd))
+      precondition(decoded.count == verified.count)
+      for page in [first, late] {
+        precondition(page.records.count == MeetingRowStaging.pageSize)
+        precondition(page.records.elementsEqual(decoded[page.offset..<(page.offset + page.records.count)]))
+      }
+    }
+    func median(_ values: [Double]) -> Double { values.sorted()[values.count / 2] }
+    return ["trials": trials, "pageSize": MeetingRowStaging.pageSize, "lateOffset": latePageIndex * MeetingRowStaging.pageSize,
+      "firstPageBytes": firstPageBytes, "latePageBytes": latePageBytes, "checkpointOpenMS": median(checkpointTimes),
+      "firstPageMS": median(firstPageTimes), "latePageMS": median(latePageTimes), "fullBlobReadMS": median(blobReadTimes),
+      "fullBlobDecodeMS": median(blobDecodeTimes), "fullBlobTotalMS": median(blobTotalTimes)]
   }
 
   private static func fixtureRows(count: Int) throws -> [Data] {

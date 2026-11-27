@@ -6,6 +6,9 @@ import Foundation
 struct MeetingRowStaging {
   static let collectionKey = "memoraMeetings"
   static let checkpointKey = "fixture.meeting-rows.checkpoint"
+  static let pageSize = 64
+  private static let maximumPageBytes = 8 * 1_024 * 1_024
+  private static let digestBytes = 32
 
   struct Checkpoint: Codable, Equatable {
     var schemaVersion = 1
@@ -14,9 +17,20 @@ struct MeetingRowStaging {
     var count: Int
     var stagedCount = 0
     var verified = false
+    var pageDigests: [Data]?
+
+    var pageCount: Int { (count + MeetingRowStaging.pageSize - 1) / MeetingRowStaging.pageSize }
 
     func rowKey(_ ordinal: Int) -> String {
       "fixture.meeting-rows.\(generation.uuidString).\(ordinal)"
+    }
+
+    func pageKey(_ index: Int) -> String {
+      "fixture.meeting-rows.\(generation.uuidString).page.\(index)"
+    }
+
+    fileprivate var stagedKeys: [String] {
+      (0..<stagedCount).map(rowKey) + (pageDigests?.indices.map(pageKey) ?? [])
     }
   }
 
@@ -29,8 +43,68 @@ struct MeetingRowStaging {
     case outOfRange
     case unfinished
     case invalidRow(Int)
+    case invalidPage(Int)
+    case pageTooLarge
     case duplicateRecordID
     case missingMedia(Int)
+  }
+
+  /// Reads a sealed offline snapshot using a trusted checkpoint from verify.
+  /// This reader has no live authority. Its SQLite change token represents the
+  /// opened fixture, and it refuses to serve pages after the fixture changes.
+  struct SealedReader {
+    struct Page {
+      var offset: Int
+      var records: [Meeting]
+      var payloadBytes: Int
+    }
+
+    private let store: LocalStore
+    private let checkpoint: Checkpoint
+    private let pageDigests: [Data]
+    private let changeToken: String
+
+    init(store: LocalStore, verified checkpoint: Checkpoint) throws {
+      guard let token = store.changeToken else { throw Failure.unavailable }
+      let (_, stored) = try savedCheckpoint(in: store)
+      guard checkpoint == stored else { throw Failure.conflict }
+      guard checkpoint.verified, let digests = checkpoint.pageDigests else { throw Failure.unfinished }
+      guard token == store.changeToken else { throw Failure.conflict }
+      self.store = store
+      self.checkpoint = checkpoint
+      pageDigests = digests
+      changeToken = token
+    }
+
+    var count: Int { checkpoint.count }
+    var pageCount: Int { checkpoint.pageCount }
+
+    func page(_ index: Int, checkCancellation: () throws -> Void = { try Task.checkCancellation() }) throws -> Page {
+      guard pageDigests.indices.contains(index) else { throw Failure.outOfRange }
+      try checkCancellation()
+      guard store.changeToken == changeToken else { throw Failure.conflict }
+      let start = index * pageSize
+      let end = min(start + pageSize, count)
+      guard let digests = try read(store, key: checkpoint.pageKey(index)),
+            digests.count == (end - start) * digestBytes,
+            Data(SHA256.hash(data: digests)) == pageDigests[index] else { throw Failure.invalidPage(index) }
+      let decoder = JSONDecoder()
+      var page = Page(offset: start, records: [], payloadBytes: 0)
+      page.records.reserveCapacity(end - start)
+      for ordinal in start..<end {
+        try checkCancellation()
+        let offset = (ordinal - start) * digestBytes
+        guard let bytes = try read(store, key: checkpoint.rowKey(ordinal)) else { throw Failure.invalidRow(ordinal) }
+        guard bytes.count <= maximumPageBytes - page.payloadBytes else { throw Failure.pageTooLarge }
+        guard Data(SHA256.hash(data: bytes)) == digests[offset..<(offset + digestBytes)],
+              let record = try? decoder.decode(Meeting.self, from: bytes) else { throw Failure.invalidRow(ordinal) }
+        page.records.append(record)
+        page.payloadBytes += bytes.count
+      }
+      try checkCancellation()
+      guard store.changeToken == changeToken else { throw Failure.conflict }
+      return page
+    }
   }
 
   private let store: LocalStore
@@ -49,7 +123,7 @@ struct MeetingRowStaging {
   func stage(maximumRows: Int, checkCancellation: () throws -> Void = { try Task.checkCancellation() }) throws -> Checkpoint {
     guard (1...4_096).contains(maximumRows) else { throw Failure.outOfRange }
     try checkCancellation()
-    let (previousBytes, previous) = try savedCheckpoint()
+    let (previousBytes, previous) = try Self.savedCheckpoint(in: store)
     var checkpoint = Checkpoint(sourceFingerprint: fingerprint, count: ranges.count)
     var removals: [String] = []
     if let previous {
@@ -57,7 +131,7 @@ struct MeetingRowStaging {
         guard previous.count == ranges.count else { throw Failure.invalidCheckpoint }
         checkpoint = previous
       } else {
-        removals = (0..<previous.stagedCount).map(previous.rowKey)
+        removals = previous.stagedKeys
       }
     }
     let limit = min(checkpoint.stagedCount + maximumRows, ranges.count)
@@ -89,13 +163,16 @@ struct MeetingRowStaging {
   /// and every row; Data slices retain the source buffer during that check.
   func verify(mediaExists: (Meeting) -> Bool,
               checkCancellation: () throws -> Void = { try Task.checkCancellation() }) throws -> Checkpoint {
-    let (bytes, loaded) = try savedCheckpoint()
+    let (bytes, loaded) = try Self.savedCheckpoint(in: store)
     guard var checkpoint = loaded, checkpoint.sourceFingerprint == fingerprint,
           checkpoint.count == ranges.count, checkpoint.stagedCount == ranges.count else { throw Failure.unfinished }
     let decoder = JSONDecoder()
     var ids: Set<UUID> = []
     var expectedRows: [(key: String, data: Data?)] = []
-    expectedRows.reserveCapacity(ranges.count)
+    expectedRows.reserveCapacity(ranges.count + checkpoint.pageCount)
+    var writes: [(key: String, data: Data)] = []
+    var pageDigests: [Data] = []
+    var rowDigests = Data()
     for ordinal in ranges.indices {
       try checkCancellation()
       let key = checkpoint.rowKey(ordinal)
@@ -106,12 +183,24 @@ struct MeetingRowStaging {
       guard ids.insert(meeting.id).inserted else { throw Failure.duplicateRecordID }
       guard mediaExists(meeting) else { throw Failure.missingMedia(ordinal) }
       expectedRows.append((key, expected))
+      rowDigests.append(contentsOf: SHA256.hash(data: expected))
+      if (ordinal + 1) % Self.pageSize == 0 || ordinal + 1 == ranges.count {
+        let pageKey = checkpoint.pageKey(pageDigests.count)
+        pageDigests.append(Data(SHA256.hash(data: rowDigests)))
+        if checkpoint.pageDigests == nil {
+          writes.append((pageKey, rowDigests))
+        } else {
+          expectedRows.append((pageKey, rowDigests))
+        }
+        rowDigests = Data()
+      }
     }
-    let writes: [(key: String, data: Data)]
-    if checkpoint.verified { writes = [] }
-    else {
+    if let saved = checkpoint.pageDigests {
+      guard saved == pageDigests else { throw Failure.invalidCheckpoint }
+    } else {
       checkpoint.verified = true
-      writes = [(Self.checkpointKey, try JSONEncoder().encode(checkpoint))]
+      checkpoint.pageDigests = pageDigests
+      writes.append((Self.checkpointKey, try JSONEncoder().encode(checkpoint)))
     }
     try checkCancellation()
     try apply(writes: writes, removing: [], previousCheckpoint: bytes, expectingRows: expectedRows)
@@ -119,18 +208,21 @@ struct MeetingRowStaging {
   }
 
   func discard() throws {
-    let (bytes, checkpoint) = try savedCheckpoint()
+    let (bytes, checkpoint) = try Self.savedCheckpoint(in: store)
     guard let checkpoint else { return }
-    let rows = (0..<checkpoint.stagedCount).map(checkpoint.rowKey)
-    try apply(writes: [], removing: rows + [Self.checkpointKey], previousCheckpoint: bytes)
+    try apply(writes: [], removing: checkpoint.stagedKeys + [Self.checkpointKey], previousCheckpoint: bytes)
   }
 
-  private func savedCheckpoint() throws -> (Data?, Checkpoint?) {
+  private static func savedCheckpoint(in store: LocalStore) throws -> (Data?, Checkpoint?) {
     guard let data = try Self.read(store, key: Self.checkpointKey) else { return (nil, nil) }
     guard let checkpoint = try? JSONDecoder().decode(Checkpoint.self, from: data),
           checkpoint.schemaVersion == 1, (0...100_000).contains(checkpoint.count),
           (0...checkpoint.count).contains(checkpoint.stagedCount),
           !checkpoint.verified || checkpoint.count == checkpoint.stagedCount else { throw Failure.invalidCheckpoint }
+    if let pageDigests = checkpoint.pageDigests {
+      guard checkpoint.verified, pageDigests.count == checkpoint.pageCount,
+            pageDigests.allSatisfy({ $0.count == digestBytes }) else { throw Failure.invalidCheckpoint }
+    }
     return (data, checkpoint)
   }
 
