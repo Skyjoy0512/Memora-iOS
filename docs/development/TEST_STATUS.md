@@ -26,6 +26,7 @@
 | 統合品質ゲート | 固定コミットの Mac ホスト | `a794baac`、`54974876`、`2dc48020`、`c489bcfb` は11/11成功（`c489bcfb` は `/Volumes/DevSSD/Development/Temp/memora-release-qa.JE0mxQ/run/summary.json`）。以前の長時間 WAV の失敗は統合再実行と単独2回で再発しなかった |
 | 要約の判断・ポスター E2E | iPhone 18 Pro／Pro Max 専用 E2E | 判断の編集は「その他 › 要点・決定事項を編集」のシートで、保存・再起動後の復元・要約と文字起こしの不変・確認リンク非表示を確認。ポスター系3件は `FeatureFlags.isInlineSummaryPosterEnabled = false` のため理由付きで skip（旧ヘルパーでも同じ失敗で、今回の変更が原因ではない）。`meeting.tasks.add` は `adaptive-structured-summary` が引き続き検証する |
 | 設定・待機・サンプルの E2E 更新 | iPhone 18 Pro Max 専用 E2E | 旧UI・旧文言で失敗していた7件を現行へ更新。`settings-polish` 5件（外観は `外観` Picker、サイドバーはマーケットプレイス／タスク／資料／人物と設定）、`waiting-evidence`（`ai.waitingStatus` の「考えています」）、`summary-sample`（Markdown 本文とノートの注意書き）、`summary-one-tap`（標準のAIの Picker、`要約し直す`、送信先の表記）が成功 |
+| 画面・体験の E2E 棚卸し | iPhone 18 Pro Max 専用 E2E | `screen-polish` と `experience-polish` は17件中8件成功、9件が旧UIを参照して失敗。旧ラベル（今日のタスク、Ask AIを開く、ソース、作成メニューを開く、すべてのタスクを見る、英語の日付、アカウント連携の説明）が現行画面に無い。QA-03 として更新するまで未検証 |
 | Bitrig iOS Debug/Release | シミュレータ向けビルド | 日付付き出典まで Debug／Release 成功。写真の根拠まで Debug 成功。実アカウント・実機は未実施 |
 
 ## SQLite 合成データの計測
