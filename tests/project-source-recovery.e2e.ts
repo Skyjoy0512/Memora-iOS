@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { launchMemora, scrollToControl, tapControl, tapTab } from './ui-helpers';
+import { launchMemora, restartToLibrary, scrollToControl, tapControl, tapTab } from './ui-helpers';
 import { isolatedDatabase, sql } from './sqlite-fixture-helpers';
 
 test('project source notes retain failed creates and edits, persist drafts, and recover after restart', { timeout: 360_000 }, async ({ app, device, screen }) => {
@@ -15,27 +15,38 @@ test('project source notes retain failed creates and edits, persist drafts, and 
   // A visible toolbar/row needs no drag. Pulling down at the top can dismiss
   // a native zoom destination rather than scroll its already visible content.
   const reveal = (control: any) => scrollToControl(screen, control);
-  async function closeKeyboard() {
-    const close = screen.getByRole('button', { name: 'キーボードを閉じる', exact: true });
-    if (await close.isVisible()) await tapControl(close);
-    await expect(screen.getByRole('keyboard')).not.toBeVisible();
-  }
   async function fillNote(name: string, text: string) {
-    await reveal(title); await title.fill(name); await closeKeyboard();
+    // The form lowers its keyboard as the next field is revealed; there is no
+    // separate dismiss button any more.
+    await reveal(title); await title.fill(name);
     const body = screen.getByRole('textbox', { name: 'ノート本文', exact: true });
     await reveal(body); await tapControl(screen, body); await expect(body).toBeFocused();
-    await body.pressSequentially(text); await closeKeyboard();
+    await body.pressSequentially(text);
+  }
+  async function openNoteBody() {
+    // A note's disclosure is labelled for its body, not the generic 原文.
+    const body = screen.getByLabel('ノート本文').first();
+    await reveal(body);
+    await tapControl(body);
+  }
+  async function openNoteMenu() {
+    // The source menu waits for the note's preparation (a local summary pass)
+    // to finish, which can outlast the default assertion window.
+    const more = screen.getByRole('button', { name: 'その他', exact: true });
+    await expect(more).toBeEnabled({ timeout: 60_000 });
+    await tapControl(more);
   }
   async function saveNote() {
     const save = screen.getByRole('button', { name: '保存', exact: true });
     await reveal(save); await tapControl(save);
   }
   async function openReferences() {
-    await tapControl(screen.getByRole('pop-up-button', { name: /表示切り替え$/ }));
+    // The workspace shows its five sections inline; there is no switcher menu.
     await tapControl(screen.getByRole('button', { name: '参考資料', exact: true }).last());
   }
   async function reopenProject() {
-    await tapTab(screen, 'ライブラリ');
+    // A restart can leave the driver bound to the closing scene.
+    await restartToLibrary(app, screen);
     await tapControl(screen.getByRole('button', { name: 'プロジェクト', exact: true }));
     await tapControl(screen.getByText(project, { exact: true }).first());
     await openReferences();
@@ -74,14 +85,14 @@ test('project source notes retain failed creates and edits, persist drafts, and 
     recover();
     // Closing/reopening and a process restart must retain both fields, not just body.
     await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }));
-    await app.restart(); await reopenProject(); await tapControl(sourceAdd);
+    await reopenProject(); await tapControl(sourceAdd);
     await reveal(title); await expect(title).toHaveValue('Retained source draft');
     const restoredBody = screen.getByRole('textbox', { name: 'ノート本文', exact: true });
     await reveal(restoredBody); await expect(restoredBody).toHaveValue('Body retained after actual SQLite failure');
     await saveNote();
     await expect(screen.getByRole('button', { name: /^Retained source draft、メモ/ }).first()).toBeVisible({ timeout: 60_000 });
     await openNote('Retained source draft');
-    await tapControl(screen.getByRole('button', { name: 'その他', exact: true }));
+    await openNoteMenu();
     await tapControl(screen.getByRole('button', { name: 'メモを編集', exact: true }));
     const editTitle = screen.getByRole('textbox', { name: 'タイトル', exact: true });
     const editBody = screen.getByRole('textbox', { name: 'メモ本文', exact: true });
@@ -96,18 +107,16 @@ test('project source notes retain failed creates and edits, persist drafts, and 
     await app.screenshot('source-edit-failure-retains-draft');
     recover();
     await tapControl(screen.getByRole('button', { name: 'キャンセル', exact: true }));
-    await app.restart(); await reopenProject(); await openNote('Retained source draft');
-    await tapControl(screen.getByRole('button', { name: 'その他', exact: true }));
+    await reopenProject(); await openNote('Retained source draft');
+    await openNoteMenu();
     await tapControl(screen.getByRole('button', { name: 'メモを編集', exact: true }));
     await expect(editTitle).toHaveValue('Recovered source edit');
     await expect(editBody).toHaveValue('Edited body survives failed save');
     await tapControl(screen.getByRole('button', { name: '保存', exact: true }));
-    await reveal(screen.getByLabel('原文').first());
-    await tapControl(screen.getByLabel('原文').first());
+    await openNoteBody();
     await expect(screen.getByText('Edited body survives failed save', { exact: true })).toBeVisible();
-    await app.restart(); await reopenProject(); await openNote('Recovered source edit');
-    await reveal(screen.getByLabel('原文').first());
-    await tapControl(screen.getByLabel('原文').first());
+    await reopenProject(); await openNote('Recovered source edit');
+    await openNoteBody();
     await expect(screen.getByText('Edited body survives failed save', { exact: true })).toBeVisible();
     await app.screenshot('source-edited-note-restored');
   } finally {

@@ -18,6 +18,8 @@ test('Office source import preserves partial coverage and reopens extracted text
   await scrollToControl(screen, word);
   await tapControl(word);
   await expect(screen.getByText(/^文書 · 取得：/)).toBeVisible();
+  // The extracted text stays folded away until the reader opens it.
+  await tapControl(screen.getByText('原文', { exact: true }).first());
   await expect(screen.getByText('MEMORA OFFICE FIXTURE', { exact: true })).toBeVisible();
   await app.screenshot('office-source-partial-coverage');
   await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }).first());
