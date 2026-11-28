@@ -78,13 +78,14 @@ test('sidebar glass: attachment glass keeps the composer mounted and preserves i
   await focusComposer(screen);
   await input.fill('Keep this input.');
   await device.setAppearance('dark');
-  await tap(screen, screen.getByLabel('添付を追加'));
-  await expect(lastAction).toBeVisible();
-  await expect(input).toHaveValue('Keep this input.');
+  // Ask AI's composer opens the chat attachment sheet, whose paperclip names
+  // that action; the sheet offers camera, photos and files, not the plugin
+  // menu the Library composer opens.
+  await tap(screen, screen.getByLabel(/^(添付を追加|チャットに追加)$/).first());
+  await expect(screen.getByRole('button', { name: '最近の写真を表示', exact: true })).toBeVisible();
   await app.screenshot('attachment-composer-draft-dark');
-  await tap(screen, screen.getByRole('button', { name: 'プラグイン・スキル・ソース', exact: true }));
-  await expect(screen.getByLabel('候補を閉じる')).toBeVisible();
-  await expect(screen.getByRole('keyboard')).toBeVisible();
-  await expect(input).toHaveValue(/Keep this input\./);
-  await input.fill('');
+  // The sheet covers the composer, so its draft is read once it is dismissed.
+  await tap(screen, screen.getByRole('button', { name: '閉じる', exact: true }).last());
+  await expect(screen.getByTestId('ai.composer.input')).toHaveValue(/Keep this input\./);
+  await screen.getByTestId('ai.composer.input').fill('');
 });
