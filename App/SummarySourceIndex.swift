@@ -12,10 +12,10 @@ struct SummarySourceIndex {
   var entries: [Entry]
   private var byShortID: [String: UUID]
   private var byOriginalID: [UUID: TranscriptSegment]
-  /// Entry lookup for reading the segment a prompt line came from. Kept apart
+  /// Entry lookup for reading a prompt line back to its segment. Kept apart
   /// from `byShortID`, which only maps ids that are unambiguous evidence.
-  private var entriesByShortID: [String: TranscriptSegment]
-  private var entriesByID: [UUID: TranscriptSegment]
+  private var entriesByShortID: [String: Entry]
+  private var entriesByID: [UUID: Entry]
 
   init(_ transcript: [TranscriptSegment]) {
     var speakers: [Speaker: String] = [:]
@@ -23,16 +23,17 @@ struct SummarySourceIndex {
     let counts = Dictionary(grouping: transcript, by: \.id).mapValues(\.count)
     var shortIDs: [String: UUID] = [:]
     var originals: [UUID: TranscriptSegment] = [:]
-    var entryShortIDs: [String: TranscriptSegment] = [:]
-    var entryIDs: [UUID: TranscriptSegment] = [:]
+    var entryShortIDs: [String: Entry] = [:]
+    var entryIDs: [UUID: Entry] = [:]
     for (index, segment) in transcript.enumerated() {
       let speaker = Speaker(name: segment.speaker, id: segment.speakerID, certain: segment.speakerIsCertain)
       let alias = speakers[speaker] ?? "A\(speakers.count + 1)"
       speakers[speaker] = alias
       let shortID = "S\(index + 1)"
-      entries.append(Entry(shortID: shortID, speakerAlias: alias, segment: segment))
-      entryShortIDs[shortID] = segment
-      if entryIDs[segment.id] == nil { entryIDs[segment.id] = segment }
+      let entry = Entry(shortID: shortID, speakerAlias: alias, segment: segment)
+      entries.append(entry)
+      entryShortIDs[shortID] = entry
+      if entryIDs[segment.id] == nil { entryIDs[segment.id] = entry }
       // Ambiguous UUIDs cannot become valid evidence through a short alias.
       if counts[segment.id] == 1 {
         shortIDs[shortID] = segment.id
@@ -85,26 +86,30 @@ struct SummarySourceIndex {
 
   func lines(hasTimestamps: Bool) -> [String] { units(hasTimestamps: hasTimestamps, compact: true).map(\.line) }
 
-  /// The segments a part's lines were written from, in the order they appear.
-  ///
-  /// A line starts with the identity the unit was given, so the segment is a
-  /// lookup rather than a search: comparing every line against every segment
-  /// took 0.75 s for a two-hour transcript, on every part of every summary.
-  func segments(inPart lines: [String], compact: Bool) -> [TranscriptSegment] {
-    var found: [TranscriptSegment] = []
-    var seen: Set<UUID> = []
-    found.reserveCapacity(lines.count)
+  /// The text a part's lines carry after their identity, keyed by segment.
+  /// Reference validation looks a quote up here instead of searching every line
+  /// for every reference.
+  func lineContents(inPart lines: [String], compact: Bool) -> [UUID: Substring] {
+    var contents: [UUID: Substring] = [:]
+    contents.reserveCapacity(lines.count)
     for line in lines {
-      guard let segment = segment(forLine: line, compact: compact),
-            seen.insert(segment.id).inserted else { continue }
-      found.append(segment)
+      guard let entry = entry(forLine: line, compact: compact),
+            contents[entry.segment.id] == nil,
+            let range = line.range(of: Self.marker(for: entry, compact: compact)) else { continue }
+      contents[entry.segment.id] = line[range.upperBound...]
     }
-    return found
+    return contents
   }
 
-  /// Reads the identity at the start of a unit line: `[mm:ss] [segmentID=…] 話者:`
-  /// or `[mm:ss] S12 A1:`. An unreadable line contributes nothing.
-  func segment(forLine line: String, compact: Bool) -> TranscriptSegment? {
+  /// The identity a unit line starts with, once the timestamp bracket is passed.
+  static func marker(for entry: Entry, compact: Bool) -> String {
+    compact ? "] \(entry.shortID) \(entry.speakerAlias): "
+      : "] [segmentID=\(entry.segment.id.uuidString)] "
+  }
+
+  /// Reads the entry a unit line came from: `[mm:ss] [segmentID=…] 話者:` or
+  /// `[mm:ss] S12 A1:`. A line that does not carry a readable identity has none.
+  func entry(forLine line: String, compact: Bool) -> Entry? {
     guard let close = line.firstIndex(of: "]") else { return nil }
     var rest = line[line.index(after: close)...]
     if rest.first == " " { rest = rest.dropFirst() }
@@ -116,6 +121,23 @@ struct SummarySourceIndex {
     let start = rest.index(rest.startIndex, offsetBy: 11)
     guard start < end, let id = UUID(uuidString: String(rest[start..<end])) else { return nil }
     return entriesByID[id]
+  }
+
+  /// The segments a part's lines were written from, in the order they appear.
+  ///
+  /// A line starts with the identity the unit was given, so the segment is a
+  /// lookup rather than a search: comparing every line against every segment
+  /// took 0.75 s for a two-hour transcript, on every part of every summary.
+  func segments(inPart lines: [String], compact: Bool) -> [TranscriptSegment] {
+    var found: [TranscriptSegment] = []
+    var seen: Set<UUID> = []
+    found.reserveCapacity(lines.count)
+    for line in lines {
+      guard let entry = entry(forLine: line, compact: compact),
+            seen.insert(entry.segment.id).inserted else { continue }
+      found.append(entry.segment)
+    }
+    return found
   }
 
   func originalID(for reference: String, allowShortIDs: Bool = true) -> UUID? {

@@ -50,7 +50,7 @@ def main():
 
         summary = build(directory, "summary-part-mapping",
                         ["TranscriptSegment", "SpeakerIdentificationStatus", "SummarySourceIndex",
-                         "MemoraFormat", "RecordPrivacy", "SummarySensitivity"],
+                         "MemoraFormat", "RecordPrivacy", "SummarySensitivity", "SummaryPartArtifact"],
                         "SummaryPartMappingChecks")
         subprocess.run([summary], check=True, timeout=300, cwd=ROOT,
                        env={**os.environ, "SWIFT_BACKTRACE": "enable=no"})

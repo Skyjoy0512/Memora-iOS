@@ -13,17 +13,14 @@ struct SummaryPartArtifact: Codable {
     guard !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
           notes.utf8.count <= Self.maximumIntegrationBytes,
           !sourceReferences.isEmpty, sourceReferences.count <= 256 else { return false }
+    // The part is read once into a segment-to-text map, so each reference is a
+    // lookup instead of a search over every line.
+    let contents = index.lineContents(inPart: part, compact: compact)
     return sourceReferences.allSatisfy { reference in
       guard let id = index.originalID(for: reference.sourceSegmentID, allowShortIDs: compact),
-            let entry = index.entries.first(where: { $0.segment.id == id }) else { return false }
-      let marker = compact ? "] \(entry.shortID) \(entry.speakerAlias): " : "] [segmentID=\(id.uuidString)] "
+            let content = contents[id] else { return false }
       return index.validates(id: reference.sourceSegmentID, quote: reference.quote, allowShortIDs: compact) &&
-        part.contains { line in
-          guard line.hasPrefix("["), let end = line.firstIndex(of: "]"),
-                line[end...].hasPrefix(marker) else { return false }
-          let content = line.index(end, offsetBy: marker.count)
-          return line[content...].contains(reference.quote)
-        }
+        content.contains(reference.quote)
     }
   }
 
