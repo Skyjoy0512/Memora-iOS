@@ -37,10 +37,10 @@
 | 設定・待機・サンプルの E2E 更新 | iPhone 18 Pro Max 専用 E2E | 旧UI・旧文言で失敗していた7件を現行へ更新。`settings-polish` 5件（外観は `外観` Picker、サイドバーはマーケットプレイス／タスク／資料／人物と設定）、`waiting-evidence`（`ai.waitingStatus` の「考えています」）、`summary-sample`（Markdown 本文とノートの注意書き）、`summary-one-tap`（標準のAIの Picker、`要約し直す`、送信先の表記）が成功 |
 | 画面・体験の E2E 棚卸し | iPhone 18 Pro Max／Pro 専用 E2E | `screen-polish` 8件と `experience-polish` 9件が全17件成功。旧ラベルを現行の導線（記録を追加、追加メニュー、タスク、参考資料、AIで資料を作る、日本語の日付、`auth.continueLocal`）へ更新。作業中にタスク画面の大きなタイトルが「未完了／完了」に重なり「完了」を押せない実不具合を見つけ、インライン表示にして修正した。タスクの作成・完了・再起動後の保持は幅402pt の iPhone 18 Pro でも成功 |
 | Bitrig iOS Debug/Release | シミュレータ向けビルド | 日付付き出典まで Debug／Release 成功。写真の根拠まで Debug 成功。記録単位の保存と Accelerate 化の後も Debug 成功。実アカウント・実機は未実施 |
-| 記録単位の保存 | Mac ホスト・実 SQLite・合成100/1千/1万/5万件 | 切替（行・manifest・旧BLOB退避）、1件編集で1行だけ更新、並び替え・追加・削除、破損行の拒否と旧BLOBへの復帰、書込失敗時のロールバックを確認。`tools/checks/run-meeting-archive-checks.py` |
+| 記録単位の保存 | Mac ホスト・実 SQLite・合成100/1千/1万/5万件 | 切替（行・manifest・旧BLOB退避）、1件編集で1文書だけ更新、並び替え・追加・削除、破損行の拒否と旧BLOBへの復帰、書込失敗時のロールバックを確認。iPhone 実機の移行と転写入り実データは未実施。`tools/checks/run-meeting-archive-checks.py` |
 | 音声信号の一致と速度 | Mac ホスト・合成波形 | Accelerate の二乗和・ピーク・しきい値カウントが素の計算と一致。512/4,096/8,192 で間引きループを上回るか同等。非有限値は検出 |
 | VAD の実行先 | Mac ホスト・同梱モデル | manifest 検証（欠落を拒否）、4実行先の読込・推論・出力一致を確認。実機の電池・熱は未計測 |
-| 性能契約スイート | Mac ホスト | `run-quality-checks.py` の12番目 `performance-contracts`。統合ゲート全体はこの版では未実行 |
+| 統合品質ゲート | Mac ホスト・固定ツリー | `ef766f66` で12/12成功。12番目の `performance-contracts` は信号演算の一致と速度、記録単位の保存契約、VAD の検証と実行先を確認する |
 
 ## SQLite 合成データの計測
 

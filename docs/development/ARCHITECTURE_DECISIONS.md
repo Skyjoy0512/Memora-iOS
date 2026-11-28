@@ -34,10 +34,13 @@
 
 ## 記録単位の保存を本番経路へ接続した（2026-11-28）
 
-- **記録は行、順序は manifest。** `meeting_rows` に 1 記録 1 行、表示順は
-  `memora.meetings.archive.v1` の id 一覧。保存は変更行だけを encode し、
-  順序が変わったときだけ id 一覧を書く。`RecordStore.commitNow`／`commitAsync`
-  の 1 操作 1 トランザクションを維持し、行・manifest・他文書を同じ境界で確定する。
+- **記録は 1 記録 1 文書、順序は manifest。** `documents` の `memora.meeting.<id>`
+  に payload の SHA-256 と payload を置き、表示順は
+  `memora.meetings.archive.v1` の id 一覧が持つ。保存は変更した文書だけを
+  encode し、順序が変わったときだけ id 一覧を書く。専用表を作らないのは、
+  `LocalStore` を記録モデルから独立させ、文書ストアだけを使う検査が記録の
+  連鎖を抱えずに済むため。`RecordStore.commitNow`／`commitAsync` の
+  1 操作 1 トランザクションはそのまま使う。
 - **切替は可逆にする。** 最初の保存で旧 BLOB をオブジェクト境界で分割して行を作り、
   `memoraMeetings.legacy` に退避してから現行 BLOB を消す。分割した行は元の
   バイト列を保つので、その build が知らないフィールドも残る。行の SHA-256 が
@@ -47,7 +50,7 @@
   保持し、次の保存の比較に使う。読込時に archive から読んだ配列を基準に据える。
   基準が無い（切替直後・破損からの復帰）ときだけ全行を作り直す。
 - **読込は行の全走査。** 起動時に本文を読まない段階読み込みは未実装。行の
-  読込は BLOB より 12〜37% 遅いが、1 編集の書込は約 13 倍速く、300 MB の
+  読込は BLOB より 25〜40% 遅いが、1 編集の書込は約 13 倍速く、300 MB の
   BLOB を保持しない。計測は [性能監査](../PERFORMANCE_AUDIT_2026_11.md)。
 - **VAD は CPU で走らせる。** 同梱 Silero は Neural Engine を使うと 0.16 ms の
   推論に約 15 ms の準備が付き、出力は変わらない。`MLModelConfiguration` で
