@@ -22,6 +22,6 @@
 - 移行は起動直後の保存キューで行う。シミュレータの合成2,000件で移行2,044 ms、起動は旧BLOB 93〜108 ms・行100〜128 ms（Debug）。移行中もメインスレッドは使わない。
 - 保存形式を直接読み書きする E2E 7ファイルを manifest と行の形式へ移した。`recording-lifecycle` 3件（SIGKILL 復旧を含む）、`markdown-replacement`、`draft-protection`、`project-chat-citation`、`adaptive-structured-summary`、`background-summary`、`library-photo-ocr` が成功。
 - QA-07 の写真保存失敗は、エディタ内に理由を出して下書きを残すよう修正（`localImportFailureMessage`）。`ProjectSourceImportChecks` の契約も「ローカル指定ならグローバルアラートを出さない」に更新。E2E で文言と下書きの保持を確認。
-- QA-08 はアプリの停止ではないと切り分けた（ツリーが空でも座標タップで操作でき、描画も正常）。同じ症状が起動直後にも出て再実行で消えるため、環境側のアクセシビリティツリーの不調として扱う。
+- QA-08 はアプリの停止ではないと切り分けた（ツリーが空でも座標タップで操作でき、描画も正常）。同じ症状が起動直後・ピッカー取消後・シートを閉じた後・`keyboard` ノードにも出るため、環境側のアクセシビリティツリーの不調として扱う。QA-06 の添付ボタンは消えておらず、ラベルと導線の更新で3/3成功。
 - 計測はホストのみ。iPhone 実機の冷起動・MainActor・RSS・電池・熱、転写入り実データの移行、実会議音声の CER は未計測。[性能監査](../PERFORMANCE_AUDIT_2026_11.md) に条件と境界をまとめた。
 - `Ask AI` の入力欄は既定で 90% のまま、アクセシビリティ文字サイズでは縮小しない。40 pt 相当の操作領域は残課題。
