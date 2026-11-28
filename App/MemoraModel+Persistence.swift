@@ -51,6 +51,25 @@ extension MemoraModel {
     }
   }
 
+  /// Moves a collection that predates the row archive across, now that the first
+  /// screen is up. It stays on the persistence queue; the person's first edit
+  /// waits for it there instead of paying for it on the main actor.
+  func stageRowArchive() {
+    let startedAt = Date()
+    let count = meetings.count
+    RecordStore.saveMeetings(meetings) { [weak self] in
+      guard let self else { return }
+      self.reportPersistenceFailure(self.saveFailureMessage)
+    } onComplete: { [weak self] in
+      guard let self else { return }
+      self.performance.record(
+        "保存（記録の移行）",
+        milliseconds: Date.now.timeIntervalSince(startedAt) * 1_000,
+        count: count
+      )
+    }
+  }
+
   func persistSpaces() {
     persistInBackground(spaces, forKey: StorageKey.spaces)
   }

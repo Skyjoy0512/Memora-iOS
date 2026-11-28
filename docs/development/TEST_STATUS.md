@@ -42,6 +42,7 @@
 | 記録単位の保存 | Mac ホスト・実 SQLite・合成100/1千/1万/5万件 | 切替（行・manifest・旧BLOB退避）、1件編集で1文書だけ更新、並び替え・追加・削除、破損行の拒否と旧BLOBへの復帰、書込失敗時のロールバックを確認。iPhone 実機の移行と転写入り実データは未実施。`tools/checks/run-meeting-archive-checks.py` |
 | 音声信号の一致と速度 | Mac ホスト・合成波形 | Accelerate の二乗和・ピーク・しきい値カウントが素の計算と一致。512/4,096/8,192 で間引きループを上回るか同等。非有限値は検出 |
 | VAD の実行先 | Mac ホスト・同梱モデル | manifest 検証（欠落を拒否）、4実行先の読込・推論・出力一致を確認。実機の電池・熱は未計測 |
+| 旧形式からの移行（シミュレータ） | iPhone 18 Pro Max シミュレータ・合成2,000件 | 起動後の保存キューで移行し、`memora.meeting.<id>` 2,000件・manifest・`memoraMeetings.legacy` を作成、旧 BLOB を削除。移行 2,044 ms、起動は旧 BLOB 93〜108 ms・行 100〜128 ms（Debug） |
 | 記録単位の保存（実機相当） | iPhone 18 Pro Max シミュレータ・実コンテナ | 画面確認用サンプル8件を追加し、再起動後も一覧に出て8件とも開けた。`documents` に `memora.meeting.<id>` が9件（32バイトの SHA-256 + payload）と manifest が入り、旧 `memoraMeetings` は無い（新規インストールのため退避対象なし）。旧形式からの移行はホストで検証 |
 | 統合品質ゲート | Mac ホスト・固定ツリー | `ef766f66` で12/12成功。12番目の `performance-contracts` は信号演算の一致と速度、記録単位の保存契約、VAD の検証と実行先を確認する |
 

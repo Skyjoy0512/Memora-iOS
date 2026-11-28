@@ -15,7 +15,11 @@ extension RecordStore {
 
   /// Saves the records off the caller's turn. Only the documents that changed
   /// are encoded and written.
-  static func saveMeetings(_ meetings: [Meeting], onFailure: (@MainActor () -> Void)? = nil) {
+  static func saveMeetings(
+    _ meetings: [Meeting],
+    onFailure: (@MainActor () -> Void)? = nil,
+    onComplete: (@MainActor () -> Void)? = nil
+  ) {
     let key = MemoraModel.StorageKey.meetings
     let generation = beginBackgroundSave(key)
     queue.async {
@@ -23,6 +27,7 @@ extension RecordStore {
       guard isCurrentBackgroundSave(key, generation) else { return }
       do {
         try commitMeetingsLocked(writes: [], removing: [], expecting: [], meetings: meetings)
+        if let onComplete { Task { @MainActor in onComplete() } }
       } catch {
         Task { @MainActor in onFailure?() }
       }

@@ -732,13 +732,16 @@ final class MemoraModel {
     // it, the collection document is still the authority. The rows are read
     // straight into `meetings`, so one edit later does not have to re-encode
     // what was just decoded.
+    var stagesRowArchive = false
     switch RecordStore.loadMeetings() {
     case .records(let records):
       meetings = records
     case .absent, .invalid:
       // The first save stages the rows from this collection document, which is
       // why the base is deliberately left unset here.
-      meetings = load([Meeting].self, forKey: StorageKey.meetings, fallback: [])
+      let legacy = load([Meeting].self, forKey: StorageKey.meetings, fallback: [])
+      meetings = legacy
+      stagesRowArchive = !legacy.isEmpty
     }
     spaces = load([MemoraSpace].self, forKey: StorageKey.spaces, fallback: [])
     documents = load([MemoraDocument].self, forKey: StorageKey.documents, fallback: [])
@@ -851,6 +854,13 @@ final class MemoraModel {
     retryPendingMediaDeletions()
     if !didFailToReadStore, !didFindUnreadableData {
       removeUnregisteredVoiceSamples()
+    }
+
+    // The rows are staged now, off the main thread, rather than inside whatever
+    // edit happens to come first: on a large collection that switch would
+    // otherwise stall the screen the person just touched.
+    if stagesRowArchive, !isStoreProtected, !didFindUnreadableData {
+      stageRowArchive()
     }
 
     // A recording that was cut off by a stop is recovered as its own record,
