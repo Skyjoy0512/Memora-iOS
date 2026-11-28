@@ -28,6 +28,10 @@ struct ProjectSourceAddSheet: View {
   @FocusState private var isNoteFocused: Bool
   private var preferredDraftKey: String { "workspace.\(isMemo ? "newMemo" : "newNote").\(projectID?.uuidString ?? "library")" }
   private var draftKey: String { activeDraftKey ?? preferredDraftKey }
+  /// The reason the model refused the import, if it gave one.
+  private var localFailure: String? {
+    model.localImportFailureMessage ?? model.persistenceFailureMessage
+  }
 
   var body: some View {
     NavigationStack {
@@ -247,7 +251,7 @@ struct ProjectSourceAddSheet: View {
           guard context.isCurrent(in: model) else { throw ProjectSourceFiles.Failure.invalidFile }
           guard let ids = try await model.importInformationSources(url, context: context, presentsErrorsLocally: true),
                 !ids.isEmpty else {
-            failure = model.persistenceFailureMessage ?? "保存できませんでした。保存先を確認して再試行してください。"
+            failure = localFailure ?? "保存できませんでした。保存先を確認して再試行してください。"
             return
           }
           rememberSources(ids)
@@ -284,11 +288,12 @@ struct ProjectSourceAddSheet: View {
   private func perform(dismissOnSuccess: Bool = true, _ operation: @escaping @MainActor () async throws -> Bool) {
     guard !isSaving else { return }
     isSaving = true; failure = nil
+    model.localImportFailureMessage = nil
     Task { @MainActor in
       defer { isSaving = false }
       do {
         if try await operation() { if dismissOnSuccess { dismiss() } }
-        else { failure = model.persistenceFailureMessage ?? "保存できませんでした。保存先を確認して再試行してください。" }
+        else { failure = localFailure ?? "保存できませんでした。保存先を確認して再試行してください。" }
       } catch { failure = error.localizedDescription }
     }
   }

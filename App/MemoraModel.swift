@@ -430,6 +430,10 @@ final class MemoraModel {
     bottomControlsHeight + MemoraSpacing.lg
   }
   var importErrorMessage: String?
+  /// Why the last import was refused, for an editor that asked to show the
+  /// failure itself instead of through the global alert. The editor keeps its
+  /// draft while it shows this.
+  var localImportFailureMessage: String?
   /// Shown when an audio file was handed to the app while recording, to say it
   /// will be imported once the recording ends.
   var pendingImportNotice: String?

@@ -58,7 +58,9 @@ extension MemoraModel {
       guard context.isCurrent(in: self), source(id: id)?.projectID == projectID else { return nil }
       return id
     case .refused(let message):
-      if presentsErrorsLocally { importErrorMessage = message }
+      // An editor that asked for a local failure shows the reason beside its
+      // own draft; the global alert stays for imports started outside one.
+      if presentsErrorsLocally { localImportFailureMessage = message } else { importErrorMessage = message }
       await discardProjectImportReceipt(receipt)
       return nil
     }

@@ -330,10 +330,14 @@ struct ProjectSourceImportChecks {
     for local in [false, true] {
       model.persistenceFailureMessage = nil
       model.importErrorMessage = nil
+      model.localImportFailureMessage = nil
       expect(try await model.importProjectFile(url, projectID: projectID, presentsErrorsLocally: local) == nil)
       precondition(model.projectSources.isEmpty && model.preparedSourceIDs.isEmpty)
       precondition((model.persistenceFailureMessage == nil) == local)
-      precondition((model.importErrorMessage != nil) == local)
+      // An editor that asked for the failure itself gets the reason; only an
+      // import started outside one raises the global alert.
+      precondition((model.importErrorMessage != nil) == !local)
+      precondition((model.localImportFailureMessage != nil) == local)
       expect(try files() == before)
       guard case .missing = model.store.readOutcome(MemoraModel.StorageKey.projectSources) else { preconditionFailure("Failed import persisted") }
     }

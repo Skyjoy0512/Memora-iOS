@@ -24,6 +24,7 @@ final class MemoraModel {
   var audioImportCalls = 0
   var discardedSourceExtractions: [ProjectSource] = []
   func discardSourceExtraction(for source: ProjectSource) { discardedSourceExtractions.append(source) }
+  var localImportFailureMessage: String?
   var importErrorMessage: String?
   func performProjectSourcePreparation(_ id: UUID) async {
     preparedSourceIDs.append(id)
