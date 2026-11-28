@@ -381,6 +381,10 @@ struct RootTabView: View {
                 keepsFocusAfterSubmit: model.selectedTab == .askAI || model.activeProjectChatID != nil,
                 compactIdle: true
               )
+              // Ask AI's composer carries the most controls; a slightly smaller
+              // scale keeps its chip and buttons inside the capsule on narrow
+              // screens.
+              .scaleEffect(model.selectedTab == .askAI ? 0.9 : 1, anchor: .bottom)
               .frame(maxWidth: .infinity, alignment: .leading)
               .padding(.trailing, showsCaptureButtons ? 60 : 0)
               // Keep the editor identity while the available width changes.
