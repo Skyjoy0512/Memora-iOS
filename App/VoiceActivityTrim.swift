@@ -33,11 +33,15 @@ enum VoiceActivityTrimmer {
     defer { if scoped { url.stopAccessingSecurityScopedResource() } }
     guard let original = duration(of: url), original >= minimumDuration,
           original <= VoiceActivityTimeline.maximumDuration,
-          let originalBytes = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
-          let model = await VoiceActivityModelAssets.shared.model() else { return nil }
+          let originalBytes = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize else { return nil }
+    // The model is loaded for this evaluation alone, so a memory warning between
+    // recordings can free it and the next one loads it again.
     let timeline: VoiceActivityTimeline
     do {
-      timeline = try await FluidVoiceActivityEvaluator(model: model).evaluate(url)
+      guard let evaluated = try await VoiceActivityModelAssets.shared.withModel({ model in
+        try await FluidVoiceActivityEvaluator(model: model).evaluate(url)
+      }) else { return nil }
+      timeline = evaluated
     } catch {
       return nil
     }

@@ -20,24 +20,38 @@ enum AudioSignalInspector {
     }
     var squares = 0.0, peak = 0.0
     var clipped: Int64 = 0, quiet: Int64 = 0, frames: Int64 = 0
+    let channelCount = Int(format.channelCount)
+    let scratch = UnsafeMutablePointer<Float>.allocate(capacity: Int(buffer.frameCapacity))
+    defer { scratch.deallocate() }
     while file.framePosition < file.length {
       try Task.checkCancellation()
       try file.read(into: buffer)
       let count = Int(buffer.frameLength)
       guard count > 0, let channels = buffer.floatChannelData else { throw SourceMediaFailure.invalidTemporaryFile }
-      for index in 0..<count {
-        var framePeak: Float = 0
-        for channel in 0..<Int(format.channelCount) {
-          let sample = channels[channel][index]
-          guard sample.isFinite else { throw SourceMediaFailure.invalidTemporaryFile }
-          squares += Double(sample) * Double(sample)
-          let amplitude = abs(sample)
-          framePeak = max(framePeak, amplitude)
-          peak = max(peak, Double(amplitude))
-          if amplitude >= 0.999 { clipped += 1 }
+      for channel in 0..<channelCount {
+        let samples = channels[channel]
+        let total = AudioLevelMath.sumOfSquares(samples, count: count)
+        // A non-finite sample makes the sum non-finite: the file is refused
+        // rather than measured as silence.
+        guard total.isFinite else { throw SourceMediaFailure.invalidTemporaryFile }
+        squares += Double(total)
+        peak = max(peak, Double(AudioLevelMath.peakMagnitude(samples, count: count)))
+        clipped += Int64(AudioLevelMath.countMagnitudes(
+          atLeast: 0.999, in: samples, count: count, scratch: scratch))
+      }
+      // -60dBFS is deliberately named quiet, never "no speech". A frame is
+      // quiet when every channel is below the threshold.
+      if channelCount == 1 {
+        quiet += Int64(count) - Int64(AudioLevelMath.countMagnitudes(
+          atLeast: 0.001, in: channels[0], count: count, scratch: scratch))
+      } else {
+        for index in 0..<count {
+          var framePeak: Float = 0
+          for channel in 0..<channelCount {
+            framePeak = max(framePeak, abs(channels[channel][index]))
+          }
+          if framePeak < 0.001 { quiet += 1 }
         }
-        // -60dBFS is deliberately named quiet, never "no speech".
-        if framePeak < 0.001 { quiet += 1 }
       }
       frames += Int64(count)
     }

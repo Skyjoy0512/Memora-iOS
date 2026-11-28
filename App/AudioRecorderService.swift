@@ -31,25 +31,12 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
       let accepted = writer.append(output.buffer)
       guard accepted else { return false }
       frames.withLock { $0 += Int64(output.buffer.frameLength) }
-      level.withLock { $0 = Self.rms(output.buffer) }
+      guard let samples = output.buffer.floatChannelData?[0] else { return true }
+      // Every frame is measured, not one in eight: Accelerate is faster than the
+      // sampled Swift loop it replaces and the glow follows the real level.
+      let value = AudioLevelMath.level(samples, count: Int(output.buffer.frameLength))
+      level.withLock { $0 = value }
       return true
-    }
-
-    private static func rms(_ buffer: AVAudioPCMBuffer) -> Float {
-      guard let samples = buffer.floatChannelData?[0], buffer.frameLength > 0 else { return 0 }
-      let count = Int(buffer.frameLength)
-      let stride = max(1, count / 512)
-      var sum: Float = 0
-      var used = 0
-      var index = 0
-      while index < count {
-        let sample = samples[index]
-        sum += sample * sample
-        used += 1
-        index += stride
-      }
-      let rms = sqrt(sum / Float(max(used, 1)))
-      return min(1, max(0, rms * 4))
     }
   }
 

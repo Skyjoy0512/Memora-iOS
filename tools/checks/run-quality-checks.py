@@ -24,6 +24,9 @@ SUITES = (
     ("adaptive-summary-quality", "bash", "run-adaptive-summary-quality.sh"),
     ("composer-layout", "bash", "run-composer-layout-checks.sh"),
     ("optimization", "python3", "run-optimization-checks.py"),
+    # Signal math, the record archive and the voice activity model: the parts
+    # whose cost or correctness the performance work changed.
+    ("performance-contracts", "python3", "run-performance-contract-checks.py"),
 )
 
 

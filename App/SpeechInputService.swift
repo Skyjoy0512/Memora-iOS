@@ -176,12 +176,8 @@ final class SpeechInputService {
     let frames = Int(buffer.frameLength)
     guard frames > 0 else { return 0 }
 
-    var sum: Float = 0
-    for index in 0..<frames {
-      let sample = samples[index]
-      sum += sample * sample
-    }
-    let rms = sqrt(sum / Float(frames))
+    let meanSquare = AudioLevelMath.meanSquare(samples, count: frames)
+    let rms = sqrt(meanSquare)
     guard rms > 0 else { return 0 }
 
     let decibels = 20 * log10(rms)
