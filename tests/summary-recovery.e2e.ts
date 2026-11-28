@@ -84,7 +84,7 @@ test('failed transcript saves keep the stored record and durable or in-memory dr
   } finally { recover(); }
 });
 
-test('PNG write failure keeps the preview and a retry uses the real share sheet', { timeout: 180_000 }, async ({ app, device, screen }) => {
+test('PNG write failure keeps the preview and a retry uses the real share sheet', { timeout: 180_000, skip: 'The one-page summary poster is compiled off (FeatureFlags.isInlineSummaryPosterEnabled is false).' }, async ({ app, device, screen }) => {
   const { database } = await seedSummaryFixture(app, device, screen);
   const container = realpathSync(resolve(dirname(database), '../../..'));
   const folder = join(container, 'tmp');

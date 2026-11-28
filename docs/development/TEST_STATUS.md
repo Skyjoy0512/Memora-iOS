@@ -24,6 +24,7 @@
 | プロジェクトの時系列横断 | Mac ホスト・実 FTS5、合成資料52件 | 適合9/10、取得9/9。方針変更前後の2件、監査資料を含む3件、更新・移動・削除を確認。記録日を明示した検索は対象日だけを取得し、日付だけの検索も成功。用途を指定しない日付表現では古い記録も1件返った。70回の再検索は p50 0.31 ms、p95 0.57 ms |
 | 資料生成 | Mac ホスト・実出力と Quick Look | 65型の構造と書き出し。原本と Quick Look 14型、CoreGraphics 38型に描画差。Office での編集・再保存は未確認 |
 | 統合品質ゲート | 固定コミットの Mac ホスト | `a794baac`、`54974876`、`2dc48020`、`c489bcfb` は11/11成功（`c489bcfb` は `/Volumes/DevSSD/Development/Temp/memora-release-qa.JE0mxQ/run/summary.json`）。以前の長時間 WAV の失敗は統合再実行と単独2回で再発しなかった |
+| ジャーナル・録音・チャット E2E | iPhone 18 Pro Max 専用 E2E | `journal-failure`、`project-chat-citation`、`marketplace-discovery`、`recording-power`、`summary-recovery` が成功。ジャーナルのメモは空の日を選んで「記録を追加」から作成する。`capture-audio-picker` は音声取込のキャンセル後にアプリのアクセシビリティツリーが戻らず QA-08 として残す |
 | 参考資料の作成 E2E | iPhone 18 Pro Max 専用 E2E | `project-source-note`、`project-source-note-attach-order`、`project-source-interruption`、`source-ask-ai`、`library-photo-ocr` が成功。ワークスペースのセクションはインラインの「参考資料」を押す。`project-source-photo`（写真ピッカーの確定ラベル）と `project-source-pickers`（閉じた後の空状態の文言）は QA-07 として残す |
 | UI・メニュー E2E | iPhone 18 Pro Max 専用 E2E | `answer-actions` 3件、`people-management`、`capture-menu-layout` 2件、`sidebar-glass` 2/3件、`ui-polish` 1/2件が成功。追加メニューは「録音する／音声を取り込む／ノートを追加」、資料の検索は文言で確認。起動時のマイク許可ダイアログは `launchMemora` が「許可しない」で閉じる。添付メニューを閉じた後の再表示と、候補選択後のキーボード保持は QA-06 として残す |
 | ナビゲーション・コレクション E2E | iPhone 18 Pro Max 専用 E2E | `native-header` 4件、`root-tab-navigation` 5件が成功。`collection-polish` 4件成功。書類編集の破棄確認は iOS 27 のダイアログが破棄ボタンだけを描き、外側タップで編集を続ける仕様に合わせて検証した。検索の空状態は testID ではなく文言で確認する |

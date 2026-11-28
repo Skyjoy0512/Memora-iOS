@@ -16,6 +16,8 @@ test('top-right audio picker cancellation preserves Library capture and native m
       const cancel = screen.getByRole('button', { name: /^(Cancel|キャンセル)$/ }).first();
       await tapControl(cancel);
       await expect(screen.getByTestId('FullDocumentManagerViewControllerNavigationBar')).not.toBeVisible();
+      // The document picker leaves the driver on an empty scene for a moment.
+      await expect.poll(async () => await screen.getByLabel('メニュー').first().isVisible().catch(() => false)).toBe(true);
       if (!(await importAudio.isVisible())) await tapControl(screen.getByLabel('追加メニュー').first());
       await expect(screen.getByRole('button', { name: '録音する', exact: true })).toBeVisible();
       await expect(screen.getByText('インポートできませんでした', { exact: true })).not.toBeVisible();

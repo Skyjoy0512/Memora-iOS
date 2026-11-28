@@ -1,14 +1,21 @@
 import { randomUUID } from 'node:crypto';
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { launchMemora, openSidebarSearch, tapControl, tapTab } from './ui-helpers';
+import { launchMemora, openSidebarSearch, scrollToControl, tapControl, tapTab } from './ui-helpers';
 import { isolatedDatabase, sql } from './sqlite-fixture-helpers';
 
 test('journal SQLite failures retain drafts and records, then recover through the UI', { timeout: 360_000 }, async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   const marker = 'memora-journal-failure-' + randomUUID();
   async function newMemo(title: string, detail: string) {
-    await device.openLink('memora://new-memo');
+    // The memo link now opens the note editor; the journal's own sheet is the
+    // one that writes a life-log entry.
+    await tapTab(screen, 'ジャーナル');
+    // A day without entries shows the add action directly; a populated day
+    // keeps it at the end of a lazy timeline.
+    const emptyDay = screen.getByRole('button', { name: /、記録なし$/ }).first();
+    await tapControl(screen, emptyDay);
+    await tapControl(screen.getByRole('button', { name: '記録を追加', exact: true }).first());
     await expect(screen.getByText('ライフログを追加', { exact: true })).toBeVisible();
     await screen.getByRole('textbox', { name: 'メモのタイトル', exact: true }).fill(title);
     await screen.getByRole('textbox', { name: 'ひとことや背景', exact: true }).fill(detail);
