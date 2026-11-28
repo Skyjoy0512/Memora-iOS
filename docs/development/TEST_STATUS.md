@@ -48,7 +48,7 @@
 | VAD の実行先 | Mac ホスト・同梱モデル | manifest 検証（欠落を拒否）、4実行先の読込・推論・出力一致を確認。実機の電池・熱は未計測 |
 | 並列復号の実機相当比較 | iPhone 18 Pro Max シミュレータ・Release・合成2,000件 | 直列 138〜186 ms、512件ずつ並列 62〜69 ms（起動準備完了まで、各4〜5回）。Debug では並列が約149 msで、Release の数値を使う |
 | 旧形式からの移行（シミュレータ） | iPhone 18 Pro Max シミュレータ・合成2,000件 | 起動後の保存キューで移行し、`memora.meeting.<id>` 2,000件・manifest・`memoraMeetings.legacy` を作成、旧 BLOB を削除。Debug は移行 2,044 ms、Release は移行 506 ms・起動は旧 BLOB 103 ms・行 62〜69 ms |
-| 並列復号後の記録読み込み | iPhone 18 Pro Max 専用 E2E | `adaptive-structured-summary`（要約・根拠・転写の往復）と `library-photo-ocr`（写真付き記録の種込と検索）が成功。`recording-lifecycle` 3件も成功 |
+| 並列復号後の記録読み込み | iPhone 18 Pro Max 専用 E2E | `recording-lifecycle` 3件、`adaptive-structured-summary`（要約・根拠・転写の往復）、`library-photo-ocr`（写真付き記録の種込と検索）、`draft-protection` 2件、`markdown-replacement` 2件が成功 |
 | 保存形式に依存する E2E の更新 | iPhone 18 Pro Max 専用 E2E | `memoraMeetings` を直接読み書きしていた7ファイルを、manifest と `memora.meeting.<id>` を扱う `readMeetings`／`writeMeetings` に移した。`recording-lifecycle` 3件、`markdown-replacement` 2件、`draft-protection` 2件、`project-chat-citation` 1件、`adaptive-structured-summary` 1件、`background-summary` 1件（再実行で成功）、`library-photo-ocr` 1件が成功 |
 | 記録単位の保存（実機相当） | iPhone 18 Pro Max シミュレータ・実コンテナ | 画面確認用サンプル8件を追加し、再起動後も一覧に出て8件とも開けた。`documents` に `memora.meeting.<id>` が9件（32バイトの SHA-256 + payload）と manifest が入り、旧 `memoraMeetings` は無い（新規インストールのため退避対象なし）。旧形式からの移行はホストで検証 |
 | 統合品質ゲート | Mac ホスト・固定ツリー | `ef766f66` で12/12成功。12番目の `performance-contracts` は信号演算の一致と速度、記録単位の保存契約、VAD の検証と実行先を確認する |
