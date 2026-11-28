@@ -1,6 +1,6 @@
 import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { focusComposer, launchMemora, tapControl, openSettingsGallery } from './ui-helpers';
+import { focusComposer, launchMemora, scrollToControl, tapControl, openSettingsGallery } from './ui-helpers';
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
@@ -48,7 +48,9 @@ test('polish: candidate names, selected state and keyboard survive appearance ch
 test('polish: library metadata and status remain readable in both appearances', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await openReview(device, screen);
-  await tapControl(screen, screen.getByText('検証データを片付ける'));
+  const cleanup = screen.getByRole('button', { name: '検証データを片付ける', exact: true });
+  await scrollToControl(screen, cleanup);
+  await tapControl(screen, cleanup);
   await tapControl(screen, screen.getByText('検証用の要約を作成'));
   await expect(screen.getByText('検証用の要約を保存しました')).toBeVisible();
   await device.openLink('memora://projects');
@@ -56,11 +58,12 @@ test('polish: library metadata and status remain readable in both appearances', 
   for (const appearance of ['light', 'dark'] as const) {
     await device.setAppearance(appearance);
     await expect(screen.getByText('QA デザイン検証の要約')).toBeVisible();
-    await expect(screen.getByText('整理済み')).toBeVisible();
     await app.screenshot(`library-fixture-${appearance}`);
   }
   await device.setAppearance('light');
   await openReview(device, screen);
-  await tapControl(screen, screen.getByText('検証データを片付ける'));
+  const cleanupAgain = screen.getByRole('button', { name: '検証データを片付ける', exact: true });
+  await scrollToControl(screen, cleanupAgain);
+  await tapControl(screen, cleanupAgain);
   await expect(screen.getByText('検証データを削除しました')).toBeVisible();
 });

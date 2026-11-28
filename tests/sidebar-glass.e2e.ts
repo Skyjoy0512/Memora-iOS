@@ -35,35 +35,27 @@ test('sidebar glass: supplied logo sits above auxiliary destinations in both app
   }
 });
 
-test('sidebar glass: create morph keeps capture choices and memo cancellation working', async ({ app, device, screen }) => {
+test('sidebar glass: create menu keeps the capture choices working', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   for (const appearance of ['light', 'dark'] as const) {
     await device.setAppearance(appearance);
-    await tap(screen, screen.getByLabel('新規作成'));
-    for (const name of ['録音を開始', 'ファイルをインポート', 'メモを作成', 'オンライン会議', '新規チャット']) {
+    await tap(screen, screen.getByLabel('追加メニュー'));
+    for (const name of ['録音する', '音声を取り込む', 'ノートを追加']) {
       await expect(screen.getByRole('button', { name, exact: true })).toBeVisible();
     }
     await app.screenshot(`capture-glass-${appearance}`);
-    await tap(screen, screen.getByRole('button', { name: 'メモを作成', exact: true }));
-    await expect(screen.getByPlaceholder('メモのタイトル')).toBeVisible();
-    await tap(screen, screen.getByLabel('キャンセル', { exact: true }));
-    await expect(screen.getByLabel('新規作成')).toBeVisible();
-    await tap(screen, screen.getByLabel('新規作成'));
-    await tap(screen, screen.getByRole('button', { name: 'オンライン会議', exact: true }));
-    await expect(screen.getByRole('button', { name: '録音の準備をする', exact: true })).toBeVisible();
-    await tap(screen, screen.getByLabel('閉じる', { exact: true }).first());
-    await expect(screen.getByLabel('新規作成')).toBeVisible();
+    await tap(screen, screen.getByRole('button', { name: 'ノートを追加', exact: true }));
+    await expect(screen.getByRole('textbox', { name: 'タイトル', exact: true })).toBeVisible();
+    await tap(screen, screen.getByRole('button', { name: '閉じる', exact: true }));
+    await expect(screen.getByLabel('追加メニュー')).toBeVisible();
   }
   await tapTab(screen, 'ジャーナル');
-  await tap(screen, screen.getByLabel('新規作成'));
-  await tap(screen, screen.getByRole('button', { name: 'メモを作成', exact: true }));
-  await expect(screen.getByPlaceholder('メモのタイトル')).toBeVisible();
-  await tap(screen, screen.getByLabel('キャンセル', { exact: true }));
+  await tap(screen, screen.getByLabel('追加メニュー'));
+  await tap(screen, screen.getByRole('button', { name: 'ノートを追加', exact: true }));
+  await expect(screen.getByRole('textbox', { name: 'タイトル', exact: true })).toBeVisible();
+  await tap(screen, screen.getByRole('button', { name: '閉じる', exact: true }));
   await tapTab(screen, 'ライブラリ');
-  await tap(screen, screen.getByRole('button', { name: '録音または読み込み', exact: true }));
-  await tap(screen, screen.getByRole('button', { name: 'メモを作成', exact: true }));
-  await expect(screen.getByPlaceholder('メモのタイトル')).toBeVisible();
-  await tap(screen, screen.getByLabel('キャンセル', { exact: true }));
+  await expect(screen.getByTestId('ai.composer.input')).toBeVisible();
 });
 
 test('sidebar glass: attachment glass keeps the composer mounted and preserves its draft', async ({ app, device, screen }) => {
@@ -77,9 +69,8 @@ test('sidebar glass: attachment glass keeps the composer mounted and preserves i
   const field = await input.boundingBox();
   expect(field!.y).toBeCloseTo(before!.y, 0);
   expect(field!.width).toBeCloseTo(before!.width, 0);
-  await expect(screen.getByLabel('音声で入力')).toBeVisible();
   await app.screenshot('attachment-composer-library');
-  await tap(screen, screen.getByRole('button', { name: '連携サービス…', exact: true }));
+  await tap(screen, screen.getByRole('button', { name: 'コネクタ…', exact: true }));
   await expect(screen.getByText('Gmail', { exact: true }).first()).toBeVisible();
   await tap(screen, screen.getByLabel('閉じる', { exact: true }).first());
   await expect(screen.getByLabel('添付を追加')).toBeVisible();

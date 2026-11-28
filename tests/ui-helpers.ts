@@ -145,7 +145,21 @@ export async function launchMemora(app: any, device: any, screen: any) {
   const skip = screen.getByRole('button', { name: 'スキップ', exact: true });
   const menu = screen.getByLabel('メニュー').first();
   const open = screen.getByRole('button', { name: '開く', exact: true });
-  await expect.poll(async () => await skip.isVisible() || await menu.isVisible() || await open.isVisible()).toBe(true);
+  // Onboarding can raise the microphone prompt before the first screen is
+  // readable. Decline it so the flow continues; scenarios that need the
+  // microphone set their own permission.
+  const denyMicrophone = screen.getByRole('button', { name: '許可しない', exact: true });
+  const ready = async () => {
+    try {
+      return await skip.isVisible() || await menu.isVisible() || await open.isVisible()
+        || await denyMicrophone.isVisible();
+    } catch {
+      return false;
+    }
+  };
+  await expect.poll(ready).toBe(true);
+  if (await denyMicrophone.isVisible()) await denyMicrophone.tap();
+  await expect.poll(async () => (await skip.isVisible()) || (await menu.isVisible()) || (await open.isVisible())).toBe(true);
   if (!await skip.isVisible() && !await menu.isVisible() && await open.isVisible()) {
     // A previous interrupted deep-link test can leave the system consent
     // alert above a freshly installed app. Dismiss it before onboarding.
