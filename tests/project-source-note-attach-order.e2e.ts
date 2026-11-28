@@ -17,8 +17,7 @@ test('a note saves attached sources in tap order and keeps it after restart', { 
   const closeKeyboard = screen.getByRole('button', { name: 'キーボードを閉じる', exact: true });
 
   async function openReferences() {
-    await tapControl(screen.getByRole('pop-up-button', { name: /表示切り替え$/ }));
-    await tapControl(screen.getByRole('button', { name: '参考資料', exact: true }).last());
+      await tapControl(screen.getByRole('button', { name: '参考資料', exact: true }).last());
   }
 
   async function addNote(title: string, body: string) {

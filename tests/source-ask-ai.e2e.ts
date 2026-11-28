@@ -11,8 +11,7 @@ test('a saved note is answered from its text with an openable citation and survi
   const title = '予算メモ ' + marker;
   const bodyText = 'この会議の予算は1200万円、担当は佐藤、期限は12月20日です。';
   async function openReferences() {
-    await tapControl(screen.getByRole('pop-up-button', { name: /表示切り替え$/ }));
-    await tapControl(screen.getByRole('button', { name: '参考資料', exact: true }).last());
+      await tapControl(screen.getByRole('button', { name: '参考資料', exact: true }).last());
   }
   await selectLibrarySection(screen, 'プロジェクト');
   await tapControl(screen.getByRole('button', { name: 'プロジェクトを作成', exact: true }).first());

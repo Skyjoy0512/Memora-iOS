@@ -19,8 +19,7 @@ test('selected photo survives SQL failure, same-photo retry, deduplication and r
   let triggerInstalled = false;
   let stockPhotoName: string | undefined;
   async function openReferences() {
-    await tapControl(screen.getByLabel(/表示切り替え$/).last());
-    await tapControl(screen.getByRole('button', { name: '参考資料', exact: true }).last());
+      await tapControl(screen.getByRole('button', { name: '参考資料', exact: true }).last());
   }
   async function dismissKeyboard() {
     for (const label of ['キーボードを閉じる', '完了']) {

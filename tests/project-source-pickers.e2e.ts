@@ -9,7 +9,6 @@ test('source native photo and file pickers cancel without losing the note text',
   await tapControl(screen.getByRole('button', { name: 'プロジェクトを作成', exact: true }).first());
   await screen.getByPlaceholder('例：新規アプリ').fill('Picker-' + randomUUID().slice(0, 8));
   await tapControl(screen.getByRole('button', { name: '作成', exact: true }));
-  await tapControl(screen.getByRole('pop-up-button', { name: /表示切り替え$/ }));
   await tapControl(screen.getByRole('button', { name: '参考資料', exact: true }).last());
   await tapControl(screen.getByRole('button', { name: '参考資料を追加', exact: true }).first());
   const title = screen.getByRole('textbox', { name: 'タイトル', exact: true });

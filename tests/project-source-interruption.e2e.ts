@@ -15,7 +15,6 @@ test('interrupted source status recovers on launch without fetching content', { 
   await tapControl(screen.getByRole('button', { name: 'プロジェクトを作成', exact: true }).first());
   await screen.getByPlaceholder('例：新規アプリ').fill(project);
   await tapControl(screen.getByRole('button', { name: '作成', exact: true }));
-  await tapControl(screen.getByRole('pop-up-button', { name: /表示切り替え$/ }));
   await tapControl(screen.getByRole('button', { name: '参考資料', exact: true }).last());
   await tapControl(screen.getByRole('button', { name: '参考資料を追加', exact: true }).first());
   const body = screen.getByRole('textbox', { name: 'ノート本文', exact: true });
@@ -44,7 +43,6 @@ test('interrupted source status recovers on launch without fetching content', { 
   await tapTab(screen, 'ライブラリ');
   await tapControl(screen.getByRole('button', { name: 'プロジェクト', exact: true }));
   await tapControl(screen.getByText(project, { exact: true }).first());
-  await tapControl(screen.getByRole('pop-up-button', { name: /表示切り替え$/ }));
   await tapControl(screen.getByRole('button', { name: '参考資料', exact: true }).last());
   await tapControl(screen.getByRole('button', { name: /^example\.com/ }).first());
   const notice = '処理は中断されました。ソースは保持しています。必要に応じて再試行してください。自動では再開しません。';

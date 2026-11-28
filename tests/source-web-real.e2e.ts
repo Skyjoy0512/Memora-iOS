@@ -20,7 +20,6 @@ test('an approved HTTPS source is extracted, answered on-device and cited', {
   const project = 'RealWeb-' + randomUUID().slice(0, 8);
 
   async function openReferences() {
-    await tapControl(screen.getByRole('pop-up-button', { name: /表示切り替え$/ }));
     await tapControl(screen.getByRole('button', { name: '参考資料', exact: true }).last());
   }
 
