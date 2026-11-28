@@ -20,12 +20,13 @@ def main():
         "TemplateSummary", "SummarySection", "SummaryEvidence", "SummaryEvidenceLink",
         "GeneratedSummaryEvidence", "SummaryLength", "SummaryPreferences", "SummaryProcessingMode",
         "SummaryPreviewCache", "MarkdownBlockParser", "MarkdownBlock", "SourcedMarkdownBlock", "MarkdownFence",
+        "MeetingRowStaging",
     ]
     check_root = os.environ.get("MEMORA_CHECK_TMPDIR") or os.environ.get("MEMORA_CHECK_ROOT")
     with tempfile.TemporaryDirectory(prefix="memora-row-staging-", dir=check_root) as directory:
         binary = str(Path(directory) / "row-staging")
         subprocess.run(["swiftc", "-O", "Shared/MemoraIcon.swift", *[f"App/{name}.swift" for name in sources],
-                        "tools/checks/MeetingRowStaging.swift", "tools/checks/MeetingRowStagingChecks.swift",
+                        "tools/checks/MeetingRowStagingChecks.swift",
                         "-lsqlite3", "-o", binary], check=True, timeout=240)
         for scenario in ["recovery", *map(str, args.counts)]:
             subprocess.run([binary, directory, scenario], check=True, timeout=240,

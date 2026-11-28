@@ -1,8 +1,12 @@
 import CryptoKit
 import Foundation
 
-/// Rehearses staging against the production document store in synthetic stores.
-/// The legacy collection remains the authority throughout this exercise.
+/// Stages each record as its own document, next to the legacy collection.
+///
+/// The collection stays the authority until a verified checkpoint exists; the
+/// sealed reader then serves pages without trusting the live store. Keeping this
+/// in the app lets the migration run against the real store rather than only in
+/// the rehearsal checks.
 struct MeetingRowStaging {
   static let collectionKey = "memoraMeetings"
   static let checkpointKey = "fixture.meeting-rows.checkpoint"
