@@ -24,6 +24,7 @@
 - 保存形式を直接読み書きする E2E 7ファイルを manifest と行の形式へ移した。`recording-lifecycle` 3件（SIGKILL 復旧を含む）、`markdown-replacement`、`draft-protection`、`project-chat-citation`、`adaptive-structured-summary`、`background-summary`、`library-photo-ocr` が成功。
 - QA-07 の写真保存失敗は、エディタ内に理由を出して下書きを残すよう修正（`localImportFailureMessage`）。`ProjectSourceImportChecks` の契約も「ローカル指定ならグローバルアラートを出さない」に更新。E2E で文言と下書きの保持を確認。
 - QA-08 はアプリの停止ではないと切り分けた（ツリーが空でも座標タップで操作でき、描画も正常）。同じ症状が起動直後・ピッカー取消後・シートを閉じた後・`keyboard` ノードにも出るため、環境側のアクセシビリティツリーの不調として扱う。QA-06 の添付ボタンは消えておらず、ラベルと導線の更新で3/3成功。
+- ライブラリの日付見出しを日ごとに一度だけ決めるようにした（2,000件で6.1 ms → 1.6 ms、5万件で126 ms → 33 ms）。
 - 要約の「部分→発言」対応を総当たり比較から識別子引きへ変えた（2時間相当で824 ms → 2.6 ms）。出典検証も同じ形で 10.9 ms → 4.4 ms。`performance-contracts` が同一結果を確認。
 - 計測はホストのみ。iPhone 実機の冷起動・MainActor・RSS・電池・熱、転写入り実データの移行、実会議音声の CER は未計測。[性能監査](../PERFORMANCE_AUDIT_2026_11.md) に条件と境界をまとめた。
 - `Ask AI` の入力欄は既定で 90% のまま、アクセシビリティ文字サイズでは縮小しない。40 pt 相当の操作領域は残課題。
