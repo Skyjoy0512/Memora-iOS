@@ -15,9 +15,8 @@ struct RootTabBackdrop: View {
     }
     .mask {
       VStack(spacing: 0) {
-        // A longer fade so content softens before it reaches the tab row.
         LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
-          .frame(height: MemoraSpacing.group)
+          .frame(height: MemoraSpacing.lg)
         Color.black
       }
     }
