@@ -35,11 +35,13 @@
 | 要約の読み面 E2E | iPhone 18 Pro Max 専用 E2E | `adaptive-structured-summary`、`markdown-replacement` 2件、`summary-reading-accessibility`、`draft-protection` 2件が成功。共有シートを閉じた後や再起動後にアプリのツリーが外れる場合は `restartToLibrary` でライブラリから開き直す。`summary-reading` はポスター前提のため skip |
 | 要約の判断・ポスター E2E | iPhone 18 Pro／Pro Max 専用 E2E | 判断の編集は「その他 › 要点・決定事項を編集」のシートで、保存・再起動後の復元・要約と文字起こしの不変・確認リンク非表示を確認。ポスター系4件は `FeatureFlags.isInlineSummaryPosterEnabled = false` のため理由付きで skip（旧ヘルパーでも同じ失敗で、今回の変更が原因ではない）。`meeting.tasks.add` は `adaptive-structured-summary` が引き続き検証する |
 | 設定・待機・サンプルの E2E 更新 | iPhone 18 Pro Max 専用 E2E | 旧UI・旧文言で失敗していた7件を現行へ更新。`settings-polish` 5件（外観は `外観` Picker、サイドバーはマーケットプレイス／タスク／資料／人物と設定）、`waiting-evidence`（`ai.waitingStatus` の「考えています」）、`summary-sample`（Markdown 本文とノートの注意書き）、`summary-one-tap`（標準のAIの Picker、`要約し直す`、送信先の表記）が成功 |
+| サンプル画面の E2E | iPhone 18 Pro Max 専用 E2E | `screen-review-samples` は、浮遊する入力欄の下にある行をタップしてタブ列に当たっていた。行を安全な範囲へスクロールしてから押すよう修正し、成功（`tests/screen-review-samples.e2e.ts`）。アプリ側の不具合ではなく、他のテストと同じ操作条件に揃えた |
 | 画面・体験の E2E 棚卸し | iPhone 18 Pro Max／Pro 専用 E2E | `screen-polish` 8件と `experience-polish` 9件が全17件成功。旧ラベルを現行の導線（記録を追加、追加メニュー、タスク、参考資料、AIで資料を作る、日本語の日付、`auth.continueLocal`）へ更新。作業中にタスク画面の大きなタイトルが「未完了／完了」に重なり「完了」を押せない実不具合を見つけ、インライン表示にして修正した。タスクの作成・完了・再起動後の保持は幅402pt の iPhone 18 Pro でも成功 |
 | Bitrig iOS Debug/Release | シミュレータ向けビルド | 日付付き出典まで Debug／Release 成功。写真の根拠まで Debug 成功。記録単位の保存と Accelerate 化の後も Debug 成功。実アカウント・実機は未実施 |
 | 記録単位の保存 | Mac ホスト・実 SQLite・合成100/1千/1万/5万件 | 切替（行・manifest・旧BLOB退避）、1件編集で1文書だけ更新、並び替え・追加・削除、破損行の拒否と旧BLOBへの復帰、書込失敗時のロールバックを確認。iPhone 実機の移行と転写入り実データは未実施。`tools/checks/run-meeting-archive-checks.py` |
 | 音声信号の一致と速度 | Mac ホスト・合成波形 | Accelerate の二乗和・ピーク・しきい値カウントが素の計算と一致。512/4,096/8,192 で間引きループを上回るか同等。非有限値は検出 |
 | VAD の実行先 | Mac ホスト・同梱モデル | manifest 検証（欠落を拒否）、4実行先の読込・推論・出力一致を確認。実機の電池・熱は未計測 |
+| 記録単位の保存（実機相当） | iPhone 18 Pro Max シミュレータ・実コンテナ | 画面確認用サンプル8件を追加し、再起動後も一覧に出て8件とも開けた。`documents` に `memora.meeting.<id>` が9件（32バイトの SHA-256 + payload）と manifest が入り、旧 `memoraMeetings` は無い（新規インストールのため退避対象なし）。旧形式からの移行はホストで検証 |
 | 統合品質ゲート | Mac ホスト・固定ツリー | `ef766f66` で12/12成功。12番目の `performance-contracts` は信号演算の一致と速度、記録単位の保存契約、VAD の検証と実行先を確認する |
 
 ## SQLite 合成データの計測

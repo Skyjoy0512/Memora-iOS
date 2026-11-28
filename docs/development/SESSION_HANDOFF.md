@@ -19,6 +19,9 @@ Bitrig の iOS プロジェクトで継続する。[実行状態](EXECUTION_STAT
 - `f43cd2b6` の記録日指定と `31becc94` の MCP 認証中断は専用ホスト検証が成功。`63626753` はリリース根拠の記録。
 - Phase 5 の長時間音声は AVFoundation、実 SQLite、合成認識結果を使ったホスト検証。計測結果は [音声計測](../AUDIO_MEASUREMENT.md)。
 
+- 記録単位の保存は iPhone 18 Pro Max の実コンテナで確認: サンプル8件を追加し、再起動後も開けた。`documents` の `memora.meeting.<id>` 9件と manifest が実データとして存在する。
+- `collection-polish` 4件と `screen-review-samples` 1件は現行ビルドで成功。後者は浮遊する入力欄の下を押していたテスト側の問題で、行を安全な範囲へスクロールしてから押すよう直した。
+
 ## 続きの作業
 
 1. QA-02 は判断の編集を「その他 › 要点・決定事項を編集」で再検証済み。ポスター3件は `FeatureFlags.isInlineSummaryPosterEnabled = false` のため skip。QA-03 の `screen-polish`／`experience-polish` は17件すべて成功し、タスク画面のタイトル重なりも `ff8d918d` で修正した。

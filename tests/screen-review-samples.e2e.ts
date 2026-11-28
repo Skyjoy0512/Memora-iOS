@@ -42,7 +42,9 @@ test('screen review samples persist without replacing existing content or duplic
   ];
   for (const [title, action] of states) {
     const row = screen.getByRole('button', { name: new RegExp(`^${title}（サンプル）、`) });
-    await scrollToControl(screen, row);
+    // The composer floats over the bottom of the list, so a row that reads as
+    // visible there would take a tap meant for the tab row underneath it.
+    await scrollToControl(screen, row, { minimumY: 160, maximumY: 700 });
     await tapControl(row);
     await expect(screen.getByText('記録', { exact: true }).first()).toBeVisible();
     await expect(screen.getByText(title + '（サンプル）', { exact: true }).last()).toBeVisible();
