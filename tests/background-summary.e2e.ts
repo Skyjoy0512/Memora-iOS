@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { seedSummaryFixture } from './summary-fixture-helpers';
-import { sql } from './sqlite-fixture-helpers';
+import { readMeetings, sql, writeMeetings } from './sqlite-fixture-helpers';
 import { tapControl, tapTab, scrollToControl } from './ui-helpers';
 
 // Presentation/restart only: a paused job must not call any model. OS scheduling
@@ -17,12 +17,10 @@ test('paused background summary preserves text and offers explicit retry after r
     automaticallySelect: false, preferences: { method: 'fixed', length: 'standard', displayOrder: 'importance' },
     cloudDisclosureConfirmed: false, usesCloud: false, createdAt: fixture.createdAt, requiresUserRetry: true };
   await device.closeApp();
-  for (const [key, value] of [['memoraMeetings', [record]], ['memoraPendingSummaryJobs', [job]]] as const) {
-    const bytes = Buffer.from(JSON.stringify(value)).toString('hex');
-    sql(database, `INSERT OR REPLACE INTO documents(key,data,updated_at) VALUES ('${key}',X'${bytes}',0);`);
-  }
+  writeMeetings(database, [record]);
+  sql(database, `INSERT OR REPLACE INTO documents(key,data,updated_at) VALUES ('memoraPendingSummaryJobs',X'${Buffer.from(JSON.stringify([job])).toString('hex')}',0);`);
   const storedJobs = () => JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraPendingSummaryJobs';"));
-  const storedRecord = () => JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"))[0];
+  const storedRecord = () => readMeetings(database)![0];
   await app.restart();
   await tapTab(screen, 'ライブラリ');
   await tapControl(screen.getByRole('button', { name: new RegExp('^' + title) }).first());

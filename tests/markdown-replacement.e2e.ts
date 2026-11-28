@@ -2,7 +2,7 @@ import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { seedSummaryFixture } from './summary-fixture-helpers';
 import { replaceEditorWithPaste, restartToLibrary, selectAllEditorText, scrollToControl, tapControl, tapTab } from './ui-helpers';
-import { sql } from './sqlite-fixture-helpers';
+import { readMeetings, sql } from './sqlite-fixture-helpers';
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
@@ -26,7 +26,7 @@ test('Japanese replacement, Unicode paste and navigation keep exact committed te
   await expect(editor).toHaveValue(final);
   await app.screenshot('replacement-before-navigation-light');
   await tapControl(screen.getByTestId('BackButton'));
-  const records = () => JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"));
+  const records = () => readMeetings(database)!;
   await expect.poll(() => records()[0].summary.includes(final)).toBe(true);
   expect(records()[0].summary.includes(original)).toBe(false);
   expect(records()[0].summary.includes('第1段落')).toBe(false);
@@ -55,7 +55,7 @@ test('formatting, list and table edits change only their own source lines', { ti
   const original = '予算は10万円ではなく12万円。承認された場合だけ来週実施する。';
   const paragraph = screen.getByRole('button', { name: original, exact: true });
   const editor = screen.getByRole('textbox', { name: '本文', exact: true });
-  const records = () => JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"));
+  const records = () => readMeetings(database)!;
   const finish = () => tapControl(screen.getByRole('button', { name: '完了', exact: true }));
   await scrollToControl(screen, paragraph);
   await tapControl(paragraph);

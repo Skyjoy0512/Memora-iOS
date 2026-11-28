@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, realpathSync } from 'node:fs';
 import { join, sep } from 'node:path';
 
@@ -32,4 +33,52 @@ export function isolatedDatabase(marker: string, bundleID: string, key: FixtureD
   }
   if (matches.length !== 1) throw new Error('Cannot uniquely identify the isolated fixture database');
   return matches[0];
+}
+
+const meetingRowPrefix = 'memora.meeting.';
+const archiveManifestKey = 'memora.meetings.archive.v1';
+
+/**
+ * The records as the app stores them. Once the archive exists each record is
+ * its own document (a SHA-256 of the payload followed by the payload) and the
+ * manifest lists the order; before that they are one collection document. A
+ * fixture that seeds or inspects records has to speak both.
+ */
+export function readMeetings(database: string): any[] | null {
+  const manifest = sql(database,
+    `SELECT CAST(data AS TEXT) FROM documents WHERE key='${archiveManifestKey}';`);
+  if (!manifest) {
+    const legacy = sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';");
+    return legacy ? JSON.parse(legacy) : null;
+  }
+  const ids: string[] = JSON.parse(manifest).ids;
+  const rows = sql(database,
+    `SELECT key || ' ' || hex(data) FROM documents WHERE key >= '${meetingRowPrefix}' AND key < 'memora.meeting/';`);
+  const records = new Map<string, any>();
+  for (const line of rows.split('\n')) {
+    if (!line) continue;
+    const space = line.indexOf(' ');
+    const key = line.slice(0, space);
+    const payload = Buffer.from(line.slice(space + 1), 'hex').subarray(32);
+    records.set(key.slice(meetingRowPrefix.length), JSON.parse(payload.toString('utf8')));
+  }
+  return ids.map((id) => records.get(String(id).toLowerCase())).filter(Boolean);
+}
+
+/** Replaces every stored record, in the archive format the app reads. */
+export function writeMeetings(database: string, records: any[]) {
+  const statements = [
+    `DELETE FROM documents WHERE key >= '${meetingRowPrefix}' AND key < 'memora.meeting/';`,
+    `DELETE FROM documents WHERE key='${archiveManifestKey}';`,
+  ];
+  const ids: string[] = [];
+  for (const record of records) {
+    const payload = Buffer.from(JSON.stringify(record));
+    const document = Buffer.concat([createHash('sha256').update(payload).digest(), payload]);
+    ids.push(String(record.id));
+    statements.push(`INSERT OR REPLACE INTO documents(key,data,updated_at) VALUES ('${meetingRowPrefix}${String(record.id).toLowerCase()}',X'${document.toString('hex')}',0);`);
+  }
+  const manifest = Buffer.from(JSON.stringify({ schemaVersion: 1, ids }));
+  statements.push(`INSERT OR REPLACE INTO documents(key,data,updated_at) VALUES ('${archiveManifestKey}',X'${manifest.toString('hex')}',0);`);
+  sql(database, statements.join(' '));
 }

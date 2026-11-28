@@ -20,5 +20,7 @@
 - `ef766f66` は記録の保存を全件 BLOB から 1 記録 1 文書（`memora.meeting.<id>`）へ移した。最初の保存で旧 BLOB をオブジェクト境界で分割して行を作り、`memoraMeetings.legacy` に退避する。1 件の編集は 5 万件で 27.8 ms（全件方式は 365 ms）。読込は行の全走査で、5 万件 472 ms（BLOB 336 ms）。段階読み込みは STORE-03 として残す。
 - `f1d1f26b` は録音 tap・音声入力・取り込み検査の信号演算を Accelerate にし、VAD を `.cpuOnly` にした（Neural Engine は同じ推論に約 15 ms の準備を払う）。品質ゲートは 12 スイートになり、`performance-contracts` が信号演算・保存契約・VAD 検証を確認する。`ef766f66` の後に12/12成功（`memora-gate12`）。
 - 移行は起動直後の保存キューで行う。シミュレータの合成2,000件で移行2,044 ms、起動は旧BLOB 93〜108 ms・行100〜128 ms（Debug）。移行中もメインスレッドは使わない。
+- 保存形式を直接読み書きする E2E 7ファイルを manifest と行の形式へ移した。`recording-lifecycle` 3件（SIGKILL 復旧を含む）、`markdown-replacement`、`draft-protection`、`project-chat-citation`、`adaptive-structured-summary`、`background-summary`、`library-photo-ocr` が成功。
+- QA-08 はアプリの停止ではないと切り分けた（ツリーが空でも座標タップで操作でき、描画も正常）。同じ症状が起動直後にも出て再実行で消えるため、環境側のアクセシビリティツリーの不調として扱う。
 - 計測はホストのみ。iPhone 実機の冷起動・MainActor・RSS・電池・熱、転写入り実データの移行、実会議音声の CER は未計測。[性能監査](../PERFORMANCE_AUDIT_2026_11.md) に条件と境界をまとめた。
 - `Ask AI` の入力欄は既定で 90% のまま、アクセシビリティ文字サイズでは縮小しない。40 pt 相当の操作領域は残課題。

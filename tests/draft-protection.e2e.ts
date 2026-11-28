@@ -2,7 +2,7 @@ import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { seedSummaryFixture } from './summary-fixture-helpers';
 import { scrollToControl, tapControl, tapTab } from './ui-helpers';
-import { sql } from './sqlite-fixture-helpers';
+import { readMeetings, sql } from './sqlite-fixture-helpers';
 
 // The UUID marker in seedSummaryFixture identifies a fresh dedicated test
 // simulator. Invalid bytes are never written into Bitrig's preview or a device.
@@ -22,7 +22,7 @@ test('an unreadable summary draft blocks editing and retains its original bytes'
   await tapControl(paragraph);
   await expect(screen.getByRole('textbox', { name: '本文', exact: true })).not.toBeVisible();
   expect(sql(database, `SELECT hex(data) FROM documents WHERE key='${key}';`)).toBe('01FF');
-  const records = JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"));
+  const records = readMeetings(database)!;
   expect(records[0].summary).toBe(summary);
   await app.screenshot('unreadable-draft-preserved');
 });
@@ -36,7 +36,7 @@ test('an unreadable composer draft protects the store during launch', { timeout:
   await expect(screen.getByTestId('composer.recovery.open')).toBeVisible();
   await expect(screen.getByTestId('ai.composer.input')).toBeDisabled();
   expect(sql(database, `SELECT hex(data) FROM documents WHERE key='${key}';`)).toBe('01FF');
-  const records = JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"));
+  const records = readMeetings(database)!;
   expect(records[0].summary).toBe(summary);
   await tapControl(screen.getByTestId('composer.recovery.open'));
   await expect(screen.getByText('前回の下書きを読み込めないため、Ask AIの入力を保護しています。', { exact: true })).toBeVisible();
@@ -45,6 +45,6 @@ test('an unreadable composer draft protects the store during launch', { timeout:
   await expect(screen.getByTestId('composer.recovery.open')).toBeVisible();
   await expect(screen.getByTestId('ai.composer.input')).toBeDisabled();
   expect(sql(database, `SELECT hex(data) FROM documents WHERE key='${key}';`)).toBe('01FF');
-  expect(JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"))[0].summary).toBe(summary);
+  expect(readMeetings(database)![0].summary).toBe(summary);
   await app.screenshot('unreadable-composer-store-protection');
 });

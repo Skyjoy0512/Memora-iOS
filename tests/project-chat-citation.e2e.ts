@@ -4,7 +4,7 @@ import { dirname, join, resolve } from 'node:path';
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { seedSummaryFixture } from './summary-fixture-helpers';
-import { sql } from './sqlite-fixture-helpers';
+import { sql, writeMeetings } from './sqlite-fixture-helpers';
 import { requireRootMenu, selectLibrarySection, tapControl, tapTab } from './ui-helpers';
 
 test('project chat cites dates and original photos and revalidates their availability', { timeout: 180_000 }, async ({ app, device, screen }) => {
@@ -44,9 +44,9 @@ test('project chat cites dates and original photos and revalidates their availab
       createdAt: fixture.createdAt, citations: [citation(moved), citation(retained), photoReference],
     }],
   };
+  writeMeetings(database, [retained, moved]);
   const values = [
     ['memoraSpaces', [originalProject, otherProject]],
-    ['memoraMeetings', [retained, moved]],
     ['memoraProjectChats.v2', [thread]],
     ['memora.mediaIndex.v1', [mediaIndex]],
     ['memoraAIHistory', [{

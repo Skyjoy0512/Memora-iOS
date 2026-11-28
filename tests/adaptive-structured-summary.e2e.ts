@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { seedSummaryFixture } from './summary-fixture-helpers';
-import { sql } from './sqlite-fixture-helpers';
+import { readMeetings, sql, writeMeetings } from './sqlite-fixture-helpers';
 import { scrollToControl, tapControl, tapTab, replaceEditorWithPaste, restartToLibrary } from './ui-helpers';
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
@@ -16,7 +16,9 @@ test('adaptive reading retains task operations, facts and transcript evidence', 
   const { database, fixture, title } = await seedSummaryFixture(app, device, screen, {
     summary, raw, segmentID: randomUUID(), timestamp: 12,
   });
-  const read = (key: string) => JSON.parse(sql(database, `SELECT CAST(data AS TEXT) FROM documents WHERE key='${key}';`) || '[]');
+  const read = (key: string) => key === 'memoraMeetings'
+    ? readMeetings(database) ?? []
+    : JSON.parse(sql(database, `SELECT CAST(data AS TEXT) FROM documents WHERE key='${key}';`) || '[]');
   await device.closeApp();
   // This is the real TranscriptSegment codec's sorted-keys representation.
   const segment = { id: fixture.transcript[0].id.toUpperCase(), identificationStatus: 'manual', speaker: '話者1', speakerIsCertain: true, text: raw, timestamp: 12 };
@@ -29,8 +31,7 @@ test('adaptive reading retains task operations, facts and transcript evidence', 
       facts: [{ id: 'f1', category: 'decision', content: '公開時期を再検討する', status: 'confirmed', relatedTopicID: 't1',
         sourceReferences: [{ sourceSegmentID: segment.id, quote: '11月20日の公開予定を再検討します' }] }],
       coverage: [{ aspect: '担当の確定', status: 'pending' }, { aspect: '予算', status: 'notMentioned' }] } };
-  const bytes = Buffer.from(JSON.stringify([{ ...fixture, summaryVersions: [version], activeSummaryVersionID: versionID }])).toString('hex');
-  sql(database, `UPDATE documents SET data=X'${bytes}' WHERE key='memoraMeetings';`);
+  writeMeetings(database, [{ ...fixture, summaryVersions: [version], activeSummaryVersionID: versionID }]);
   await restartToLibrary(app, screen);
   await tapControl(screen.getByRole('button', { name: new RegExp('^' + title) }).first());
   await expect(screen.getByTestId('ai.composer.input')).toBeVisible();

@@ -3,7 +3,7 @@ import { dirname, join, resolve } from 'node:path';
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { seedSummaryFixture } from './summary-fixture-helpers';
-import { sql } from './sqlite-fixture-helpers';
+import { sql, writeMeetings } from './sqlite-fixture-helpers';
 import { requireRootMenu, tapControl } from './ui-helpers';
 
 test('Library finds a record from an unopened photo and stops matching when the original disappears', { timeout: 180_000 }, async ({ app, device, screen }) => {
@@ -15,8 +15,7 @@ test('Library finds a record from an unopened photo and stops matching when the 
   const photo = join(photos, name);
   copyFileSync(join(import.meta.dirname, 'fixtures', 'photo-ocr-quartz.jpg'), photo);
   const record = { ...fixture, photoFileNames: [name] };
-  const bytes = Buffer.from(JSON.stringify([record]), 'utf8').toString('hex');
-  sql(database, `UPDATE documents SET data=X'${bytes}' WHERE key='memoraMeetings';`);
+  writeMeetings(database, [record]);
   expect(sql(database, "SELECT COUNT(*) FROM documents WHERE key='memora.mediaIndex.v1';")).toBe('0');
 
   await app.restart();

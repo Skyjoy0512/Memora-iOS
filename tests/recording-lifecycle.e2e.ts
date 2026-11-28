@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { launchMemora, requireRootMenu, tapControl, tapTab } from './ui-helpers';
-import { isolatedDatabase, sql } from './sqlite-fixture-helpers';
+import { isolatedDatabase, readMeetings, sql, writeMeetings } from './sqlite-fixture-helpers';
 
 // A short regression by default; an explicit duration runs real wall-clock
 // recording, not the accelerated synthetic transcript benchmark.
@@ -49,6 +49,7 @@ async function startIsolatedRecording(app: any, device: any, screen: any) {
     await tapControl(screen.getByText('省電力', { exact: true }));
   }
   const document = (key: string) => {
+    if (key === 'memoraMeetings') return readMeetings(database);
     const value = sql(database, `SELECT CAST(data AS TEXT) FROM documents WHERE key='${key}';`);
     return value ? JSON.parse(value) : null;
   };
@@ -203,7 +204,8 @@ test('a finalized AAC staged as a recovery draft still offers manual transcripti
     const draft = { ...capture.draft, title: '確定済みAACの復旧確認', note: '復旧後も残す架空の録音メモ' };
     const meetings = capture.document('memoraMeetings').filter((record: any) => record.id !== draft.id);
     const entries = capture.document('memoraLifeLogEntries').filter((entry: any) => entry.id !== draft.id && entry.meetingID !== draft.id);
-    const writes = [['memoraMeetings', meetings], ['memoraLifeLogEntries', entries], ['memoraRecordingDraft', draft]];
+    writeMeetings(capture.database, meetings);
+    const writes = [['memoraLifeLogEntries', entries], ['memoraRecordingDraft', draft]];
     sql(capture.database, 'BEGIN IMMEDIATE; ' + writes.map(([key, value]) => {
       const hex = Buffer.from(JSON.stringify(value)).toString('hex');
       return `INSERT OR REPLACE INTO documents(key,data,updated_at) VALUES ('${key}',X'${hex}',0);`;
