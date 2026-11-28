@@ -22,6 +22,6 @@ Bitrig の iOS プロジェクトで継続する。[実行状態](EXECUTION_STAT
 ## 続きの作業
 
 1. QA-02 は判断の編集を「その他 › 要点・決定事項を編集」で再検証済み。ポスター3件は `FeatureFlags.isInlineSummaryPosterEnabled = false` のため skip。QA-03 の `screen-polish`／`experience-polish` は17件すべて成功し、タスク画面のタイトル重なりも `ff8d918d` で修正した。
-2. STORE-02 はページ読込の検証が済んだ。各入口（録音・要約・復元）の書込順序と競合契約を決め、音声を含む実データで切替える前に復元とロールバックの受け入れ条件を満たす。
+2. STORE-02 は契約（1操作1トランザクション、封は最後、検証までBLOBが正、項目単位の統合、復元・削除も同じ境界）とページ読込まで完了。次は切替実行の実装: 段階保存→検証→1トランザクションで `memoraMeetings` の版とポインタを更新し、旧BLOBを `memoraMeetings.legacy` に退避。読込は切替の完了までBLOB。実データの復元・ロールバック受け入れが条件。
 3. グローバル Ask AI の原画像参照は読取済み写真を対象とし、写真を含む旧回答はそのまま再投入しない。実機の Apple Intelligence で回答と引用を検証し、資料生成で同じ根拠の参照を実装する。
 4. 統合品質ゲートは `run-quality-checks.py --output-dir` で11スイート。`2dc48020` と `c489bcfb` は11/11成功。`c489bcfb` の結果は `/Volumes/DevSSD/Development/Temp/memora-release-qa.JE0mxQ/run/summary.json`。
