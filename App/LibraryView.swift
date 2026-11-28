@@ -596,8 +596,9 @@ struct LibraryView: View {
 
   private var recordRowInsets: EdgeInsets {
     let vertical = layout == .card ? MemoraSpacing.sm : MemoraSpacing.xs
-    return EdgeInsets(top: vertical, leading: ProjectLayout.horizontalInset,
-      bottom: vertical, trailing: ProjectLayout.horizontalInset)
+    // The row content keeps its reading inset; the row itself spans the screen
+    // so its separator and any highlight reach both edges.
+    return EdgeInsets(top: vertical, leading: 0, bottom: vertical, trailing: 0)
   }
 
   /// A teammate's record: opens read-only, with none of the actions that

@@ -29,6 +29,7 @@ struct LibraryRecordRow: View {
           .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
       }
     }
+    .padding(.horizontal, ProjectLayout.horizontalInset)
     .frame(maxWidth: .infinity, alignment: .leading)
     .fixedSize(horizontal: false, vertical: true)
     .foregroundStyle(.primary)
