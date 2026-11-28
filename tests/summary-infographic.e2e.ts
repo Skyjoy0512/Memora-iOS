@@ -1,7 +1,7 @@
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { seedSummaryFixture } from './summary-fixture-helpers';
-import { sql } from './sqlite-fixture-helpers';
+import { readMeetings, sql, writeMeetings } from './sqlite-fixture-helpers';
 import { scrollToControl, tapControl, tapTab, openSummaryPoster, openSummaryImageMenu } from './ui-helpers';
 
 test('separate infographic restores evidence and stages three record questions without sending', { timeout: 300_000, skip: 'The one-page summary poster is compiled off (FeatureFlags.isInlineSummaryPosterEnabled is false).' }, async ({ app, device, screen }) => {
@@ -25,8 +25,7 @@ test('separate infographic restores evidence and stages three record questions w
     } };
   const savedFixture = { ...fixture, privacy, summaryInfographicJSON: JSON.stringify(document) };
   await device.closeApp();
-  const bytes = Buffer.from(JSON.stringify([savedFixture]), 'utf8').toString('hex');
-  sql(database, `UPDATE documents SET data=X'${bytes}' WHERE key='memoraMeetings';`);
+  writeMeetings(database, [savedFixture]);
   await app.restart();
   await tapTab(screen, 'ライブラリ');
   await tapControl(screen.getByRole('button', { name: new RegExp('^' + title) }).first());
@@ -48,7 +47,7 @@ test('separate infographic restores evidence and stages three record questions w
   await expect(screen.getByTestId('summary.infographic.generate')).toBeVisible();
   await expect(screen.getByText('内容を整理しています…', { exact: true })).not.toBeVisible();
   await tapControl(screen.getByRole('button', { name: 'キャンセル', exact: true }));
-  expect(JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"))[0].summaryInfographicJSON).toBe(savedFixture.summaryInfographicJSON);
+  expect(readMeetings(database)![0].summaryInfographicJSON).toBe(savedFixture.summaryInfographicJSON);
   const first = screen.getByTestId('summary.question.0');
   await scrollToControl(screen, first, { minimumY: 100, maximumY: 750 });
   await expect(screen.getByTestId(/^summary\.question\.\d$/)).toHaveCount(3);
@@ -68,7 +67,7 @@ test('separate infographic restores evidence and stages three record questions w
   await tapTab(screen, 'ライブラリ');
   await tapControl(screen.getByRole('button', { name: new RegExp('^' + title) }).first());
   await expect(screen.getByTestId('summary.poster.inline')).toHaveAccessibleName(/本番切替はしない/);
-  const restored = JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"))[0];
+  const restored = readMeetings(database)![0];
   expect(restored.summaryInfographicJSON).toBe(savedFixture.summaryInfographicJSON);
   expect(restored.summary).toBe(summary);
   expect(restored.transcript[0].text).toBe(raw);

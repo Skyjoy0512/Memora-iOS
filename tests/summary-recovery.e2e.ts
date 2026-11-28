@@ -4,14 +4,14 @@ import { dirname, join, resolve, sep } from 'node:path';
 import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { tapControl, tapTab, openSummaryPoster, replaceEditorWithPaste } from './ui-helpers';
-import { sql } from './sqlite-fixture-helpers';
+import { readMeetings, sql } from './sqlite-fixture-helpers';
 import { seedSummaryFixture } from './summary-fixture-helpers';
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
 test('failed transcript saves keep the stored record and durable or in-memory draft', { timeout: 300_000 }, async ({ app, device, screen }) => {
   const { database, fixture, title, raw } = await seedSummaryFixture(app, device, screen);
-  const read = () => JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"));
+  const read = () => readMeetings(database)!;
   const draftKey = `draft.meeting.${fixture.id.toUpperCase()}.transcript.${fixture.transcript[0].id.toUpperCase()}`;
   const draft = () => sql(database, `SELECT hex(data) FROM documents WHERE key='${draftKey}';`);
   const trigger = 'transcript_failure_' + randomUUID().replaceAll('-', '');
@@ -19,7 +19,8 @@ test('failed transcript saves keep the stored record and durable or in-memory dr
   const secondEdit = '予算の承認はまだ得られていません。';
   let installed = false;
   const inject = (rejectDraft: boolean) => {
-    sql(database, `CREATE TRIGGER ${trigger} BEFORE INSERT ON documents WHEN NEW.key='memoraMeetings'${rejectDraft ? ` OR NEW.key='${draftKey}'` : ''} BEGIN SELECT RAISE(ABORT, 'isolated transcript save failure'); END;`);
+    // A record save writes its own document and the order manifest.
+    sql(database, `CREATE TRIGGER ${trigger} BEFORE INSERT ON documents WHEN (NEW.key LIKE 'memora.meeting.%' OR NEW.key='memora.meetings.archive.v1')${rejectDraft ? ` OR NEW.key='${draftKey}'` : ''} BEGIN SELECT RAISE(ABORT, 'isolated transcript save failure'); END;`);
     installed = true;
   };
   const recover = () => { if (installed) { sql(database, `DROP TRIGGER ${trigger};`); installed = false; } };

@@ -1,7 +1,7 @@
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { seedSummaryFixture } from './summary-fixture-helpers';
-import { sql } from './sqlite-fixture-helpers';
+import { readMeetings, sql } from './sqlite-fixture-helpers';
 import { scrollToControl, tapControl, tapTab, openSummaryPoster } from './ui-helpers';
 
 test('content-led poster and meeting task creation preserve saved records', { timeout: 240_000, skip: 'The one-page summary poster is compiled off (FeatureFlags.isInlineSummaryPosterEnabled is false).' }, async ({ app, device, screen }) => {
@@ -9,10 +9,12 @@ test('content-led poster and meeting task creation preserve saved records', { ti
   const { database, fixture, title } = await seedSummaryFixture(app, device, screen, {
     summary, raw: '架空のUI検証用です。', segmentID: '82828282-8282-4282-8282-828282828282', timestamp: 0,
   });
-  const read = (key: string) => {
-    const value = sql(database, `SELECT CAST(data AS TEXT) FROM documents WHERE key='${key}';`);
-    return value ? JSON.parse(value) : [];
-  };
+  const read = (key: string) => key === 'memoraMeetings'
+    ? readMeetings(database) ?? []
+    : (() => {
+        const value = sql(database, `SELECT CAST(data AS TEXT) FROM documents WHERE key='${key}';`);
+        return value ? JSON.parse(value) : [];
+      })();
   await expect(screen.getByTestId('summary.poster.inline')).toBeVisible();
   await openSummaryPoster(screen);
   await expect(screen.getByTestId('summary.poster.image')).toBeVisible();

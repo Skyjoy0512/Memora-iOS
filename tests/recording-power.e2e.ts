@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { launchMemora, requireRootMenu, tapControl } from './ui-helpers';
-import { isolatedDatabase, sql } from './sqlite-fixture-helpers';
+import { isolatedDatabase, readMeetings, sql } from './sqlite-fixture-helpers';
 
 test('power mode changes and pause preserve the AAC recording and SQLite draft', { timeout: 240_000 }, async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
@@ -76,8 +76,8 @@ test('power mode changes and pause preserve the AAC recording and SQLite draft',
   await tapControl(screen.getByRole('button', { name: '終了して保存', exact: true }));
   await expect(screen.getByRole('button', { name: '終了して保存', exact: true })).not.toBeVisible();
   await expect.poll(async () => {
-    const value = sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';");
-    return value !== '' && JSON.parse(value).some((record: any) =>
+    const records = readMeetings(database) ?? [];
+    return records.some((record: any) =>
       record.id === firstDraft.id && record.title === recordingTitle);
   }).toBe(true);
   expect(existsSync(audio)).toBe(true);

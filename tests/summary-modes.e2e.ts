@@ -2,7 +2,7 @@ import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { seedSummaryFixture } from './summary-fixture-helpers';
 import { scrollToControl, tapControl, tapTab } from './ui-helpers';
-import { sql } from './sqlite-fixture-helpers';
+import { readMeetings, sql } from './sqlite-fixture-helpers';
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
@@ -41,7 +41,7 @@ test('summary processing mode is separate from detail and never regenerates on s
     await tapControl(screen.getByRole('button', { name: choice, exact: true }));
     await expect(mode).toHaveAccessibleName(new RegExp(choice));
     await expect(detail).toBeSelected();
-    const records = JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"));
+    const records = readMeetings(database)!;
     expect(records[0].summary).toBe(summary);
     expect(records[0].transcript[0].text).toBe(raw);
   }
