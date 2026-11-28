@@ -19,6 +19,7 @@
 - 次は切替実行（stage→verify→1トランザクションで版とポインタを更新、旧BLOBは退避）と、実データでの復元・ロールバック受け入れ。読込経路は切替完了まで現行 BLOB のまま。ポスター再有効化時は QA-02 の断言を現行の読み面へ移植する。
 - `ef766f66` は記録の保存を全件 BLOB から 1 記録 1 文書（`memora.meeting.<id>`）へ移した。最初の保存で旧 BLOB をオブジェクト境界で分割して行を作り、`memoraMeetings.legacy` に退避する。1 件の編集は 5 万件で 27.8 ms（全件方式は 365 ms）。読込は行を 512 件ずつ最大 4 コアで復号し、5 万件 221 ms（BLOB 353 ms、38% 短縮）。1,000 件以上で BLOB より速い。起動時に本文を読まない段階読み込みは STORE-03 として残す。
 - `f1d1f26b` は録音 tap・音声入力・取り込み検査の信号演算を Accelerate にし、VAD を `.cpuOnly` にした（Neural Engine は同じ推論に約 15 ms の準備を払う）。品質ゲートは 12 スイートになり、`performance-contracts` が信号演算・保存契約・VAD 検証を確認する。`ef766f66` の後に12/12成功（`memora-gate12`）。
+- 並列復号はシミュレータ Release・2,000件で直列138〜186 ms → 62〜69 ms。Debug では並列の利点が出ないため、実機は Release で測る。
 - 移行は起動直後の保存キューで行う。シミュレータの合成2,000件で移行2,044 ms、起動は旧BLOB 93〜108 ms・行100〜128 ms（Debug）。移行中もメインスレッドは使わない。
 - 保存形式を直接読み書きする E2E 7ファイルを manifest と行の形式へ移した。`recording-lifecycle` 3件（SIGKILL 復旧を含む）、`markdown-replacement`、`draft-protection`、`project-chat-citation`、`adaptive-structured-summary`、`background-summary`、`library-photo-ocr` が成功。
 - QA-07 の写真保存失敗は、エディタ内に理由を出して下書きを残すよう修正（`localImportFailureMessage`）。`ProjectSourceImportChecks` の契約も「ローカル指定ならグローバルアラートを出さない」に更新。E2E で文言と下書きの保持を確認。

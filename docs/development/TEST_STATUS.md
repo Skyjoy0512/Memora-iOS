@@ -46,6 +46,7 @@
 | 記録単位の保存 | Mac ホスト・実 SQLite・合成100/1千/1万/5万件 | 切替（行・manifest・旧BLOB退避）、1件編集で1文書だけ更新、並び替え・追加・削除、破損行の拒否と旧BLOBへの復帰、書込失敗時のロールバックを確認。並列復号でも同じ内容・順序・digest 検証が通る。読込は5万件 221 ms（BLOB 353 ms、38%短縮）。iPhone 実機の移行と転写入り実データは未実施。`tools/checks/run-meeting-archive-checks.py` |
 | 音声信号の一致と速度 | Mac ホスト・合成波形 | Accelerate の二乗和・ピーク・しきい値カウントが素の計算と一致。512/4,096/8,192 で間引きループを上回るか同等。非有限値は検出 |
 | VAD の実行先 | Mac ホスト・同梱モデル | manifest 検証（欠落を拒否）、4実行先の読込・推論・出力一致を確認。実機の電池・熱は未計測 |
+| 並列復号の実機相当比較 | iPhone 18 Pro Max シミュレータ・Release・合成2,000件 | 直列 138〜186 ms、512件ずつ並列 62〜69 ms（起動準備完了まで、各4〜5回）。Debug では並列が約149 msで、Release の数値を使う |
 | 旧形式からの移行（シミュレータ） | iPhone 18 Pro Max シミュレータ・合成2,000件 | 起動後の保存キューで移行し、`memora.meeting.<id>` 2,000件・manifest・`memoraMeetings.legacy` を作成、旧 BLOB を削除。移行 2,044 ms、起動は旧 BLOB 93〜108 ms・行 100〜128 ms（Debug） |
 | 並列復号後の記録読み込み | iPhone 18 Pro Max 専用 E2E | `adaptive-structured-summary`（要約・根拠・転写の往復）と `library-photo-ocr`（写真付き記録の種込と検索）が成功。`recording-lifecycle` 3件も成功 |
 | 保存形式に依存する E2E の更新 | iPhone 18 Pro Max 専用 E2E | `memoraMeetings` を直接読み書きしていた7ファイルを、manifest と `memora.meeting.<id>` を扱う `readMeetings`／`writeMeetings` に移した。`recording-lifecycle` 3件、`markdown-replacement` 2件、`draft-protection` 2件、`project-chat-citation` 1件、`adaptive-structured-summary` 1件、`background-summary` 1件（再実行で成功）、`library-photo-ocr` 1件が成功 |
