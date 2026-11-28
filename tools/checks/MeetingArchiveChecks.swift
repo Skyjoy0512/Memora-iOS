@@ -21,6 +21,7 @@ enum MeetingArchiveChecks {
       try appliesInsertionsRemovalsAndOrder()
       try rejectsDamagedRowsAndFallsBack()
       try rejectsMismatchedRows()
+      try writesThePreparedPayload()
       try rollsBackOnFailedWrite()
       print("Meeting archive: migration, single-row writes, ordering, damaged rows, rollback passed.")
     default:
@@ -141,6 +142,28 @@ enum MeetingArchiveChecks {
       let rows = try rowKeys(store)
       precondition(damage == "extra" ? rows.count == 5 : rows.count == (damage == "missing" ? 3 : 4))
     }
+  }
+
+  /// An edit hands the save the record it already encoded off the main actor.
+  /// The archive writes those bytes rather than encoding the record again.
+  private static func writesThePreparedPayload() throws {
+    let store = try open("archive-prepared")
+    let records = try seeded(store, count: 3, name: "archive-prepared")
+    var edited = records
+    edited[1].title = "準備済みの題名"
+    let encoder = JSONEncoder()
+    let payload = try encoder.encode(edited[1])
+    let change = try MeetingArchive.change(from: records, to: edited, collection: nil,
+                                           prepared: [edited[1].id: payload])
+    precondition(change.documents.count == 1)
+    let document = change.documents[0].data
+    precondition(Data(document.dropFirst(32)) == payload,
+                 "The prepared bytes were not the ones written")
+    try commit(store, change: change)
+    guard case .records(let loaded) = MeetingArchive.load(store) else {
+      preconditionFailure("The prepared row was not readable")
+    }
+    precondition(loaded == edited)
   }
 
   private static func rollsBackOnFailedWrite() throws {
