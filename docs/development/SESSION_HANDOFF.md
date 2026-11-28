@@ -27,5 +27,6 @@ Bitrig の iOS プロジェクトで継続する。[実行状態](EXECUTION_STAT
 1. QA-02 は判断の編集を「その他 › 要点・決定事項を編集」で再検証済み。ポスター3件は `FeatureFlags.isInlineSummaryPosterEnabled = false` のため skip。QA-03 の `screen-polish`／`experience-polish` は17件すべて成功し、タスク画面のタイトル重なりも `ff8d918d` で修正した。
 2. STORE-02 は本番経路を記録単位へ接続した（`ef766f66`）。次は (a) 実データ（転写・写真入り）の移行と復元・ロールバックの受け入れ、(b) `performance-contracts` を含む12スイートの統合実行、(c) STORE-03（起動時に本文を読まない段階読み込み）の設計。行の読込は BLOB より 12〜37% 遅いので、冷起動の目標には STORE-03 が要る。
 3. 音声は信号演算を Accelerate 化し、VAD を `.cpuOnly` にした（`f1d1f26b`）。実機の電池・熱、連続録音時の VAD、日本語 CER の実測が残る。
+4. QA-06 は現行ビルドで再現した。`ui-polish` は外観をダークに変えた時点でキーボードが閉じる（`@` 候補の選択より前）。`sidebar-glass` は「コネクタ…」を「閉じる」で閉じた後に `添付を追加` が消える。入力欄の同一性を保ったまま、外観変更とシート復帰でフォーカスを維持する設計が必要。テストの条件緩和では直さない。
 3. グローバル Ask AI の原画像参照は読取済み写真を対象とし、写真を含む旧回答はそのまま再投入しない。実機の Apple Intelligence で回答と引用を検証し、資料生成で同じ根拠の参照を実装する。
 4. 統合品質ゲートは `run-quality-checks.py --output-dir` で11スイート。`2dc48020` と `c489bcfb` は11/11成功。`c489bcfb` の結果は `/Volumes/DevSSD/Development/Temp/memora-release-qa.JE0mxQ/run/summary.json`。
