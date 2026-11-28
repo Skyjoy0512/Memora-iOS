@@ -40,7 +40,7 @@
 | サンプル画面の E2E | iPhone 18 Pro Max 専用 E2E | `screen-review-samples` は、浮遊する入力欄の下にある行をタップしてタブ列に当たっていた。行を安全な範囲へスクロールしてから押すよう修正し、成功（`tests/screen-review-samples.e2e.ts`）。アプリ側の不具合ではなく、他のテストと同じ操作条件に揃えた |
 | 画面・体験の E2E 棚卸し | iPhone 18 Pro Max／Pro 専用 E2E | `screen-polish` 8件と `experience-polish` 9件が全17件成功。旧ラベルを現行の導線（記録を追加、追加メニュー、タスク、参考資料、AIで資料を作る、日本語の日付、`auth.continueLocal`）へ更新。作業中にタスク画面の大きなタイトルが「未完了／完了」に重なり「完了」を押せない実不具合を見つけ、インライン表示にして修正した。タスクの作成・完了・再起動後の保持は幅402pt の iPhone 18 Pro でも成功 |
 | Bitrig iOS Debug/Release | シミュレータ向けビルド | 日付付き出典まで Debug／Release 成功。写真の根拠まで Debug 成功。記録単位の保存と Accelerate 化の後も Debug 成功。実アカウント・実機は未実施 |
-| 記録単位の保存 | Mac ホスト・実 SQLite・合成100/1千/1万/5万件 | 切替（行・manifest・旧BLOB退避）、1件編集で1文書だけ更新、並び替え・追加・削除、破損行の拒否と旧BLOBへの復帰、書込失敗時のロールバックを確認。並列復号でも同じ内容・順序・digest 検証が通る。読込は5万件 258 ms（BLOB 378 ms）。iPhone 実機の移行と転写入り実データは未実施。`tools/checks/run-meeting-archive-checks.py` |
+| 記録単位の保存 | Mac ホスト・実 SQLite・合成100/1千/1万/5万件 | 切替（行・manifest・旧BLOB退避）、1件編集で1文書だけ更新、並び替え・追加・削除、破損行の拒否と旧BLOBへの復帰、書込失敗時のロールバックを確認。並列復号でも同じ内容・順序・digest 検証が通る。読込は5万件 221 ms（BLOB 353 ms、38%短縮）。iPhone 実機の移行と転写入り実データは未実施。`tools/checks/run-meeting-archive-checks.py` |
 | 音声信号の一致と速度 | Mac ホスト・合成波形 | Accelerate の二乗和・ピーク・しきい値カウントが素の計算と一致。512/4,096/8,192 で間引きループを上回るか同等。非有限値は検出 |
 | VAD の実行先 | Mac ホスト・同梱モデル | manifest 検証（欠落を拒否）、4実行先の読込・推論・出力一致を確認。実機の電池・熱は未計測 |
 | 旧形式からの移行（シミュレータ） | iPhone 18 Pro Max シミュレータ・合成2,000件 | 起動後の保存キューで移行し、`memora.meeting.<id>` 2,000件・manifest・`memoraMeetings.legacy` を作成、旧 BLOB を削除。移行 2,044 ms、起動は旧 BLOB 93〜108 ms・行 100〜128 ms（Debug） |
