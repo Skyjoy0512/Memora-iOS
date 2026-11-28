@@ -24,6 +24,8 @@ struct MeetingArchive {
 
   static let schemaVersion = 1
   private static let digestBytes = 32
+  /// Rows decoded together on the launch path.
+  private static let batchSize = 512
 
   static let keyRange = (lower: rowPrefix, upper: "memora.meeting/")
 
@@ -85,30 +87,76 @@ struct MeetingArchive {
           manifest.schemaVersion == schemaVersion,
           manifest.ids.count <= 100_000 else { return .invalid }
 
-    let decoder = JSONDecoder()
     var records = [Meeting?](repeating: nil, count: manifest.ids.count)
     var positions: [UUID: Int] = [:]
     positions.reserveCapacity(manifest.ids.count)
     for (index, id) in manifest.ids.enumerated() { positions[id] = index }
 
+    // Decoding is the expensive half of a launch read, and each record is
+    // independent. A batch of rows is collected and decoded across cores, so
+    // only the batch is in memory at once and the whole collection is never
+    // held twice. The order is restored from the manifest.
+    let workers = max(1, min(4, ProcessInfo.processInfo.activeProcessorCount))
+    var batch: [(position: Int, payload: Data)] = []
+    batch.reserveCapacity(batchSize)
+    var failed = false
+
+    func flush() {
+      guard !batch.isEmpty, !failed else { batch.removeAll(keepingCapacity: true); return }
+      let pending = batch
+      batch.removeAll(keepingCapacity: true)
+      var decoded = [Meeting?](repeating: nil, count: pending.count)
+      let slices = min(workers, max(1, pending.count / 64))
+      decoded.withUnsafeMutableBufferPointer { buffer in
+        let result = buffer
+        DispatchQueue.concurrentPerform(iterations: slices) { slice in
+          // Each slice owns a disjoint range; nothing here touches the store.
+          let local = JSONDecoder()
+          let start = pending.count * slice / slices
+          let end = pending.count * (slice + 1) / slices
+          for index in start..<end {
+            result[index] = try? local.decode(Meeting.self, from: pending[index].payload)
+          }
+        }
+      }
+      for (index, record) in decoded.enumerated() {
+        guard let record, record.id == manifest.ids[pending[index].position] else {
+          failed = true
+          return
+        }
+        records[pending[index].position] = record
+      }
+    }
+
     var scanned = 0
     do {
       scanned = try store.scanDocuments(inKeyRange: keyRange) { key, document in
-        guard key.count == rowPrefix.count + 36,
+        guard !failed, key.count == rowPrefix.count + 36,
               let id = UUID(uuidString: String(key.dropFirst(rowPrefix.count))),
               let position = positions[id], records[position] == nil,
-              let record = decode(document, expecting: id, decoder: decoder) else {
+              let payload = verifiedPayload(document, expecting: id) else {
           throw Failure.duplicateID
         }
-        records[position] = record
+        batch.append((position, payload))
+        if batch.count == batchSize { flush() }
       }
     } catch {
       return .invalid
     }
-    guard scanned == manifest.ids.count else { return .invalid }
-    let decoded = records.compactMap { $0 }
-    guard decoded.count == manifest.ids.count else { return .invalid }
-    return .records(decoded)
+    flush()
+    guard !failed, scanned == manifest.ids.count else { return .invalid }
+    let loaded = records.compactMap { $0 }
+    guard loaded.count == manifest.ids.count else { return .invalid }
+    return .records(loaded)
+  }
+
+  /// The digest-checked payload of a row document.
+  private static func verifiedPayload(_ document: Data, expecting id: UUID) -> Data? {
+    guard document.count > digestBytes else { return nil }
+    let digest = document.prefix(digestBytes)
+    let payload = document.dropFirst(digestBytes)
+    guard Data(SHA256.hash(data: payload)) == digest else { return nil }
+    return Data(payload)
   }
 
   private static func decode(_ document: Data, expecting id: UUID, decoder: JSONDecoder) -> Meeting? {

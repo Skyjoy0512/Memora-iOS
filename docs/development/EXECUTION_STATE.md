@@ -17,7 +17,7 @@
 - QA-03: `screen-polish` と `experience-polish` の17件を現行の導線へ更新し、すべて成功。作業中にタスク画面の大きなタイトルが「未完了／完了」の切替に重なりタップを奪う実不具合を見つけ、`ff8d918d` でインライン表示にした。
 - STORE-02 は書込順序と競合の契約を `ARCHITECTURE_DECISIONS` に固定し、段階保存・検証・ページ読込を `App/MeetingRowStaging.swift` としてアプリ側へ移した。合成5万件のリハーサルは通過。
 - 次は切替実行（stage→verify→1トランザクションで版とポインタを更新、旧BLOBは退避）と、実データでの復元・ロールバック受け入れ。読込経路は切替完了まで現行 BLOB のまま。ポスター再有効化時は QA-02 の断言を現行の読み面へ移植する。
-- `ef766f66` は記録の保存を全件 BLOB から 1 記録 1 文書（`memora.meeting.<id>`）へ移した。最初の保存で旧 BLOB をオブジェクト境界で分割して行を作り、`memoraMeetings.legacy` に退避する。1 件の編集は 5 万件で 27.8 ms（全件方式は 365 ms）。読込は行の全走査で、5 万件 472 ms（BLOB 336 ms）。段階読み込みは STORE-03 として残す。
+- `ef766f66` は記録の保存を全件 BLOB から 1 記録 1 文書（`memora.meeting.<id>`）へ移した。最初の保存で旧 BLOB をオブジェクト境界で分割して行を作り、`memoraMeetings.legacy` に退避する。1 件の編集は 5 万件で 27.8 ms（全件方式は 365 ms）。読込は行を 512 件ずつ最大 4 コアで復号し、5 万件 258 ms（BLOB 378 ms、32% 短縮）。1,000 件以上で BLOB より速い。起動時に本文を読まない段階読み込みは STORE-03 として残す。
 - `f1d1f26b` は録音 tap・音声入力・取り込み検査の信号演算を Accelerate にし、VAD を `.cpuOnly` にした（Neural Engine は同じ推論に約 15 ms の準備を払う）。品質ゲートは 12 スイートになり、`performance-contracts` が信号演算・保存契約・VAD 検証を確認する。`ef766f66` の後に12/12成功（`memora-gate12`）。
 - 移行は起動直後の保存キューで行う。シミュレータの合成2,000件で移行2,044 ms、起動は旧BLOB 93〜108 ms・行100〜128 ms（Debug）。移行中もメインスレッドは使わない。
 - 保存形式を直接読み書きする E2E 7ファイルを manifest と行の形式へ移した。`recording-lifecycle` 3件（SIGKILL 復旧を含む）、`markdown-replacement`、`draft-protection`、`project-chat-citation`、`adaptive-structured-summary`、`background-summary`、`library-photo-ocr` が成功。
