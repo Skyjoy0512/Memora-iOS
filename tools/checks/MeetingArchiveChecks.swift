@@ -20,6 +20,7 @@ enum MeetingArchiveChecks {
       try writesOnlyChangedRows()
       try appliesInsertionsRemovalsAndOrder()
       try rejectsDamagedRowsAndFallsBack()
+      try rejectsMismatchedRows()
       try rollsBackOnFailedWrite()
       print("Meeting archive: migration, single-row writes, ordering, damaged rows, rollback passed.")
     default:
@@ -112,6 +113,34 @@ enum MeetingArchiveChecks {
     }
     precondition(data(store, MeetingArchive.legacyKey) != nil,
                  "The previous collection must survive a damaged archive")
+  }
+
+  /// A row whose payload names a different record, a manifest that lists a row
+  /// that is not there, and an extra row are all refused rather than served.
+  private static func rejectsMismatchedRows() throws {
+    for damage in ["foreign", "missing", "extra"] {
+      let store = try open("archive-\(damage)")
+      let records = try seeded(store, count: 4, name: "archive-\(damage)")
+      let database = "archive-\(damage)"
+      switch damage {
+      case "foreign":
+        // Row 1 now carries record 0's payload, digest and all.
+        let donor = data(store, MeetingArchive.rowKey(records[0].id))!
+        try sql(database, "UPDATE documents SET data = X'\(donor.map { String(format: "%02x", $0) }.joined())' "
+          + "WHERE key = '\(MeetingArchive.rowKey(records[1].id))';")
+      case "missing":
+        try sql(database, "DELETE FROM documents WHERE key = '\(MeetingArchive.rowKey(records[2].id))';")
+      default:
+        try sql(database, "INSERT OR REPLACE INTO documents (key, data, updated_at) VALUES "
+          + "('\(MeetingArchive.rowKey(UUID()))', X'00', 0);")
+      }
+      guard case .invalid = MeetingArchive.load(store) else {
+        preconditionFailure("A \(damage) row set was served")
+      }
+      // The rows are refused, not repaired; the caller falls back to the copy.
+      let rows = try rowKeys(store)
+      precondition(damage == "extra" ? rows.count == 5 : rows.count == (damage == "missing" ? 3 : 4))
+    }
   }
 
   private static func rollsBackOnFailedWrite() throws {
