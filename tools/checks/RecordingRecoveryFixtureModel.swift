@@ -67,10 +67,13 @@ final class MemoraModel {
     try! store.write(key, data: RecordStore.encoded(value))
   }
 
-  func persistBatchAsync(_ build: () throws -> [(key: String, data: Data)], removing: [String]) async -> Bool {
+  func persistBatchAsync(meetings: [Meeting]? = nil, prepared: [UUID: Data] = [:],
+                         _ build: () throws -> [(key: String, data: Data)],
+                         removing: [String]) async -> Bool {
     guard !isStoreProtected else { return false }
     do {
-      let writes = try build()
+      var writes = try build()
+      if let meetings { writes.append((key: "memoraMeetings", data: try RecordStore.encoded(meetings))) }
       await beforeCommit?()
       try store.applyBatch(writes: writes, removing: removing)
       return true

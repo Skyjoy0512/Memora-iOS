@@ -281,7 +281,9 @@ final class MemoraModel {
     precondition(removing.isEmpty) // Draft commits run against real SQLite in the storage checks.
     sources[source.id] = source; return true
   }
-  func persistBatch(_ build: () throws -> [(key: String, data: Data)], removing: [String]) -> Bool {
+  func persistBatch(meetings: [Meeting]? = nil, prepared: [UUID: Data] = [:],
+                    _ build: () throws -> [(key: String, data: Data)],
+                    removing: [String]) -> Bool {
     preconditionFailure("Composer fixtures do not commit editor drafts")
   }
   func scheduleProjectSourcePreparation(_ id: UUID) {}

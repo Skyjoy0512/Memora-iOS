@@ -103,12 +103,21 @@ extension MemoraModel {
       let base = meetings
       var candidate = base
       candidate[currentIndex] = rebased
+      // One record is encoded here, off the main actor, and the save reuses it:
+      // a long transcript is not written while the frame is waiting.
+      let edited = candidate[currentIndex]
+      let payload: Data
+      do {
+        payload = try await Task.detached(priority: .userInitiated) {
+          try RecordStore.encoded(edited)
+        }.value
+      } catch {
+        return persistBatch { throw error }
+      }
       guard !Task.isCancelled, !isRestoring, !isStoreProtected, currentTeamID == nil,
             aiWorkspaceGeneration == generation else { return false }
       guard meetings == base else { continue }
-      // Only the rows that changed are encoded, so the retry loop no longer
-      // encodes the whole collection off the main actor first.
-      guard persistBatch(meetings: candidate, { [] }) else { return false }
+      guard persistBatch(meetings: candidate, prepared: [edited.id: payload], { [] }) else { return false }
       meetingSearchTexts.removeValue(forKey: id)
       meetings = candidate
       return true

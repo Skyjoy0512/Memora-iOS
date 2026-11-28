@@ -42,21 +42,20 @@ enum MeetingArchiveChecks {
     }
 
     let records = try JSONDecoder().decode([Meeting].self, from: original)
-    let change = try MeetingArchive.change(from: nil, to: records)
-    try apply(store, change)
+    try commit(store, from: nil, to: records)
     precondition(data(store, MeetingRowStaging.collectionKey) == nil)
     precondition(data(store, MeetingArchive.legacyKey) == original)
     guard case .records(let loaded) = MeetingArchive.load(store) else {
       preconditionFailure("Rows written by the switch were not readable")
     }
     precondition(loaded == records)
-    guard let firstRow = rowPayload(store, id: records[0].id) else {
+    guard let firstRow = rowDocument(store, id: records[0].id) else {
       preconditionFailure("First row is missing")
     }
-    precondition(String(decoding: firstRow, as: UTF8.self).contains("futureField"),
+    precondition(String(decoding: firstRow.dropFirst(32), as: UTF8.self).contains("futureField"),
                  "An untouched record must keep the bytes it was stored with")
-    let count = try store.scanMeetingRows { _, _, _ in }
-    precondition(count == records.count)
+    let keysAfterSwitch = try rowKeys(store)
+    precondition(keysAfterSwitch.count == records.count)
   }
 
   private static func writesOnlyChangedRows() throws {
@@ -65,14 +64,14 @@ enum MeetingArchiveChecks {
     var edited = records
     edited[5].title = "編集した記録"
     edited[5].summary = "編集した本文"
-    let before = try digests(store)
-    let change = try MeetingArchive.change(from: records, to: edited)
-    precondition(change.rows.count == 1 && change.removals.isEmpty)
+    let before = try rowDocuments(store)
+    let change = try MeetingArchive.change(from: records, to: edited, collection: nil)
+    precondition(change.documents.count == 1 && change.removals.isEmpty)
     precondition(!change.manifestChanged)
-    try apply(store, change)
-    let after = try digests(store)
+    try commit(store, change: change)
+    let after = try rowDocuments(store)
     let changed = before.filter { after[$0.key] != $0.value }
-    precondition(changed.count == 1 && changed.first?.key == records[5].id)
+    precondition(changed.count == 1 && changed.first?.key == MeetingArchive.rowKey(records[5].id))
     guard case .records(let loaded) = MeetingArchive.load(store) else {
       preconditionFailure("Edited rows were not readable")
     }
@@ -86,26 +85,27 @@ enum MeetingArchiveChecks {
                         source: .recording, status: .ready, summary: "", keyPoints: [], decisions: [],
                         openQuestions: [], transcript: [], spaceID: nil)
     let reordered = [added] + records.reversed().dropFirst(2)
-    let change = try MeetingArchive.change(from: records, to: reordered)
-    precondition(change.manifest.ids == reordered.map(\.id))
+    let change = try MeetingArchive.change(from: records, to: reordered, collection: nil)
+    precondition(change.manifestChanged)
     precondition(change.removals.count == 2)
-    try apply(store, change)
+    try commit(store, change: change)
     guard case .records(let loaded) = MeetingArchive.load(store) else {
       preconditionFailure("Reordered rows were not readable")
     }
     precondition(loaded == reordered)
-    let count = try store.scanMeetingRows { _, _, _ in }
-    precondition(count == reordered.count)
+    let keysAfterReorder = try rowKeys(store)
+    precondition(keysAfterReorder.count == reordered.count)
   }
 
   private static func rejectsDamagedRowsAndFallsBack() throws {
     let store = try open("archive-damage")
     let records = try seeded(store, count: 3, name: "archive-damage")
-    try sql("archive-damage", "UPDATE meeting_rows SET payload = x'00' WHERE id = '\(records[1].id.uuidString)';")
+    try sql("archive-damage", """
+      UPDATE documents SET data = x'00' WHERE key = '\(MeetingArchive.rowKey(records[1].id))';
+      """)
     guard case .invalid = MeetingArchive.load(store) else {
       preconditionFailure("A damaged row must not be served")
     }
-    try sql("archive-damage", "UPDATE meeting_rows SET payload = payload;")
     try sql("archive-damage", "DELETE FROM documents WHERE key = '\(MeetingArchive.manifestKey)';")
     guard case .absent = MeetingArchive.load(store) else {
       preconditionFailure("A missing manifest must report the collection as the authority")
@@ -121,18 +121,18 @@ enum MeetingArchiveChecks {
     try store.write(MeetingRowStaging.collectionKey, data: original)
     let records = try JSONDecoder().decode([Meeting].self, from: original)
     try sql("archive-rollback", """
-      CREATE TRIGGER reject_rows BEFORE INSERT ON meeting_rows
+      CREATE TRIGGER reject_manifest BEFORE INSERT ON documents
+      WHEN NEW.key = '\(MeetingArchive.manifestKey)'
       BEGIN SELECT RAISE(ABORT, 'synthetic disk failure'); END;
       """)
-    let change = try MeetingArchive.change(from: nil, to: records)
     do {
-      try apply(store, change)
-      preconditionFailure("A failed row write was accepted")
+      try commit(store, from: nil, to: records)
+      preconditionFailure("A failed write was accepted")
     } catch is LocalStore.StoreError {}
     precondition(data(store, MeetingRowStaging.collectionKey) == original)
     precondition(data(store, MeetingArchive.manifestKey) == nil)
-    let count = try store.scanMeetingRows { _, _, _ in }
-    precondition(count == 0)
+    let keysAfterFailure = try rowKeys(store)
+    precondition(keysAfterFailure.isEmpty)
   }
 
   // MARK: - Scale
@@ -145,7 +145,7 @@ enum MeetingArchiveChecks {
     try store.write(MeetingRowStaging.collectionKey, data: original)
     let records = try JSONDecoder().decode([Meeting].self, from: original)
 
-    // The way the app stores records today: encode the whole collection and
+    // The way the app stored records before: encode the whole collection and
     // rewrite it.
     var legacyEncode: [Double] = []
     var legacyWrite: [Double] = []
@@ -161,8 +161,7 @@ enum MeetingArchiveChecks {
     try store.write(MeetingRowStaging.collectionKey, data: original)
 
     let switchStart = ContinuousClock.now
-    let change = try MeetingArchive.change(from: nil, to: records)
-    try apply(store, change)
+    try commit(store, from: nil, to: records)
     let switchEnd = ContinuousClock.now
 
     var editTimes: [Double] = []
@@ -172,22 +171,24 @@ enum MeetingArchiveChecks {
       let previous = current
       current[index].title = "編集\(trial)"
       let start = ContinuousClock.now
-      let edit = try MeetingArchive.change(from: previous, to: current)
-      try apply(store, edit)
+      let edit = try MeetingArchive.change(from: previous, to: current, collection: nil)
+      try commit(store, change: edit)
       let end = ContinuousClock.now
       editTimes.append(milliseconds(start, end))
-      precondition(edit.rows.count == 1)
+      precondition(edit.documents.count == 1)
     }
 
     var manifestTimes: [Double] = []
     var scanTimes: [Double] = []
     for _ in 0..<3 {
-      guard let manifestData = data(store, MeetingArchive.manifestKey) else { preconditionFailure("Missing manifest") }
+      guard let manifestData = data(store, MeetingArchive.manifestKey) else {
+        preconditionFailure("Missing manifest")
+      }
       let start = ContinuousClock.now
       let manifest = try JSONDecoder().decode(MeetingArchive.Manifest.self, from: manifestData)
       let decodedAt = ContinuousClock.now
       var seen = 0
-      _ = try store.scanMeetingRows { _, _, _ in seen += 1 }
+      _ = try store.scanDocuments(inKeyRange: MeetingArchive.keyRange) { _, _ in seen += 1 }
       let scannedAt = ContinuousClock.now
       manifestTimes.append(milliseconds(start, decodedAt))
       scanTimes.append(milliseconds(decodedAt, scannedAt))
@@ -195,7 +196,6 @@ enum MeetingArchiveChecks {
     }
 
     var archiveRead: [Double] = []
-    var archiveDecode: [Double] = []
     for _ in 0..<3 {
       let start = ContinuousClock.now
       let loaded: [Meeting]
@@ -206,7 +206,6 @@ enum MeetingArchiveChecks {
       let end = ContinuousClock.now
       precondition(loaded == current)
       archiveRead.append(milliseconds(start, end))
-      archiveDecode.append(0)
     }
 
     var blobRead: [Double] = []
@@ -230,10 +229,10 @@ enum MeetingArchiveChecks {
       "switchMS": milliseconds(switchStart, switchEnd),
       "singleEditMS": median(editTimes),
       "archiveLoadMS": median(archiveRead),
-      "manifestDecodeMS": median(manifestTimes),
-      "rowScanMS": median(scanTimes),
       "blobReadMS": median(blobRead),
       "blobDecodeMS": median(blobDecode),
+      "manifestDecodeMS": median(manifestTimes),
+      "rowScanMS": median(scanTimes),
     ]
     print(String(decoding: try JSONSerialization.data(withJSONObject: metrics, options: .sortedKeys), as: UTF8.self))
   }
@@ -245,32 +244,46 @@ enum MeetingArchiveChecks {
     let original = collection(rows)
     try store.write(MeetingRowStaging.collectionKey, data: original)
     let records = try JSONDecoder().decode([Meeting].self, from: original)
-    try apply(store, try MeetingArchive.change(from: nil, to: records))
+    try commit(store, from: nil, to: records)
     return records
   }
 
-  private static func apply(_ store: LocalStore, _ change: MeetingArchive.Change) throws {
-    var writes: [(key: String, data: Data)] = []
+  /// The same sequence the app's store performs for a record save.
+  private static func commit(_ store: LocalStore, from previous: [Meeting]?, to meetings: [Meeting]) throws {
+    let source: Data? = data(store, MeetingRowStaging.collectionKey)
+    var change = try MeetingArchive.change(from: previous, to: meetings, collection: source)
+    change.removals = MeetingArchive.staleRemovals(for: change, in: store)
+    try commit(store, change: change, source: source)
+  }
+
+  private static func commit(_ store: LocalStore, change: MeetingArchive.Change,
+                             source: Data? = nil) throws {
+    var documents = change.documents
     if change.manifestChanged || change.rebuild != nil {
-      writes.append((key: MeetingArchive.manifestKey, data: try MeetingArchive.manifestData(change.manifest)))
+      documents.append((key: MeetingArchive.manifestKey,
+                        data: try MeetingArchive.manifestData(change.manifest)))
     }
+    if let source { documents.append((key: MeetingArchive.legacyKey, data: source)) }
     let landed = try store.applyBatch(
-      writes: writes, removing: [], expecting: [], archive: change)
+      writes: documents, removing: change.removals,
+      expecting: change.rebuild != nil ? [(MeetingRowStaging.collectionKey, source)] : [])
     precondition(landed)
   }
 
-  private static func digests(_ store: LocalStore) throws -> [UUID: Data] {
-    var values: [UUID: Data] = [:]
-    _ = try store.scanMeetingRows { id, digest, _ in values[id] = digest }
+  private static func rowKeys(_ store: LocalStore) throws -> [String] {
+    var keys: [String] = []
+    _ = try store.scanDocuments(inKeyRange: MeetingArchive.keyRange) { key, _ in keys.append(key) }
+    return keys
+  }
+
+  private static func rowDocuments(_ store: LocalStore) throws -> [String: Data] {
+    var values: [String: Data] = [:]
+    _ = try store.scanDocuments(inKeyRange: MeetingArchive.keyRange) { key, data in values[key] = data }
     return values
   }
 
-  private static func rowPayload(_ store: LocalStore, id: UUID) -> Data? {
-    var found: Data?
-    _ = try? store.scanMeetingRows { rowID, _, payload in
-      if rowID == id { found = payload }
-    }
-    return found
+  private static func rowDocument(_ store: LocalStore, id: UUID) -> Data? {
+    data(store, MeetingArchive.rowKey(id))
   }
 
   private static func fixtureRows(count: Int) throws -> [Data] {

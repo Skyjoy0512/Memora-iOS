@@ -30,8 +30,16 @@ import SQLite3
   }
   func isStoreWritable() -> Bool { !isStoreProtected }
   func persistMeetings() { _ = persistBatch { [(StorageKey.meetings, try RecordStore.encoded(meetings))] } }
-  func persistBatch(_ build: () throws -> [(key: String, data: Data)]) -> Bool {
-    do { try store.applyBatch(writes: try build(), removing: []); return true } catch { return false }
+  func persistBatch(meetings: [Meeting]? = nil, prepared: [UUID: Data] = [:],
+                    _ build: () throws -> [(key: String, data: Data)]) -> Bool {
+    do {
+      var writes = try build()
+      if let meetings, let data = try? JSONEncoder().encode(meetings) {
+        writes.append((key: "memoraMeetings", data: data))
+      }
+      try store.applyBatch(writes: writes, removing: [])
+      return true
+    } catch { return false }
   }
 }
 struct Meeting: Codable, Equatable {

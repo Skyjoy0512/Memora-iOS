@@ -74,8 +74,14 @@ enum SummaryKnowledgeEditChecks {
   init(url: URL) { store = LocalStore(fileURL: url) }
   func meeting(id: UUID) -> Meeting? { meetings.first { $0.id == id } }
   func isStoreWritable() -> Bool { !isStoreProtected }
-  func persistBatch(_ body: () throws -> [(key: String, data: Data)]) -> Bool {
-    do { try store.applyBatch(writes: body(), removing: []); return true } catch { return false }
+  func persistBatch(meetings: [Meeting]? = nil, prepared: [UUID: Data] = [:],
+                    _ body: () throws -> [(key: String, data: Data)]) -> Bool {
+    do {
+      var writes = try body()
+      if let meetings { writes.append((key: "meetings", data: try RecordStore.encoded(meetings))) }
+      try store.applyBatch(writes: writes, removing: [])
+      return true
+    } catch { return false }
   }
 }
 struct ProcessingFixture {

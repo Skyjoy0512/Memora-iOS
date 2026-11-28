@@ -66,8 +66,14 @@ import SQLite3
   enum StorageKey { static let meetings = "memoraMeetings" }
   init(url: URL) throws { storeURL = url; store = LocalStore(fileURL: url); try store.prepare() }
   func isStoreWritable() -> Bool { !protected }
-  func persistBatch(_ build: () throws -> [(key: String, data: Data)]) -> Bool {
-    do { try store.applyBatch(writes: build(), removing: []); return true } catch { return false }
+  func persistBatch(meetings: [Meeting]? = nil, prepared: [UUID: Data] = [:],
+                    _ build: () throws -> [(key: String, data: Data)]) -> Bool {
+    do {
+      var writes = try build()
+      if let meetings { writes.append((key: "memoraMeetings", data: try RecordStore.encoded(meetings))) }
+      try store.applyBatch(writes: writes, removing: [])
+      return true
+    } catch { return false }
   }
 }
 

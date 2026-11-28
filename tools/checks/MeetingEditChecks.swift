@@ -24,9 +24,18 @@ final class MemoraModel {
     catch { failures += 1; return false }
   }
   func persistMeetings() { _ = persistNow(meetings, forKey: StorageKey.meetings) }
-  func persistBatch(_ build: () throws -> [(key: String, data: Data)]) -> Bool {
-    do { try store.applyBatch(writes: try build(), removing: []); return true }
-    catch { failures += 1; return false }
+  func persistBatch(meetings: [Meeting]? = nil, prepared: [UUID: Data] = [:],
+                    _ build: () throws -> [(key: String, data: Data)]) -> Bool {
+    do {
+      var writes = try build()
+      // The edit path's encoder is gated here on purpose; the fixture's own
+      // save must not wait on that gate.
+      if let meetings, let data = try? JSONEncoder().encode(meetings) {
+        writes.append((key: "memoraMeetings", data: data))
+      }
+      try store.applyBatch(writes: writes, removing: [])
+      return true
+    } catch { failures += 1; return false }
   }
 }
 

@@ -132,10 +132,45 @@ final class MemoraModel {
     }
   }
 
-  func persistBatch(_ build: () throws -> [(key: String, data: Data)], removing: [String] = []) -> Bool {
+  /// The import suite stores records under its own key so a fixture never
+  /// collides with real documents.
+  private var meetingsKey: String {
+    #if MEMORA_AUDIO_IMPORT_CHECKS
+    StorageKey.meetings
+    #else
+    "memoraMeetings"
+    #endif
+  }
+
+  func persistMeetings<Records: Encodable>(_ meetings: [Records]) -> Bool {
+    do {
+      try store.write(meetingsKey, data: try JSONEncoder().encode(meetings))
+      return true
+    } catch { return false }
+  }
+
+  func persistBatch(_ build: () throws -> [(key: String, data: Data)],
+                    removing: [String] = []) -> Bool {
     do {
       guard !isStoreProtected else { return false }
       try store.applyBatch(writes: try build(), removing: removing)
+      return true
+    } catch {
+      if failurePresentation.shouldPresentGlobally { persistenceFailureMessage = "SQLite write failed" }
+      return false
+    }
+  }
+
+  // This fixture does not compile the record model, so the records arrive as
+  // any encodable collection rather than `[Meeting]`.
+  func persistBatch<Records: Encodable>(meetings: [Records], prepared: [UUID: Data] = [:],
+                                        _ build: () throws -> [(key: String, data: Data)],
+                                        removing: [String] = []) -> Bool {
+    do {
+      guard !isStoreProtected else { return false }
+      var writes = try build()
+      writes.append((key: meetingsKey, data: try JSONEncoder().encode(meetings)))
+      try store.applyBatch(writes: writes, removing: removing)
       return true
     } catch {
       if failurePresentation.shouldPresentGlobally { persistenceFailureMessage = "SQLite write failed" }

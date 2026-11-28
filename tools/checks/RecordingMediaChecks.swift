@@ -419,9 +419,16 @@ final class MemoraModel {
     try store.applyBatch(writes: [("meetings", try RecordStore.encoded(meetings)), ("pending", try RecordStore.encoded(pendingMediaDeletions))], removing: [])
   }
   func isStoreWritable() -> Bool { !isStoreProtected }
-  func persistBatch(_ build: () throws -> [(key: String, data: Data)], removing: [String] = []) -> Bool {
+  func persistBatch(meetings: [Meeting]? = nil, prepared: [UUID: Data] = [:],
+                    _ build: () throws -> [(key: String, data: Data)],
+                    removing: [String] = []) -> Bool {
     guard !isStoreProtected else { return false }
-    do { try store.applyBatch(writes: build(), removing: removing); return true } catch { persistenceFailureMessage = "save failed"; return false }
+    do {
+      var writes = build()
+      if let meetings { writes.append((key: "memoraMeetings", data: try RecordStore.encoded(meetings))) }
+      try store.applyBatch(writes: writes, removing: removing)
+      return true
+    } catch { persistenceFailureMessage = "save failed"; return false }
   }
   func persistNow<T: Encodable>(_ value: T, forKey key: String) -> Bool {
     persistBatch { [(key, try RecordStore.encoded(value))] }

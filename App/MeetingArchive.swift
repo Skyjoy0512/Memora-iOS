@@ -1,52 +1,66 @@
 import CryptoKit
 import Foundation
 
-/// The record collection stored one record per row, beside the legacy blob.
+/// The record collection stored one record per document, beside the legacy blob.
 ///
 /// The collection used to be a single document: every edit re-encoded and
 /// rewrote every record. At 50,000 records that is 300 MB of JSON for one
-/// changed title. Here a save writes the rows that changed and, only when the
-/// set or order changed, the small manifest that lists the record ids. The
+/// changed title. Here a save writes the documents that changed and, only when
+/// the set or order changed, the small manifest that lists the record ids. The
 /// legacy collection is moved aside rather than deleted on the first write, so
 /// an older build still has something to read and the switch stays reversible.
+///
+/// Rows live in the same `documents` table as everything else, which is what
+/// keeps a record save and its draft or trash entry in one transaction through
+/// the existing `RecordStore` boundary.
 struct MeetingArchive {
+  /// Prefix of every record row. `keyRange` bounds it for one ordered read.
+  static let rowPrefix = "memora.meeting."
   /// The manifest that makes the row set authoritative: the ids in display
-  /// order plus a revision for diagnostics. Stored in the same `documents`
-  /// table, so it commits in the same SQLite transaction as the rows.
+  /// order.
   static let manifestKey = "memora.meetings.archive.v1"
   /// Where the previous collection document is kept after the switch.
   static let legacyKey = "memoraMeetings.legacy"
 
   static let schemaVersion = 1
+  private static let digestBytes = 32
+
+  static let keyRange = (lower: rowPrefix, upper: "memora.meeting/")
 
   struct Manifest: Codable, Equatable {
     var schemaVersion = MeetingArchive.schemaVersion
     var ids: [UUID]
   }
 
+  /// One row: the digest of the payload, then the payload itself. The digest
+  /// stays with the bytes it covers, so a document table backup or a page read
+  /// cannot separate them.
   struct Row {
     var id: UUID
-    var digest: Data
-    var payload: Data
+    var document: Data
   }
 
-  /// One commit's worth of row work. `rebuild` is set when the previous state
-  /// is unknown (first save after launch, or a suspected damaged archive): the
-  /// rows are then produced inside the write transaction from the collection
-  /// document, so the bytes that are already on disk are kept where possible.
+  /// One commit's worth of work, expressed as the documents the store already
+  /// knows how to write.
   struct Change {
     var manifest: Manifest
-    /// False when the stored order is unchanged, so an edit writes only its own
-    /// row and does not re-encode the list of ids.
     var manifestChanged: Bool
-    var clearsRows: Bool
-    var rows: [Row]
-    var removals: [UUID]
+    /// Rows to write, and rows to remove. The manifest is in `documents`.
+    var documents: [(key: String, data: Data)]
+    var removals: [String]
+    /// Set when the previous state is unknown: the rows are rebuilt from the
+    /// collection document, which must still hold `rebuildSource` when the
+    /// commit lands.
     var rebuild: [Meeting]?
+    var rebuildSource: Data?
   }
 
   enum Failure: Error, Equatable {
     case duplicateID
+  }
+
+  static func rowKey(_ id: UUID) -> String {
+    rowPrefix + id.uuidString.lowercased()
   }
 
   // MARK: - Reading
@@ -69,8 +83,7 @@ struct MeetingArchive {
     }
     guard let manifest = try? JSONDecoder().decode(Manifest.self, from: manifestData),
           manifest.schemaVersion == schemaVersion,
-          manifest.ids.count <= 100_000,
-          Set(manifest.ids).count == manifest.ids.count else { return .invalid }
+          manifest.ids.count <= 100_000 else { return .invalid }
 
     let decoder = JSONDecoder()
     var records = [Meeting?](repeating: nil, count: manifest.ids.count)
@@ -80,11 +93,13 @@ struct MeetingArchive {
 
     var scanned = 0
     do {
-      scanned = try store.scanMeetingRows { id, digest, payload in
-        guard let position = positions[id], records[position] == nil,
-              Data(SHA256.hash(data: payload)) == digest,
-              let record = try? decoder.decode(Meeting.self, from: payload),
-              record.id == id else { throw Failure.duplicateID }
+      scanned = try store.scanDocuments(inKeyRange: keyRange) { key, document in
+        guard key.count == rowPrefix.count + 36,
+              let id = UUID(uuidString: String(key.dropFirst(rowPrefix.count))),
+              let position = positions[id], records[position] == nil,
+              let record = decode(document, expecting: id, decoder: decoder) else {
+          throw Failure.duplicateID
+        }
         records[position] = record
       }
     } catch {
@@ -96,31 +111,48 @@ struct MeetingArchive {
     return .records(decoded)
   }
 
+  private static func decode(_ document: Data, expecting id: UUID, decoder: JSONDecoder) -> Meeting? {
+    guard document.count > digestBytes else { return nil }
+    let digest = document.prefix(digestBytes)
+    let payload = document.dropFirst(digestBytes)
+    guard Data(SHA256.hash(data: payload)) == digest,
+          let record = try? decoder.decode(Meeting.self, from: payload),
+          record.id == id else { return nil }
+    return record
+  }
+
   // MARK: - Writing
 
   /// The work needed to store `meetings` after `previous`. `previous` is what
   /// the last successful commit wrote; nil means it is not known, so the rows
-  /// are rebuilt from the collection document in the same transaction.
+  /// are rebuilt from the collection document.
+  /// `prepared` carries payloads the caller already encoded (off the main
+  /// actor, say), so the save does not encode them a second time.
   static func change(
     from previous: [Meeting]?,
-    to meetings: [Meeting]
+    to meetings: [Meeting],
+    collection: Data?,
+    prepared: [UUID: Data] = [:]
   ) throws -> Change {
     guard let previous else {
-      let manifest = Manifest(ids: meetings.map(\.id))
-      return Change(manifest: manifest, manifestChanged: true, clearsRows: true,
-                    rows: [], removals: [], rebuild: meetings)
+      let rows = try rebuiltRows(meetings, legacy: collection)
+      return Change(manifest: Manifest(ids: meetings.map(\.id)), manifestChanged: true,
+                    documents: rows.map { (rowKey($0.id), $0.document) },
+                    removals: [MeetingRowStaging.collectionKey],
+                    rebuild: meetings, rebuildSource: collection)
     }
     let encoder = JSONEncoder()
     // The common case: the same records in the same order. Nothing but the
     // changed rows is encoded and the id list is not rebuilt at all.
     if previous.count == meetings.count,
        previous.elementsEqual(meetings, by: { $0.id == $1.id }) {
-      var rows: [Row] = []
+      var documents: [(key: String, data: Data)] = []
       for (record, stored) in zip(meetings, previous) where record != stored {
-        rows.append(try row(record, encoder: encoder))
+        documents.append((rowKey(record.id), try row(record, encoding: prepared[record.id],
+                                                      encoder: encoder)))
       }
-      return Change(manifest: Manifest(ids: []), manifestChanged: false, clearsRows: false,
-                    rows: rows, removals: [], rebuild: nil)
+      return Change(manifest: Manifest(ids: []), manifestChanged: false, documents: documents,
+                    removals: [], rebuild: nil, rebuildSource: nil)
     }
 
     let manifest = Manifest(ids: meetings.map(\.id))
@@ -128,28 +160,41 @@ struct MeetingArchive {
     positions.reserveCapacity(previous.count)
     for (index, record) in previous.enumerated() { positions[record.id] = index }
 
-    var rows: [Row] = []
-    rows.reserveCapacity(4)
-    var removed: [UUID] = []
+    var documents: [(key: String, data: Data)] = []
+    var removed: [String] = []
     var kept = Set<UUID>()
     kept.reserveCapacity(meetings.count)
     for record in meetings {
       guard kept.insert(record.id).inserted else { throw Failure.duplicateID }
       guard let position = positions[record.id] else {
-        rows.append(try row(record, encoder: encoder))
+        documents.append((rowKey(record.id), try row(record, encoding: prepared[record.id],
+                                                      encoder: encoder)))
         continue
       }
       if previous[position] != record {
-        rows.append(try row(record, encoder: encoder))
+        documents.append((rowKey(record.id), try row(record, encoding: prepared[record.id],
+                                                      encoder: encoder)))
       }
     }
     if meetings.count != previous.count {
       let present = kept
-      removed = previous.map(\.id).filter { !present.contains($0) }
+      removed = previous.map(\.id).filter { !present.contains($0) }.map(rowKey)
     }
     let orderChanged = manifest.ids != previous.map(\.id)
-    return Change(manifest: manifest, manifestChanged: orderChanged, clearsRows: false,
-                  rows: rows, removals: removed, rebuild: nil)
+    return Change(manifest: manifest, manifestChanged: orderChanged, documents: documents,
+                  removals: removed, rebuild: nil, rebuildSource: nil)
+  }
+
+  /// Row keys that exist in the store but are not in `change`, so a rebuild
+  /// leaves nothing behind.
+  static func staleRemovals(for change: Change, in store: LocalStore) -> [String] {
+    guard change.rebuild != nil else { return change.removals }
+    let written = Set(change.documents.map(\.key))
+    var stale: [String] = []
+    _ = try? store.scanDocuments(inKeyRange: keyRange) { key, _ in
+      if !written.contains(key) { stale.append(key) }
+    }
+    return stale + change.removals
   }
 
   /// Rows for an unknown base. The collection document is split at its own
@@ -165,7 +210,7 @@ struct MeetingArchive {
         let payload = legacy.subdata(in: range)
         guard let record = try? decoder.decode(Meeting.self, from: payload),
               record.id == meetings[index].id else { return try encodedRows(meetings) }
-        rows.append(Row(id: record.id, digest: Data(SHA256.hash(data: payload)), payload: payload))
+        rows.append(Row(id: record.id, document: document(payload, digest: Data(SHA256.hash(data: payload)))))
       }
       return rows
     }
@@ -176,13 +221,22 @@ struct MeetingArchive {
     let encoder = JSONEncoder()
     return try meetings.map { record in
       let payload = try encoder.encode(record)
-      return Row(id: record.id, digest: Data(SHA256.hash(data: payload)), payload: payload)
+      return Row(id: record.id,
+                 document: document(payload, digest: Data(SHA256.hash(data: payload))))
     }
   }
 
-  private static func row(_ record: Meeting, encoder: JSONEncoder) throws -> Row {
-    let payload = try encoder.encode(record)
-    return Row(id: record.id, digest: Data(SHA256.hash(data: payload)), payload: payload)
+  private static func row(_ record: Meeting, encoding payload: Data?,
+                          encoder: JSONEncoder) throws -> Data {
+    let payload = try payload ?? encoder.encode(record)
+    return document(payload, digest: Data(SHA256.hash(data: payload)))
+  }
+
+  private static func document(_ payload: Data, digest: Data) -> Data {
+    var document = Data(capacity: digest.count + payload.count)
+    document.append(digest)
+    document.append(payload)
+    return document
   }
 
   static func manifestData(_ manifest: Manifest) throws -> Data {

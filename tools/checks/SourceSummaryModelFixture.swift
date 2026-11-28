@@ -44,9 +44,25 @@ import Foundation
     do { try store.write(key, data: JSONEncoder().encode(value)); return true }
     catch { return false }
   }
-  func persistBatch(_ build: () throws -> [(key: String, data: Data)], removing: [String] = []) -> Bool {
-    do { try store.applyBatch(writes: build(), removing: removing); return true }
-    catch { return false }
+  func persistBatch(_ build: () throws -> [(key: String, data: Data)],
+                    removing: [String] = []) -> Bool {
+    do {
+      try store.applyBatch(writes: try build(), removing: removing)
+      return true
+    } catch { return false }
+  }
+
+  /// This fixture does not compile the record model, so the records arrive as
+  /// any encodable collection.
+  func persistBatch<Records: Encodable>(meetings: [Records], prepared: [UUID: Data] = [:],
+                                        _ build: () throws -> [(key: String, data: Data)],
+                                        removing: [String] = []) -> Bool {
+    do {
+      var writes = try build()
+      writes.append((key: "memoraMeetings", data: try JSONEncoder().encode(meetings)))
+      try store.applyBatch(writes: writes, removing: removing)
+      return true
+    } catch { return false }
   }
 }
 

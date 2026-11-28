@@ -43,9 +43,14 @@ final class MemoraModel {
     do { try store.write(key, data: JSONEncoder().encode(value)); return true }
     catch { failures += 1; return false }
   }
-  func persistBatch(_ build: () throws -> [(key: String, data: Data)]) -> Bool {
-    do { try store.applyBatch(writes: try build(), removing: []); return true }
-    catch { failures += 1; return false }
+  func persistBatch(meetings: [Meeting]? = nil, prepared: [UUID: Data] = [:],
+                    _ build: () throws -> [(key: String, data: Data)]) -> Bool {
+    do {
+      var writes = try build()
+      if let meetings { writes.append((key: "memoraMeetings", data: try RecordStore.encoded(meetings))) }
+      try store.applyBatch(writes: writes, removing: [])
+      return true
+    } catch { failures += 1; return false }
   }
   @discardableResult
   func updateMeeting(_ id: UUID, change: (inout Meeting) -> Void) -> Bool {

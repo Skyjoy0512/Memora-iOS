@@ -102,13 +102,15 @@ extension MemoraModel {
   @discardableResult
   func persistBatch(
     meetings: [Meeting]? = nil,
+    prepared: [UUID: Data] = [:],
     _ build: () throws -> [(key: String, data: Data)],
     removing: [String] = []
   ) -> Bool {
     guard isStoreWritable() else { return false }
     do {
       if let meetings {
-        try RecordStore.commitNow(writes: try build(), removing: removing, meetings: meetings)
+        try RecordStore.commitNow(writes: try build(), removing: removing, meetings: meetings,
+                                  prepared: prepared)
       } else {
         try RecordStore.commitNow(writes: try build(), removing: removing)
       }
