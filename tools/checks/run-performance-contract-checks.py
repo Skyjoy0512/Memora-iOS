@@ -48,6 +48,13 @@ def main():
             subprocess.run([archive, directory, scenario], check=True, timeout=900, cwd=ROOT,
                            env={**os.environ, "SWIFT_BACKTRACE": "enable=no"})
 
+        summary = build(directory, "summary-part-mapping",
+                        ["TranscriptSegment", "SpeakerIdentificationStatus", "SummarySourceIndex",
+                         "MemoraFormat", "RecordPrivacy", "SummarySensitivity"],
+                        "SummaryPartMappingChecks")
+        subprocess.run([summary], check=True, timeout=300, cwd=ROOT,
+                       env={**os.environ, "SWIFT_BACKTRACE": "enable=no"})
+
         voice = build(directory, "voice-activity", ["VoiceActivityModelAssets"],
                       "VoiceActivityModelChecks", frameworks=("CoreML",))
         subprocess.run([voice], check=True, timeout=600, cwd=ROOT,

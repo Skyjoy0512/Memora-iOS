@@ -163,13 +163,7 @@ enum MeetingSummarizer {
         let noteHeader = "# 部分\(index + 1)（\(range)）\n"
         let prompt = SummaryPrompt.partNotes(for: input, part: index + 1, of: parts.count,
           range: range, transcript: legend + part.joined(separator: "\n"))
-        let partSegments = sourceIndex.entries.filter { entry in
-          let marker = compact ? "] \(entry.shortID) \(entry.speakerAlias): " : "] [segmentID=\(entry.segment.id.uuidString)] "
-          return part.contains { line in
-            guard let end = line.firstIndex(of: "]") else { return false }
-            return line[end...].hasPrefix(marker)
-          }
-        }.map(\.segment)
+        let partSegments = sourceIndex.segments(inPart: part, compact: compact)
         let cacheIdentity = input.artifactScope.flatMap {
           SummaryArtifactIdentity.identity(scope: $0, input: input, llm: llm, segments: partSegments)
         }
