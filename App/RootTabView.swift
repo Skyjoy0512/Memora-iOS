@@ -7,6 +7,7 @@ import PhotosUI
 struct RootTabView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.dynamicTypeSize) private var typeSize
   @Environment(\.scenePhase) private var scenePhase
   @State private var isComposing = false
   @State private var recordAIEdit: RecordAIEdit.Destination?
@@ -326,6 +327,13 @@ struct RootTabView: View {
     .allowsHitTesting(shouldShowComposer || showsPlaybackBar || showsPrimaryTabs)
   }
 
+  /// The Ask AI composer is drawn at 90 percent so its chip and buttons fit the
+  /// capsule. At the accessibility text sizes that would work against the
+  /// person's own setting, so it draws at full size there instead.
+  private var composerScale: CGFloat {
+    typeSize.isAccessibilitySize ? 1 : 0.9
+  }
+
   private var showsPrimaryTabs: Bool {
     RootNavigation.showsPrimaryTabs(in: model.activeNavigationPath)
       && !isSearchCovering && !isComposing && !isKeyboardVisible && !model.isInlineEditing
@@ -384,7 +392,7 @@ struct RootTabView: View {
               // Ask AI's composer carries the most controls; a slightly smaller
               // scale keeps its chip and buttons inside the capsule on narrow
               // screens.
-              .scaleEffect(model.selectedTab == .askAI ? 0.9 : 1, anchor: .bottom)
+              .scaleEffect(model.selectedTab == .askAI ? composerScale : 1, anchor: .bottom)
               .frame(maxWidth: .infinity, alignment: .leading)
               .padding(.trailing, showsCaptureButtons ? 60 : 0)
               // Keep the editor identity while the available width changes.

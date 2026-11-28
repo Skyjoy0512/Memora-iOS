@@ -207,3 +207,22 @@ criticalでも完成cacheを再利用できることを確認する。温度状�
    手動の文字起こし再開までを確認する。
 
 シミュレータの数値はホストCPU/RSSであり、実機の電池・熱・音切れの証明ではない。
+
+## 信号演算と VAD の実行先（2026-11-28）
+
+`3b3d9687`／`f1d1f26b` の計測。条件・全結果・未計測の境界は
+[性能監査 2026-11](PERFORMANCE_AUDIT_2026_11.md) にある。ここには結果だけを置く。
+
+- 録音 tap の音量（4,096 フレーム）: 間引き 512 サンプルの Swift ループ 159 ns →
+  `vDSP_svesq` で全サンプル 131 ns。512 フレームでは 227 ns → 18 ns。
+- 取り込み音声の信号検査（`AudioSignalInspector`）: サンプルごとのループから
+  `vDSP_svesq`／`vDSP_maxmgv`／`vDSP_vabs`＋`vDSP_vthres`＋`vDSP_vclip` へ。
+  二乗和・ピーク・クリップ数・無音フレーム数は素の計算と一致し、非有限値は
+  従来どおり `invalidTemporaryFile` として拒否する。
+- VAD（Silero 256 ms）: `.all` 15.4 ms／`.cpuAndNeuralEngine` 14.8 ms／
+  `.cpuAndGPU` 0.65 ms／`.cpuOnly` 0.61 ms の読込、推論はいずれも 0.15〜0.16 ms。
+  出力は 1e-3 以内で一致。`.cpuOnly` を採用し、モデルは初回利用時に読み、
+  メモリ警告で解放する（推論中は解放しない）。
+
+再実行は `python3 tools/checks/run-performance-contract-checks.py`。
+シミュレータやホストの数値は実機の電池・熱・マイク経路の証明ではない。
