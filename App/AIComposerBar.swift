@@ -194,7 +194,7 @@ struct AIComposerBar: View {
             }
           }
         }
-        .padding(.horizontal, usesStackedLayout ? MemoraSpacing.lg : MemoraSpacing.xs)
+        .padding(.horizontal, usesStackedLayout ? MemoraSpacing.lg : MemoraSpacing.sm)
         .padding(.top, usesStackedLayout ? MemoraSpacing.sm : 0)
         .frame(minHeight: usesStackedLayout ? Self.stackedFieldHeight : Self.collapsedHeight)
 
@@ -226,7 +226,7 @@ struct AIComposerBar: View {
                 .matchedGeometryEffect(id: "action", in: controlsNamespace, properties: isConversation ? [] : .frame)
             }
           }
-          .padding(.horizontal, MemoraSpacing.sm)
+          .padding(.horizontal, MemoraSpacing.md)
           .padding(.bottom, MemoraSpacing.sm)
           .transition(isConversation ? .identity : .opacity)
         }
@@ -239,7 +239,7 @@ struct AIComposerBar: View {
       }
       .overlay(alignment: usesStackedLayout ? .bottomLeading : .leading) {
         leadingControl
-          .padding(.leading, usesStackedLayout ? MemoraSpacing.sm : MemoraSpacing.xs)
+          .padding(.leading, usesStackedLayout ? MemoraSpacing.lg : MemoraSpacing.sm)
           .padding(.bottom, usesStackedLayout ? MemoraSpacing.sm : 0)
       }
       .opacity(isDictating || isVoiceConversation ? 0 : 1)
