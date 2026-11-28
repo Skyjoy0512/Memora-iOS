@@ -727,7 +727,19 @@ final class MemoraModel {
 
     // A first run starts empty. Sample content is only added when the person
     // chooses it from onboarding, so their own records are never mixed with it.
-    meetings = load([Meeting].self, forKey: StorageKey.meetings, fallback: [])
+    //
+    // Records first come from the row archive; until the first save has staged
+    // it, the collection document is still the authority. The rows are read
+    // straight into `meetings`, so one edit later does not have to re-encode
+    // what was just decoded.
+    switch RecordStore.loadMeetings() {
+    case .records(let records):
+      meetings = records
+    case .absent, .invalid:
+      // The first save stages the rows from this collection document, which is
+      // why the base is deliberately left unset here.
+      meetings = load([Meeting].self, forKey: StorageKey.meetings, fallback: [])
+    }
     spaces = load([MemoraSpace].self, forKey: StorageKey.spaces, fallback: [])
     documents = load([MemoraDocument].self, forKey: StorageKey.documents, fallback: [])
     mediaIndexEntries = Array(load([MediaIndexEntry].self, forKey: MediaIndexEntry.storageKey,
@@ -1016,8 +1028,13 @@ final class MemoraModel {
     // Let every queued save land first, so the reload below cannot read an
     // older copy than what is on screen.
     await RecordStore.flushAsync()
-    if let stored = Self.storedDocument([Meeting].self, forKey: StorageKey.meetings) {
+    switch RecordStore.loadMeetings() {
+    case .records(let stored):
       meetings = stored
+    case .absent, .invalid:
+      if let stored = Self.storedDocument([Meeting].self, forKey: StorageKey.meetings) {
+        meetings = stored
+      }
     }
     if let stored = Self.storedDocument([MemoraSpace].self, forKey: StorageKey.spaces) {
       spaces = stored

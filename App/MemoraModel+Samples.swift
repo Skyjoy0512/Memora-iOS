@@ -46,9 +46,8 @@ extension MemoraModel {
     }
     let keptHistory = aiHistory.filter { $0.id != Self.seedAIHistoryID && $0.id != ScreenReviewSamples.historyID }
 
-    let stored = persistBatch {
+    let stored = persistBatch(meetings: keptMeetings) {
       [
-        (key: StorageKey.meetings, data: try RecordStore.encoded(keptMeetings)),
         (key: StorageKey.spaces, data: try RecordStore.encoded(keptSpaces)),
         (key: StorageKey.tasks, data: try RecordStore.encoded(keptTasks)),
         (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(keptLifeLog)),

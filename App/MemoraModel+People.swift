@@ -92,10 +92,9 @@ extension MemoraModel {
         .sorted { $0.uuidString < $1.uuidString }
       updatedJournal[index].privacy = journalPrivacyAfterPersonChange(entry)
     }
-    guard persistBatch({ [
+    guard persistBatch(meetings: updatedMeetings, { [
       (key: StorageKey.people, data: try RecordStore.encoded(updatedPeople)),
       (key: StorageKey.tasks, data: try RecordStore.encoded(updatedTasks)),
-      (key: StorageKey.meetings, data: try RecordStore.encoded(updatedMeetings)),
       (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(updatedJournal))
     ] }) else { return false }
     people = updatedPeople; tasks = updatedTasks; meetings = updatedMeetings; lifeLogEntries = updatedJournal
@@ -119,9 +118,8 @@ extension MemoraModel {
     let updatedPeople = people.filter { $0.id != id }
     var updatedMeetings = meetings
     for index in updatedMeetings.indices { updatedMeetings[index].participantIDs?.removeAll { $0 == id } }
-    guard persistBatch({ [
-      (key: StorageKey.people, data: try RecordStore.encoded(updatedPeople)),
-      (key: StorageKey.meetings, data: try RecordStore.encoded(updatedMeetings))
+    guard persistBatch(meetings: updatedMeetings, { [
+      (key: StorageKey.people, data: try RecordStore.encoded(updatedPeople))
     ] }) else { return false }
     // Retain task/journal IDs so a new person with the same name cannot inherit them.
     people = updatedPeople; meetings = updatedMeetings

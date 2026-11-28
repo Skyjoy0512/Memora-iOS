@@ -35,9 +35,8 @@ extension MemoraModel {
 
     // One operation: the record, its tasks, its journal entries, and the trash
     // entry land together or not at all.
-    let stored = persistBatch {
+    let stored = persistBatch(meetings: candidateMeetings) {
       [
-        (key: StorageKey.meetings, data: try RecordStore.encoded(candidateMeetings)),
         (key: StorageKey.tasks, data: try RecordStore.encoded(candidateTasks)),
         (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(candidateEntries)),
         (key: StorageKey.trash, data: try RecordStore.encoded(candidateTrash))
@@ -97,9 +96,8 @@ extension MemoraModel {
       at: 0
     )
 
-    let stored = persistBatch {
+    let stored = persistBatch(meetings: candidateMeetings) {
       [
-        (key: StorageKey.meetings, data: try RecordStore.encoded(candidateMeetings)),
         (key: StorageKey.tasks, data: try RecordStore.encoded(candidateTasks)),
         (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(candidateEntries)),
         (key: StorageKey.trash, data: try RecordStore.encoded(candidateTrash))
@@ -173,8 +171,7 @@ extension MemoraModel {
     }
     let candidateEntries = lifeLogEntries + restoredEntries
     let candidateTrash = trashedRecords.filter { !ids.contains($0.id) }
-    guard persistBatch({ [
-      (key: StorageKey.meetings, data: try RecordStore.encoded(candidateMeetings)),
+    guard persistBatch(meetings: candidateMeetings, { [
       (key: StorageKey.tasks, data: try RecordStore.encoded(candidateTasks)),
       (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(candidateEntries)),
       (key: StorageKey.trash, data: try RecordStore.encoded(candidateTrash))

@@ -58,6 +58,16 @@ final class LocalStore {
         updated_at REAL NOT NULL
       );
       """)
+      // One row per record, so a save rewrites one record instead of the whole
+      // collection. The digest lets a read refuse a row that changed under it.
+      try exec("""
+      CREATE TABLE IF NOT EXISTS meeting_rows (
+        id TEXT PRIMARY KEY NOT NULL,
+        digest BLOB NOT NULL,
+        payload BLOB NOT NULL,
+        updated_at REAL NOT NULL
+      );
+      """)
       try protectFiles()
     } catch {
       sqlite3_close(handle)
@@ -200,10 +210,22 @@ final class LocalStore {
     removing removals: [String],
     expecting expected: [(key: String, data: Data?)]
   ) throws -> Bool {
+    try applyBatch(writes: writes, removing: removals, expecting: expected, archive: nil)
+  }
+
+  /// The same transaction, extended with the record rows that belong to the
+  /// operation. The rows are written before the removals so a record that both
+  /// moved and dropped a document cannot leave the two disagreeing.
+  func applyBatch(
+    writes: [(key: String, data: Data)],
+    removing removals: [String],
+    expecting expected: [(key: String, data: Data?)],
+    archive change: MeetingArchive.Change?
+  ) throws -> Bool {
     lock.lock()
     defer { lock.unlock() }
     guard db != nil else { throw StoreError.open(0) }
-    guard !writes.isEmpty || !removals.isEmpty || !expected.isEmpty else { return true }
+    guard !writes.isEmpty || !removals.isEmpty || !expected.isEmpty || change != nil else { return true }
 
     try exec("BEGIN IMMEDIATE;")
     do {
@@ -216,6 +238,7 @@ final class LocalStore {
       for document in writes {
         try writeLocked(document.key, data: document.data)
       }
+      if let change { try applyArchiveLocked(change) }
       for key in removals {
         try removeLocked(key)
       }
@@ -224,6 +247,119 @@ final class LocalStore {
     } catch {
       try? exec("ROLLBACK;")
       throw error
+    }
+  }
+
+  /// Rows, their manifest and the retirement of the legacy collection are one
+  /// transaction with the rest of the operation, so an interrupted save leaves
+  /// the previous complete state in place.
+  private func applyArchiveLocked(_ change: MeetingArchive.Change) throws {
+    if change.clearsRows {
+      try removeAllMeetingRowsLocked()
+    }
+    let rows: [MeetingArchive.Row]
+    if let meetings = change.rebuild {
+      // The model's array came from the collection document, so splitting that
+      // keeps the bytes of records nobody edited.
+      let previous = try readLocked(MeetingRowStaging.collectionKey)
+      rows = try MeetingArchive.rebuiltRows(meetings, legacy: previous)
+    } else {
+      rows = change.rows
+    }
+    for row in rows {
+      try writeMeetingRowLocked(row)
+    }
+    for id in change.removals {
+      try removeMeetingRowLocked(id.uuidString)
+    }
+    guard change.rebuild != nil else { return }
+    // The switch keeps the previous collection as a read-only copy and only
+    // then drops the live one; both land here or not at all.
+    if let legacy = try readLocked(MeetingRowStaging.collectionKey) {
+      try writeLocked(MeetingArchive.legacyKey, data: legacy)
+      try removeLocked(MeetingRowStaging.collectionKey)
+    }
+  }
+
+  /// Every stored record payload in unspecified order. The caller applies the
+  /// manifest's order and checks the digest.
+  func scanMeetingRows(_ visit: (UUID, Data, Data) throws -> Void) throws -> Int {
+    lock.lock()
+    defer { lock.unlock() }
+    guard db != nil else { throw StoreError.open(0) }
+    let statement = try prepared("SELECT id, digest, payload FROM meeting_rows;")
+    defer { reset(statement) }
+    var count = 0
+    while true {
+      switch sqlite3_step(statement) {
+      case SQLITE_ROW:
+        guard let idText = sqlite3_column_text(statement, 0),
+              let id = UUID(uuidString: String(cString: idText)),
+              let digest = blobLocked(statement, column: 1),
+              let payload = blobLocked(statement, column: 2) else {
+          throw StoreError.filesystem
+        }
+        try visit(id, digest, payload)
+        count += 1
+      case SQLITE_DONE:
+        return count
+      case let failure:
+        throw StoreError.statement(failure)
+      }
+    }
+  }
+
+  private func blobLocked(_ statement: OpaquePointer, column: Int32) -> Data? {
+    let count = Int(sqlite3_column_bytes(statement, column))
+    guard let bytes = sqlite3_column_blob(statement, column) else {
+      return count == 0 && sqlite3_column_type(statement, column) == SQLITE_BLOB ? Data() : nil
+    }
+    return Data(bytes: bytes, count: count)
+  }
+
+  private func writeMeetingRowLocked(_ row: MeetingArchive.Row) throws {
+    guard db != nil else { throw StoreError.open(0) }
+    let statement = try prepared("""
+    INSERT OR REPLACE INTO meeting_rows (id, digest, payload, updated_at) VALUES (?, ?, ?, ?);
+    """)
+    try row.payload.withUnsafeBytes { payload in
+      try row.digest.withUnsafeBytes { digest in
+        defer { reset(statement) }
+        try checkBind(sqlite3_bind_text(statement, 1, row.id.uuidString, -1, Self.transient))
+        try bindBlob(digest, to: statement, at: 2)
+        try bindBlob(payload, to: statement, at: 3)
+        try checkBind(sqlite3_bind_double(statement, 4, Date().timeIntervalSince1970))
+        guard sqlite3_step(statement) == SQLITE_DONE else {
+          throw StoreError.statement(sqlite3_errcode(db))
+        }
+      }
+    }
+  }
+
+  private func removeMeetingRowLocked(_ id: String) throws {
+    guard db != nil else { throw StoreError.open(0) }
+    let statement = try prepared("DELETE FROM meeting_rows WHERE id = ?;")
+    defer { reset(statement) }
+    try checkBind(sqlite3_bind_text(statement, 1, id, -1, Self.transient))
+    guard sqlite3_step(statement) == SQLITE_DONE else {
+      throw StoreError.statement(sqlite3_errcode(db))
+    }
+  }
+
+  private func removeAllMeetingRowsLocked() throws {
+    try exec("DELETE FROM meeting_rows;")
+  }
+
+  /// A read on the writer's turn, for the values a commit has to compare.
+  private func readLocked(_ key: String) throws -> Data? {
+    guard db != nil else { throw StoreError.open(0) }
+    let statement = try prepared("SELECT data FROM documents WHERE key = ?;")
+    defer { reset(statement) }
+    try checkBind(sqlite3_bind_text(statement, 1, key, -1, Self.transient))
+    switch sqlite3_step(statement) {
+    case SQLITE_DONE: return nil
+    case SQLITE_ROW: return blobLocked(statement, column: 0) ?? Data()
+    case let failure: throw StoreError.statement(failure)
     }
   }
 

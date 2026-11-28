@@ -42,7 +42,13 @@ extension MemoraModel {
         count: meetings.count
       )
     }
-    persistInBackground(meetings, forKey: StorageKey.meetings)
+    guard isStoreWritable() else { return }
+    // Only the records that changed are encoded and written, so this no longer
+    // scales with the size of the whole collection.
+    RecordStore.saveMeetings(meetings) { [weak self] in
+      guard let self else { return }
+      self.reportPersistenceFailure(self.saveFailureMessage)
+    }
   }
 
   func persistSpaces() {
@@ -77,17 +83,35 @@ extension MemoraModel {
     }
   }
 
+  /// The records, saved before continuing. Only the changed rows are written.
+  @discardableResult
+  func persistMeetings(_ meetings: [Meeting]) -> Bool {
+    guard isStoreWritable() else { return false }
+    do {
+      try RecordStore.saveMeetingsNow(meetings)
+      return true
+    } catch {
+      reportPersistenceFailure(saveFailureMessage)
+      return false
+    }
+  }
+
   /// Waits for a write of several documents that belong to one operation, and
   /// reports whether all of them landed. `removing` lets the same commit discard
   /// the draft that belongs to the operation.
   @discardableResult
   func persistBatch(
+    meetings: [Meeting]? = nil,
     _ build: () throws -> [(key: String, data: Data)],
     removing: [String] = []
   ) -> Bool {
     guard isStoreWritable() else { return false }
     do {
-      try RecordStore.commitNow(writes: try build(), removing: removing)
+      if let meetings {
+        try RecordStore.commitNow(writes: try build(), removing: removing, meetings: meetings)
+      } else {
+        try RecordStore.commitNow(writes: try build(), removing: removing)
+      }
       return true
     } catch {
       reportPersistenceFailure(saveFailureMessage)
@@ -99,12 +123,13 @@ extension MemoraModel {
   /// disk while it finishes.
   @discardableResult
   func persistBatchAsync(
+    meetings: [Meeting]? = nil,
     _ build: () throws -> [(key: String, data: Data)],
     removing: [String] = []
   ) async -> Bool {
     guard isStoreWritable() else { return false }
     do {
-      try await RecordStore.commitAsync(writes: try build(), removing: removing)
+      try await RecordStore.commitAsync(writes: try build(), removing: removing, meetings: meetings)
       return true
     } catch {
       reportPersistenceFailure(saveFailureMessage)

@@ -169,9 +169,8 @@ extension MemoraModel {
   /// Writes the records and the journal together with the draft's removal, so
   /// a stop in the middle leaves either the saved recording or its draft.
   func commitRecordingSave() async -> Bool {
-    await persistBatchAsync({
+    await persistBatchAsync(meetings: meetings, {
       [
-        (key: StorageKey.meetings, data: try RecordStore.encoded(meetings)),
         (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(lifeLogEntries))
       ]
     }, removing: [StorageKey.recordingDraft])

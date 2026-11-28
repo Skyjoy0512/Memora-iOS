@@ -78,12 +78,11 @@ extension MemoraModel {
       }
       return value
     }
-    guard persistBatch({
+    guard persistBatch(meetings: candidateMeetings, {
       [
         (key: StorageKey.projectSources, data: try RecordStore.encoded(candidateSources)),
         (key: StorageKey.projectChats, data: try RecordStore.encoded(candidateChats)),
         (key: StorageKey.spaces, data: try RecordStore.encoded(candidateSpaces)),
-        (key: StorageKey.meetings, data: try RecordStore.encoded(candidateMeetings)),
         (key: StorageKey.documents, data: try RecordStore.encoded(candidateDocuments))
       ]
     }) else { return false }
@@ -114,9 +113,7 @@ extension MemoraModel {
     }
     guard meetings.contains(where: { ids.contains($0.id) && $0.spaceID != spaceID }) else { return true }
 
-    let stored = persistBatch {
-      [(key: StorageKey.meetings, data: try RecordStore.encoded(candidate))]
-    }
+    let stored = persistBatch(meetings: candidate) { [] }
     guard stored else { return false }
     for id in ids { meetingSearchTexts.removeValue(forKey: id) }
     invalidateProjectEvidence(ids.map(ProjectCitation.Target.meeting) + tasks.filter { $0.meetingID.map(ids.contains) == true }.map { .task($0.id) })

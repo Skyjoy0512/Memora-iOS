@@ -82,7 +82,7 @@ extension MemoraModel {
       )
       let candidate = [meeting] + meetings
       guard context.isCurrent(in: self, allowsRemovedProject: true),
-            persistNow(candidate, forKey: StorageKey.meetings) else {
+            persistMeetings(candidate) else {
         if !MediaFiles.delete(destination) {
           deletionFailureMessage = "保存できなかったインポート音声の削除に失敗しました。"
         }

@@ -248,7 +248,8 @@ struct MeetingRowStaging {
 
   /// Indexes top-level object boundaries. The Meeting decoder checks each
   /// object; staging keeps the original bytes, including fields it ignores.
-  private static func objectRanges(in source: Data) throws -> [Range<Int>] {
+  /// The row archive reuses this so its migration also keeps untouched bytes.
+  static func objectRanges(in source: Data) throws -> [Range<Int>] {
     try source.withUnsafeBytes { bytes in
       var cursor = 0
       var ranges: [Range<Int>] = []

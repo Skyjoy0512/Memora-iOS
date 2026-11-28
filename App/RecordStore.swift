@@ -1,7 +1,5 @@
 import Foundation
-#if DEBUG
 import Synchronization
-#endif
 
 /// Reads and writes the app's documents. Keeping this here means the model asks
 /// for records and never deals with the store, encoding, or the move off
@@ -14,6 +12,13 @@ import Synchronization
 enum RecordStore {
   private static let queue = DispatchQueue(label: "app.memora.persistence", qos: .utility)
   private static var pendingDataWrites: [String: PendingDataWrite] = [:]
+  /// The records the last successful commit wrote, so a save only encodes the
+  /// rows that changed. Seeded from the archive when the app loads. Touched
+  /// only on the persistence queue, which is what keeps a diff honest.
+  nonisolated(unsafe) private static var meetingBase: [Meeting]?
+  /// Bumped for every enqueued background save, so a save that a newer one has
+  /// already superseded is skipped instead of encoding the same array again.
+  nonisolated private static let backgroundSaveGenerations = Mutex<[String: Int]>([:])
 
   private struct PendingDataWrite: Sendable {
     var id = UUID()
@@ -146,14 +151,12 @@ enum RecordStore {
   private static func commitIfCurrent(
     writes: [(key: String, data: Data)],
     removing removals: [String],
-    expecting expected: [(key: String, data: Data?)]
+    expecting expected: [(key: String, data: Data?)],
+    meetings: [Meeting]? = nil
   ) throws -> Bool {
     let revisions = dataWriteRevisions(for: writes.map(\.key) + removals)
     let committed = try queue.sync {
-#if DEBUG
-      try consumeInjectedFailure()
-#endif
-      return try LocalStore.shared.applyBatch(writes: writes, removing: removals, expecting: expected)
+      try commitMeetingsLocked(writes: writes, removing: removals, expecting: expected, meetings: meetings)
     }
     if committed { settleDataWrites(revisions) }
     return committed
@@ -171,13 +174,32 @@ enum RecordStore {
     key: String,
     onFailure: (@MainActor () -> Void)? = nil
   ) {
+    let generation = beginBackgroundSave(key)
     queue.async {
+      // A newer save of the same document supersedes this one, so encoding and
+      // writing this snapshot would only repeat work.
+      guard isCurrentBackgroundSave(key, generation) else { return }
       guard let data = try? JSONEncoder().encode(value) else {
         Task { @MainActor in onFailure?() }
         return
       }
       do {
         try LocalStore.shared.write(key, data: data)
+      } catch {
+        Task { @MainActor in onFailure?() }
+      }
+    }
+  }
+
+  /// The records, written as rows. Only the records that changed are encoded
+  /// and written; the collection is no longer re-encoded as a whole.
+  static func saveMeetings(_ meetings: [Meeting], onFailure: (@MainActor () -> Void)? = nil) {
+    let key = MemoraModel.StorageKey.meetings
+    let generation = beginBackgroundSave(key)
+    queue.async {
+      guard isCurrentBackgroundSave(key, generation) else { return }
+      do {
+        try commitMeetingsLocked(writes: [], removing: [], meetings: meetings)
       } catch {
         Task { @MainActor in onFailure?() }
       }
@@ -243,6 +265,11 @@ enum RecordStore {
     try saveBatch([(key: key, data: data)])
   }
 
+  /// The records, saved on the caller's turn and reported before continuing.
+  static func saveMeetingsNow(_ meetings: [Meeting]) throws {
+    _ = try commitIfCurrent(writes: [], removing: [], expecting: [], meetings: meetings)
+  }
+
   /// Saves already-encoded bytes on the caller's turn, throwing on failure, and
   /// waiting for earlier queued writes. The awaitable form of `saveData`.
   static func saveDataNow(_ data: Data, key: String) throws {
@@ -265,26 +292,108 @@ enum RecordStore {
     _ = try commitIfCurrent(writes: writes, removing: removals, expecting: [])
   }
 
+  /// The same commit, with the record rows that belong to the operation. The
+  /// rows, the manifest and the other documents land in one transaction.
+  static func commitNow(
+    writes: [(key: String, data: Data)],
+    removing removals: [String],
+    meetings: [Meeting]
+  ) throws {
+    _ = try commitIfCurrent(writes: writes, removing: removals, expecting: [], meetings: meetings)
+  }
+
   /// The same commit off the caller's turn, so a screen does not wait on disk.
   static func commitAsync(
     writes: [(key: String, data: Data)],
     removing removals: [String]
   ) async throws {
+    try await commitAsync(writes: writes, removing: removals, meetings: nil)
+  }
+
+  static func commitAsync(
+    writes: [(key: String, data: Data)],
+    removing removals: [String],
+    meetings: [Meeting]?
+  ) async throws {
     let revisions = dataWriteRevisions(for: writes.map(\.key) + removals)
-    try await withCheckedThrowingContinuation { continuation in
+    let committedBase: [Meeting]? = try await withCheckedThrowingContinuation { continuation in
       queue.async {
         do {
-#if DEBUG
-          try consumeInjectedFailure()
-#endif
-          try LocalStore.shared.applyBatch(writes: writes, removing: removals)
-          continuation.resume()
+          try Self.commitMeetingsLocked(writes: writes, removing: removals, meetings: meetings)
+          continuation.resume(returning: meetings)
         } catch {
           continuation.resume(throwing: error)
         }
       }
     }
     settleDataWrites(revisions)
+    if let committedBase { meetingBase = committedBase }
+  }
+
+  /// Runs inside the writer queue. Encoding, the transaction and the base
+  /// update share one turn, so a queued save can never diff against a state
+  /// that a later save already replaced.
+  @discardableResult
+  nonisolated private static func commitMeetingsLocked(
+    writes: [(key: String, data: Data)],
+    removing removals: [String],
+    expecting expected: [(key: String, data: Data?)] = [],
+    meetings: [Meeting]?
+  ) throws -> Bool {
+    var documents = writes
+    var archive: MeetingArchive.Change?
+    if let meetings {
+      let change = try MeetingArchive.change(from: meetingBase, to: meetings)
+      if change.manifestChanged || change.rebuild != nil {
+        documents.append((key: MeetingArchive.manifestKey,
+                          data: try MeetingArchive.manifestData(change.manifest)))
+      }
+      archive = change
+    }
+#if DEBUG
+    try consumeInjectedFailure()
+#endif
+    let landed = try LocalStore.shared.applyBatch(
+      writes: documents, removing: removals, expecting: expected, archive: archive)
+    if landed, let meetings { meetingBase = meetings }
+    return landed
+  }
+
+  /// What the archive holds, or nil when the collection document is still the
+  /// authority. The records become the base for the next incremental save.
+  static func loadMeetings() -> MeetingArchive.Load {
+    let outcome = MeetingArchive.load(LocalStore.shared)
+    if case .records(let records) = outcome { seedMeetingBase(records) }
+    return outcome
+  }
+
+  /// The whole collection as stored, for checks that compare what was written
+  /// with what the app shows. Prefers the rows; falls back to the document.
+  static func storedMeetings() -> [Meeting]? {
+    switch loadMeetings() {
+    case .records(let records): return records
+    case .absent, .invalid:
+      guard case .data(let data) = load(MemoraModel.StorageKey.meetings) else { return nil }
+      return try? JSONDecoder().decode([Meeting].self, from: data)
+    }
+  }
+
+  /// Records read by another route become the diff base, so the first save
+  /// after a restore does not rewrite every row.
+  static func seedMeetingBase(_ meetings: [Meeting]) {
+    queue.sync { meetingBase = meetings }
+  }
+
+  private static func beginBackgroundSave(_ key: String) -> Int {
+    backgroundSaveGenerations.withLock { generations in
+      let next = (generations[key] ?? 0) + 1
+      generations[key] = next
+      return next
+    }
+  }
+
+  private static func isCurrentBackgroundSave(_ key: String, _ generation: Int) -> Bool {
+    backgroundSaveGenerations.withLock { $0[key] == generation }
   }
 
   /// Removes a document, waiting for any queued write so an older save cannot

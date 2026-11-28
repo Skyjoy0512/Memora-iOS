@@ -40,9 +40,8 @@ extension MemoraModel {
     let deletion = PendingMediaDeletion(id: UUID(), audioReference: nil, photoNames: [removed])
     let pending = pendingMediaDeletions + [deletion]
 
-    let stored = persistBatch {
+    let stored = persistBatch(meetings: candidate) {
       [
-        (key: StorageKey.meetings, data: try RecordStore.encoded(candidate)),
         (key: StorageKey.pendingMediaDeletions, data: try RecordStore.encoded(pending))
       ]
     }
@@ -103,9 +102,8 @@ extension MemoraModel {
     var candidate = meetings
     candidate[index].removeAudioReferences()
     meetingSearchTexts.removeValue(forKey: id)
-    let stored = persistBatch {
+    let stored = persistBatch(meetings: candidate) {
       [
-        (key: StorageKey.meetings, data: try RecordStore.encoded(candidate)),
         (key: StorageKey.pendingMediaDeletions, data: try RecordStore.encoded(pending))
       ]
     }
@@ -136,9 +134,8 @@ extension MemoraModel {
       meetingSearchTexts.removeValue(forKey: original.id)
     }
     let pending = pendingMediaDeletions.filter { !pendingIDs.contains($0.id) }
-    let stored = persistBatch {
+    let stored = persistBatch(meetings: candidate) {
       [
-        (key: StorageKey.meetings, data: try RecordStore.encoded(candidate)),
         (key: StorageKey.pendingMediaDeletions, data: try RecordStore.encoded(pending))
       ]
     }
@@ -165,9 +162,8 @@ extension MemoraModel {
       meetingSearchTexts.removeValue(forKey: candidate[index].id)
     }
 
-    let stored = persistBatch {
+    let stored = persistBatch(meetings: candidate) {
       [
-        (key: StorageKey.meetings, data: try RecordStore.encoded(candidate)),
         (key: StorageKey.pendingMediaDeletions, data: try RecordStore.encoded(pending))
       ]
     }
@@ -193,9 +189,8 @@ extension MemoraModel {
     candidate[meetingIndex].photoFileNames = names
     let pending = pendingMediaDeletions.filter { $0.id != deletionID }
 
-    let stored = persistBatch {
+    let stored = persistBatch(meetings: candidate) {
       [
-        (key: StorageKey.meetings, data: try RecordStore.encoded(candidate)),
         (key: StorageKey.pendingMediaDeletions, data: try RecordStore.encoded(pending))
       ]
     }

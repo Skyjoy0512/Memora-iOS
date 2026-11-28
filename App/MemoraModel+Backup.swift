@@ -284,9 +284,8 @@ extension MemoraModel {
       // just created are taken back, so the device is left as it was.
       let restoredHistory = manifest.aiHistory.map(\.withoutCloudReplayAuthorization)
       let restoredProjectChats = (manifest.projectChats ?? []).map(\.withoutCloudReplayAuthorization)
-      let stored = persistBatch {
+      let stored = persistBatch(meetings: manifest.meetings) {
         [
-          (key: StorageKey.meetings, data: try RecordStore.encoded(manifest.meetings)),
           (key: StorageKey.spaces, data: try RecordStore.encoded(manifest.spaces)),
           (key: StorageKey.tasks, data: try RecordStore.encoded(manifest.tasks)),
           (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(manifest.lifeLogEntries)),

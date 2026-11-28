@@ -75,7 +75,7 @@ extension MemoraModel {
     candidate[index] = updated
     // Callers use success to start follow-up work or discard their drafts.
     // Publish only the snapshot that actually reached the ordered store.
-    guard persistBatch({ [(key: StorageKey.meetings, data: try RecordStore.encoded(candidate))] }) else { return false }
+    guard persistBatch(meetings: candidate, { [] }) else { return false }
     meetingSearchTexts.removeValue(forKey: id)
     meetings = candidate
     return true
@@ -103,17 +103,12 @@ extension MemoraModel {
       let base = meetings
       var candidate = base
       candidate[currentIndex] = rebased
-      let snapshot = candidate
-      let data: Data
-      do {
-        data = try await Task.detached(priority: .userInitiated) { try RecordStore.encoded(snapshot) }.value
-      } catch {
-        return persistBatch { throw error }
-      }
       guard !Task.isCancelled, !isRestoring, !isStoreProtected, currentTeamID == nil,
             aiWorkspaceGeneration == generation else { return false }
       guard meetings == base else { continue }
-      guard persistBatch({ [(key: StorageKey.meetings, data: data)] }) else { return false }
+      // Only the rows that changed are encoded, so the retry loop no longer
+      // encodes the whole collection off the main actor first.
+      guard persistBatch(meetings: candidate, { [] }) else { return false }
       meetingSearchTexts.removeValue(forKey: id)
       meetings = candidate
       return true

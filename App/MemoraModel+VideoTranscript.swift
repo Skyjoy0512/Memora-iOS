@@ -23,8 +23,7 @@ extension MemoraModel {
     candidateSources[index].updatedAt = .now
     let candidateMeetings = [record] + meetings
     // The link and the record land together, so an interrupted save cannot create duplicates.
-    guard persistBatch({ [
-      (key: StorageKey.meetings, data: try RecordStore.encoded(candidateMeetings)),
+    guard persistBatch(meetings: candidateMeetings, { [
       (key: StorageKey.projectSources, data: try RecordStore.encoded(candidateSources))
     ] }) else { return nil }
     meetings = candidateMeetings

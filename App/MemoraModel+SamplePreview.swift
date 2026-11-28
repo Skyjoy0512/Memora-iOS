@@ -7,7 +7,7 @@ extension MemoraModel {
     guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return false }
     if !meetings.contains(where: { $0.id == SummarizedAudioSample.id }) {
       let candidate = [SummarizedAudioSample.make()] + meetings
-      guard persistBatch({ [(key: StorageKey.meetings, data: try RecordStore.encoded(candidate))] }) else { return false }
+      guard persistBatch(meetings: candidate, { [] }) else { return false }
       meetings = candidate
     }
     selectedTab = .library

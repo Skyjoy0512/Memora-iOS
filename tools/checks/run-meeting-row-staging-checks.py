@@ -20,7 +20,7 @@ def main():
         "TemplateSummary", "SummarySection", "SummaryEvidence", "SummaryEvidenceLink",
         "GeneratedSummaryEvidence", "SummaryLength", "SummaryPreferences", "SummaryProcessingMode",
         "SummaryPreviewCache", "MarkdownBlockParser", "MarkdownBlock", "SourcedMarkdownBlock", "MarkdownFence",
-        "MeetingRowStaging",
+        "MeetingRowStaging", "MeetingArchive",
     ]
     check_root = os.environ.get("MEMORA_CHECK_TMPDIR") or os.environ.get("MEMORA_CHECK_ROOT")
     with tempfile.TemporaryDirectory(prefix="memora-row-staging-", dir=check_root) as directory:

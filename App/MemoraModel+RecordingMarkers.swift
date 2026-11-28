@@ -24,7 +24,7 @@ extension MemoraModel {
           meetings[index].recordingMarkers.contains(where: { $0.id == markerID }) else { return }
     var candidate = meetings
     candidate[index].recordingMarkers.removeAll { $0.id == markerID }
-    guard persistNow(candidate, forKey: StorageKey.meetings) else { return }
+    guard persistMeetings(candidate) else { return }
     meetings = candidate
     announce("重要マークを削除しました")
   }

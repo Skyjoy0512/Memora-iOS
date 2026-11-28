@@ -51,15 +51,14 @@ import Foundation
     let record = Meeting(id: recordID, title: "QA デザイン検証の要約", createdAt: .now, duration: 0,
       source: .importFile, status: .ready, summary: markdown, keyPoints: [], decisions: [], openQuestions: [], transcript: [], spaceID: nil)
     let candidate = [record] + model.meetings
-    guard model.persistNow(candidate, forKey: MemoraModel.StorageKey.meetings) else { return false }
+    guard model.persistMeetings(candidate) else { return false }
     model.meetings = candidate
     return true
   }
 
   static func verify(in model: MemoraModel) -> String {
     guard let current = model.meeting(id: recordID),
-          case .data(let data) = RecordStore.load(MemoraModel.StorageKey.meetings),
-          let records = try? JSONDecoder().decode([Meeting].self, from: data),
+          let records = RecordStore.storedMeetings(),
           records.first(where: { $0.id == recordID })?.summary == current.summary else { return "SQLiteの一致を確認できませんでした" }
     return "SQLite再読込一致：" + (current.summary.contains("E2E保存確認") ? "編集内容を保存済み" : "原文を保存済み")
   }
@@ -67,7 +66,7 @@ import Foundation
   static func cleanup(in model: MemoraModel) -> Bool {
     guard model.currentTeamID == nil, !model.isRestoring, !model.isStoreProtected else { return false }
     let candidate = model.meetings.filter { $0.id != recordID }
-    guard model.persistNow(candidate, forKey: MemoraModel.StorageKey.meetings) else { return false }
+    guard model.persistMeetings(candidate) else { return false }
     model.meetings = candidate
     DraftStore.clear("meeting.\(recordID).summary")
     return true

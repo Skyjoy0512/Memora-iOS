@@ -236,8 +236,7 @@ extension MemoraModel {
         self.updateMeetingTransiently(id) { $0.status = .organizing("結果を保存しています") }
         // Deliver the result and acknowledge the job in the same transaction.
         // A failed record write must never erase its only recoverable request.
-        guard self.persistBatch({ [
-          (key: StorageKey.meetings, data: try RecordStore.encoded(candidateMeetings)),
+        guard self.persistBatch(meetings: candidateMeetings, { [
           (key: StorageKey.tasks, data: try RecordStore.encoded(candidateTasks)),
           (key: StorageKey.pendingSummaryJobs, data: try RecordStore.encoded(candidateJobs))
         ] }) else {
@@ -278,8 +277,7 @@ extension MemoraModel {
         var candidateMeetings = self.meetings
         candidateMeetings[index].status = .failed(message)
         let candidateJobs = self.pendingSummaryJobs.filter { $0.id != job.id }
-        guard self.persistBatch({ [
-          (key: StorageKey.meetings, data: try RecordStore.encoded(candidateMeetings)),
+        guard self.persistBatch(meetings: candidateMeetings, { [
           (key: StorageKey.pendingSummaryJobs, data: try RecordStore.encoded(candidateJobs))
         ] }) else {
           self.pauseBackgroundSummary(job, requiresUserRetry: true)

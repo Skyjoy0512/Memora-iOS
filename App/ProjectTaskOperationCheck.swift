@@ -32,8 +32,7 @@ final class ProjectTaskOperationCheck {
     taskIDs = Set(additions.map(\.id))
     let records = [record, outside] + model.meetings
     let tasks = additions + model.tasks
-    guard model.persistBatch({ [
-      (key: MemoraModel.StorageKey.meetings, data: try RecordStore.encoded(records)),
+    guard model.persistBatch(meetings: records, { [
       (key: MemoraModel.StorageKey.tasks, data: try RecordStore.encoded(tasks))
     ] }) else { result = "検証データを保存できませんでした。"; return }
     model.meetings = records; model.tasks = tasks
@@ -70,9 +69,8 @@ final class ProjectTaskOperationCheck {
     let tasks = model.tasks.filter { !taskIDs.contains($0.id) }
     let records = model.meetings.filter { !recordIDs.contains($0.id) }
     let spaces = model.spaces.filter { $0.id != projectID }
-    guard model.persistBatch({ [
+    guard model.persistBatch(meetings: records, { [
       (key: MemoraModel.StorageKey.tasks, data: try RecordStore.encoded(tasks)),
-      (key: MemoraModel.StorageKey.meetings, data: try RecordStore.encoded(records)),
       (key: MemoraModel.StorageKey.spaces, data: try RecordStore.encoded(spaces))
     ] }) else { result = "検証データを削除できませんでした。"; return false }
     model.tasks = tasks; model.meetings = records; model.spaces = spaces

@@ -21,8 +21,7 @@ extension MemoraModel {
     }, to: lifeLogEntries)
     let nextDocuments = addingMissing(ScreenReviewSamples.documents(), to: documents)
     let nextHistory = addingMissing([ScreenReviewSamples.history()], to: aiHistory)
-    guard persistBatch({ [
-      (key: StorageKey.meetings, data: try RecordStore.encoded(nextMeetings)),
+    guard persistBatch(meetings: nextMeetings, { [
       (key: StorageKey.spaces, data: try RecordStore.encoded(nextSpaces)),
       (key: StorageKey.people, data: try RecordStore.encoded(nextPeople)),
       (key: StorageKey.tasks, data: try RecordStore.encoded(nextTasks)),
